@@ -10,12 +10,17 @@ const { exportTreeZip } = require('./zipCreator');
 let mainWindow;
 let isReadyToClose = false;
 let latestUpdateInfo = null;
+const updateFeedUrl = 'https://github.com/markelpher/TreeIDE-Deploy/releases/latest/download';
 
 autoUpdater.autoDownload = false;
 autoUpdater.allowPrerelease = false;
 autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: updateFeedUrl
+});
 
 function normalizeVersion(version = '') {
     return String(version).trim().replace(/^v/i, '').split('-')[0];
@@ -95,6 +100,10 @@ autoUpdater.on('update-available', (info) => {
     latestUpdateInfo = buildUpdateInfo(info);
     log.info(`Update available event: ${latestUpdateInfo.latestVersion}`);
     mainWindow?.webContents.send('release-update-available', latestUpdateInfo);
+});
+
+autoUpdater.on('checking-for-update', () => {
+    log.info(`Checking update feed: ${updateFeedUrl}`);
 });
 
 autoUpdater.on('update-not-available', () => {
