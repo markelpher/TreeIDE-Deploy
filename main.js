@@ -12,6 +12,8 @@ const updateFeed = {
     owner: 'markelpher',
     repo: 'TreeIDE-Deploy'
 };
+const updateRepoUrl = `https://github.com/${updateFeed.owner}/${updateFeed.repo}`;
+const releasesApiUrl = `https://api.github.com/repos/${updateFeed.owner}/${updateFeed.repo}/releases`;
 
 // Basic auto-updater config
 autoUpdater.autoDownload = false;
@@ -21,6 +23,100 @@ autoUpdater.logger.transports.file.level = 'info';
 autoUpdater.setFeedURL(updateFeed);
 
 let isReadyToClose = false;
+let latestUpdateInfo = null;
+
+function normalizeVersion(version = '') {
+    return String(version).trim().replace(/^v/i, '').split('-')[0];
+}
+
+function compareVersions(a, b) {
+    const left = normalizeVersion(a).split('.').map((part) => Number.parseInt(part, 10) || 0);
+    const right = normalizeVersion(b).split('.').map((part) => Number.parseInt(part, 10) || 0);
+    const length = Math.max(left.length, right.length);
+
+    for (let i = 0; i < length; i += 1) {
+        const diff = (left[i] || 0) - (right[i] || 0);
+        if (diff !== 0) return diff > 0 ? 1 : -1;
+    }
+
+    return 0;
+}
+
+function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '---';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+    }
+
+    return `${value.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+}
+
+function pickReleaseAsset(release) {
+    const assets = Array.isArray(release?.assets) ? release.assets : [];
+    const platform = process.platform;
+
+    if (platform === 'win32') {
+        return assets.find((asset) => /setup.*\.exe$/i.test(asset.name))
+            || assets.find((asset) => /\.exe$/i.test(asset.name) && !/portable/i.test(asset.name))
+            || assets.find((asset) => /\.msi$/i.test(asset.name))
+            || assets.find((asset) => /\.exe$/i.test(asset.name));
+    }
+
+    if (platform === 'darwin') {
+        return assets.find((asset) => /\.(dmg|zip)$/i.test(asset.name));
+    }
+
+    return assets.find((asset) => /\.(appimage|deb|rpm|tar\.gz)$/i.test(asset.name));
+}
+
+function releaseToUpdateInfo(release) {
+    const asset = pickReleaseAsset(release);
+    const version = normalizeVersion(release?.tag_name || release?.name);
+    const hasUpdaterMetadata = Array.isArray(release?.assets)
+        && release.assets.some((item) => /^latest.*\.ya?ml$/i.test(item.name));
+
+    return {
+        version,
+        size: formatBytes(asset?.size),
+        releaseName: release?.name || `v${version}`,
+        releaseUrl: release?.html_url || `${updateRepoUrl}/releases`,
+        downloadUrl: asset?.browser_download_url || release?.html_url || `${updateRepoUrl}/releases`,
+        canInstall: app.isPackaged && process.platform === 'win32' && hasUpdaterMetadata,
+        manual: !app.isPackaged || !hasUpdaterMetadata,
+        prerelease: Boolean(release?.prerelease)
+    };
+}
+
+async function fetchJson(url) {
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/vnd.github+json',
+            'User-Agent': 'Tree-IDE-Updater'
+        }
+    });
+
+    if (!response.ok) {
+        const error = new Error(`GitHub update check failed with status ${response.status}`);
+        error.statusCode = response.status;
+        throw error;
+    }
+
+    return response.json();
+}
+
+async function getLatestRelease(channel = 'release') {
+    const releases = await fetchJson(`${releasesApiUrl}?per_page=20`);
+    const usableReleases = releases
+        .filter((release) => !release.draft)
+        .filter((release) => channel === 'beta' || !release.prerelease);
+
+    return usableReleases[0] || null;
+}
 
 function getUpdateErrorMessage(err) {
     const rawMessage = err?.message || String(err || '');
@@ -92,15 +188,33 @@ function createWindow() {
 }
 
 
-async function checkForUpdates() {
-    if (!app.isPackaged) {
-        const message = 'Updates are only available in the installed app, not while running with npm start.';
-        mainWindow?.webContents.send('updater-error', message);
-        return { ok: false, error: message };
-    }
+async function checkForUpdates(channel = 'release') {
+    latestUpdateInfo = null;
+    autoUpdater.allowPrerelease = channel === 'beta';
+    mainWindow?.webContents.send('updater-checking');
 
     try {
-        await autoUpdater.checkForUpdates();
+        const release = await getLatestRelease(channel);
+
+        if (!release) {
+            mainWindow?.webContents.send('updater-not-available');
+            return { ok: true, updateAvailable: false };
+        }
+
+        const updateInfo = releaseToUpdateInfo(release);
+        if (compareVersions(updateInfo.version, app.getVersion()) <= 0) {
+            mainWindow?.webContents.send('updater-not-available');
+            return { ok: true, updateAvailable: false };
+        }
+
+        latestUpdateInfo = updateInfo;
+
+        if (updateInfo.canInstall) {
+            await autoUpdater.checkForUpdates();
+        } else {
+            mainWindow?.webContents.send('updater-available', updateInfo);
+        }
+
         return { ok: true };
     } catch (err) {
         const message = getUpdateErrorMessage(err);
@@ -156,7 +270,16 @@ ipcMain.handle('check-for-updates', async () => {
     return checkForUpdates();
 });
 
+ipcMain.handle('check-for-updates-channel', async (event, channel) => {
+    return checkForUpdates(channel);
+});
+
 ipcMain.handle('download-update', async () => {
+    if (latestUpdateInfo?.manual) {
+        await shell.openExternal(latestUpdateInfo.downloadUrl || latestUpdateInfo.releaseUrl);
+        return { ok: true, manual: true };
+    }
+
     try {
         await autoUpdater.downloadUpdate();
         return { ok: true };
@@ -169,6 +292,12 @@ ipcMain.handle('download-update', async () => {
 
 ipcMain.on('install-update', () => {
     autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('open-update-download', async () => {
+    const url = latestUpdateInfo?.downloadUrl || `${updateRepoUrl}/releases/latest`;
+    await shell.openExternal(url);
+    return { ok: true };
 });
 
 // IPC handlers

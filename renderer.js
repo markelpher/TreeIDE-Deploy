@@ -1959,22 +1959,13 @@ const templatesModal = document.getElementById('templatesModal');
 const checkUpdateBtn = document.getElementById('checkUpdateBtn');
 const updateDetails = document.getElementById('updateDetails');
 let updaterState = 'idle'; // idle, checking, available, downloading, downloaded
+let latestUpdateInfo = null;
 
 async function initializeAppInfo() {
     const appInfo = await window.electronAPI.getAppInfo();
     const versionInfo = document.getElementById('versionInfo');
-    const updatesSidebarTab = document.getElementById('updatesSidebarTab');
-    const updatesTab = document.getElementById('tab-updates');
-    const welcomeUpdatesSection = document.getElementById('welcomeUpdatesSection');
-
     if (versionInfo) {
-        versionInfo.textContent = `v${appInfo.version}`;
-    }
-
-    if (!appInfo.isPackaged) {
-        if (updatesSidebarTab) updatesSidebarTab.style.display = 'none';
-        if (updatesTab) updatesTab.style.display = 'none';
-        if (welcomeUpdatesSection) welcomeUpdatesSection.style.display = 'none';
+        versionInfo.textContent = appInfo.isPackaged ? `v${appInfo.version}` : `v${appInfo.version} (dev)`;
     }
 }
 
@@ -2100,6 +2091,8 @@ sidebarTabs.forEach(tab => {
 // Automatic Updates toggle
 const autoUpdateToggle = document.getElementById('autoUpdateToggle');
 const welcomeAutoUpdateToggle = document.getElementById('welcomeAutoUpdateToggle');
+const updateChannelSelect = document.getElementById('updateChannelSelect');
+const welcomeUpdateChannelSelect = document.getElementById('welcomeUpdateChannelSelect');
 
 const handleAutoUpdateChange = (val) => {
     localStorage.setItem('auto_update', val);
@@ -2117,6 +2110,22 @@ if (welcomeAutoUpdateToggle) {
 // Initial state for auto-update
 const savedAutoUpdate = localStorage.getItem('auto_update') === 'true';
 handleAutoUpdateChange(savedAutoUpdate);
+
+const handleUpdateChannelChange = (val) => {
+    const channel = val === 'beta' ? 'beta' : 'release';
+    localStorage.setItem('update_channel', channel);
+    if (updateChannelSelect) updateChannelSelect.value = channel;
+    if (welcomeUpdateChannelSelect) welcomeUpdateChannelSelect.value = channel;
+};
+
+if (updateChannelSelect) {
+    updateChannelSelect.addEventListener('change', (e) => handleUpdateChannelChange(e.target.value));
+}
+if (welcomeUpdateChannelSelect) {
+    welcomeUpdateChannelSelect.addEventListener('change', (e) => handleUpdateChannelChange(e.target.value));
+}
+
+handleUpdateChannelChange(localStorage.getItem('update_channel') || 'release');
 
 // Custom Confirmation Modal Logic
 let confirmCallback = null;
@@ -2169,7 +2178,9 @@ document.getElementById('laterUpdateBtn').addEventListener('click', () => {
 
 document.getElementById('nowUpdateBtn').addEventListener('click', async () => {
     updateModal.style.display = 'none';
-    const result = await window.electronAPI.downloadUpdate();
+    const result = latestUpdateInfo?.manual
+        ? await window.electronAPI.openUpdateDownload()
+        : await window.electronAPI.downloadUpdate();
     if (result && result.ok === false) {
         showToast(result.error || 'Update download failed');
     }
@@ -2181,7 +2192,7 @@ document.getElementById('closeUpdateModal').addEventListener('click', () => {
 
 checkUpdateBtn.addEventListener('click', async () => {
     if (updaterState === 'idle' || updaterState === 'error') {
-        const result = await window.electronAPI.checkForUpdates();
+        const result = await window.electronAPI.checkForUpdates(localStorage.getItem('update_channel') || 'release');
         if (result && result.ok === false) {
             updaterState = 'error';
             checkUpdateBtn.textContent = window.i18n.t('check_updates');
@@ -2189,7 +2200,9 @@ checkUpdateBtn.addEventListener('click', async () => {
             showToast(result.error || 'Update check failed');
         }
     } else if (updaterState === 'available') {
-        const result = await window.electronAPI.downloadUpdate();
+        const result = latestUpdateInfo?.manual
+            ? await window.electronAPI.openUpdateDownload()
+            : await window.electronAPI.downloadUpdate();
         if (result && result.ok === false) {
             updaterState = 'error';
             checkUpdateBtn.textContent = window.i18n.t('check_updates');
@@ -2203,14 +2216,16 @@ checkUpdateBtn.addEventListener('click', async () => {
 
 window.electronAPI.onUpdateChecking(() => {
     updaterState = 'checking';
+    latestUpdateInfo = null;
     checkUpdateBtn.textContent = window.i18n.t('checking');
     checkUpdateBtn.disabled = true;
     updateDetails.style.display = 'none';
 });
 
 window.electronAPI.onUpdateAvailable((info) => {
+    latestUpdateInfo = info;
     updaterState = 'available';
-    checkUpdateBtn.textContent = window.i18n.t('download_now');
+    checkUpdateBtn.textContent = info.manual ? window.i18n.t('open_download_page') : window.i18n.t('download_now');
     checkUpdateBtn.disabled = false;
     document.getElementById('newVersion').textContent = info.version;
     document.getElementById('newSize').textContent = info.size;
@@ -2218,7 +2233,7 @@ window.electronAPI.onUpdateAvailable((info) => {
 
     // If auto-update is off, show the custom modal prompt
     // If auto-update is on, it will download automatically via downloadUpdate
-    if (localStorage.getItem('auto_update') === 'true') {
+    if (localStorage.getItem('auto_update') === 'true' && !info.manual) {
         window.electronAPI.downloadUpdate().then((result) => {
             if (result && result.ok === false) {
                 showToast(result.error || 'Update download failed');
@@ -2231,9 +2246,10 @@ window.electronAPI.onUpdateAvailable((info) => {
 
 window.electronAPI.onUpdateNotAvailable(() => {
     updaterState = 'idle';
+    latestUpdateInfo = null;
     checkUpdateBtn.textContent = window.i18n.t('check_updates');
     checkUpdateBtn.disabled = false;
-    showToast('App is up to date');
+    showToast(window.i18n.t('up_to_date'));
 });
 
 window.electronAPI.onUpdateProgress((percent) => {

@@ -185,6 +185,13 @@
                                 </label>
                             </div>
                             <div class="settings-row">
+                                <label data-i18n="update_channel">Update Channel</label>
+                                <select id="updateChannelSelect" class="styled-select">
+                                    <option value="release" data-i18n="release">Release</option>
+                                    <option value="beta" data-i18n="beta">Beta</option>
+                                </select>
+                            </div>
+                            <div class="settings-row">
                                 <span data-i18n="current_version">Current Version</span>
                                 <span id="versionInfo">---</span>
                             </div>
@@ -298,6 +305,13 @@
                             <input type="checkbox" id="welcomeAutoUpdateToggle">
                             <span class="slider"></span>
                         </label>
+                    </div>
+                    <div class="settings-row">
+                        <label data-i18n="update_channel">Update Channel</label>
+                        <select id="welcomeUpdateChannelSelect" class="styled-select">
+                            <option value="release" data-i18n="release">Release</option>
+                            <option value="beta" data-i18n="beta">Beta</option>
+                        </select>
                     </div>
                 </div>
 
