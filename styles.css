@@ -900,6 +900,21 @@ body.light-theme .tree-connector {
     justify-content: flex-end;
 }
 
+.about-version {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    margin: 0 0 16px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-accent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .release-update-modal-content {
     max-width: 460px;
 }

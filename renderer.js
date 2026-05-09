@@ -1854,6 +1854,7 @@ window.addEventListener('DOMContentLoaded', () => {
     syncLanguageControls();
     updateBuildFolderDisplay();
     updateValidationPanel();
+    initializeAppInfo();
     setTimeout(checkReleaseUpdateOnStartup, 1200);
 });
 
@@ -1998,6 +1999,20 @@ async function checkReleaseUpdateOnStartup() {
         }
     } catch (err) {
         console.warn('Release update check failed:', err);
+    }
+}
+
+async function initializeAppInfo() {
+    if (!window.electronAPI.getAppInfo) return;
+
+    try {
+        const appInfo = await window.electronAPI.getAppInfo();
+        const aboutVersion = document.getElementById('aboutVersion');
+        if (aboutVersion) {
+            aboutVersion.textContent = appInfo.isPackaged ? `v${appInfo.version}` : `v${appInfo.version} dev`;
+        }
+    } catch (err) {
+        console.warn('App info unavailable:', err);
     }
 }
 

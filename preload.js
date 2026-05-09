@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     windowReload: () => ipcRenderer.send('window-reload'),
     windowDevTools: () => ipcRenderer.send('window-dev-tools'),
     onWindowStateChanged: (callback) => ipcRenderer.on('window-state-changed', (event, value) => callback(value)),
+    getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     checkReleaseUpdate: () => ipcRenderer.invoke('check-release-update'),
     openReleaseUpdateDownload: (url) => ipcRenderer.invoke('open-release-update-download', url),
     openExternal: (url) => ipcRenderer.send('open-external', url),

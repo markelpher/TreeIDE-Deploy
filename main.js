@@ -147,6 +147,11 @@ app.on('activate', () => {
 });
 
 // IPC handlers
+ipcMain.handle('get-app-info', () => ({
+    version: app.getVersion(),
+    isPackaged: app.isPackaged
+}));
+
 ipcMain.handle('check-release-update', async () => {
     try {
         return await checkReleaseUpdate();
