@@ -2,7 +2,7 @@
 
 Tree IDE is a lightweight desktop app for designing project structures in text, previewing them as a visual tree, and generating folders, starter files, and ZIP archives in a few clicks.
 
-![Tree IDE Interface](https://raw.githubusercontent.com/markelpher/TreeIDE-Deploy/main/assets/preview.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview.png)
 
 ## Highlights
 
