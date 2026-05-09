@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.37",
+  "version": "2.0.38",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare",
   "license": "MIT",
@@ -74,6 +74,7 @@
       "renderer.js",
       "index.html",
       "styles.css",
+      "lucide-local.js",
       "translations.js",
       "treeParser.js",
       "treeCreator.js",
