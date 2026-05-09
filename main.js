@@ -74,6 +74,7 @@ async function openHttpUrl(url) {
 
 async function checkReleaseUpdate() {
     if (!app.isPackaged) {
+        log.info('Skipping update check because the app is not packaged.');
         return {
             ok: true,
             updateAvailable: false,
@@ -82,19 +83,23 @@ async function checkReleaseUpdate() {
         };
     }
 
+    log.info('Checking for updates.');
     const result = await autoUpdater.checkForUpdates();
     const updateInfo = buildUpdateInfo(result?.updateInfo);
     latestUpdateInfo = updateInfo.updateAvailable ? updateInfo : null;
+    log.info(updateInfo.updateAvailable ? `Update available: ${updateInfo.latestVersion}` : 'No update available.');
     return updateInfo;
 }
 
 autoUpdater.on('update-available', (info) => {
     latestUpdateInfo = buildUpdateInfo(info);
+    log.info(`Update available event: ${latestUpdateInfo.latestVersion}`);
     mainWindow?.webContents.send('release-update-available', latestUpdateInfo);
 });
 
 autoUpdater.on('update-not-available', () => {
     latestUpdateInfo = null;
+    log.info('Update not available event.');
 });
 
 autoUpdater.on('download-progress', (progress) => {
@@ -106,7 +111,9 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('release-update-error', getUpdateErrorMessage(err));
+    const message = getUpdateErrorMessage(err);
+    log.warn(`Update error: ${err?.message || String(err)}`);
+    mainWindow?.webContents.send('release-update-error', message);
 });
 
 function createWindow() {

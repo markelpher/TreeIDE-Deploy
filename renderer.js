@@ -2022,6 +2022,7 @@ async function checkReleaseUpdateOnStartup() {
             queueOrShowReleaseUpdate(result);
         } else if (result?.ok === false) {
             console.warn('Release update check failed:', result.error);
+            showToast(window.i18n.t(result.error || 'update_failed'), 4000);
         }
     } catch (err) {
         console.warn('Release update check failed:', err);
