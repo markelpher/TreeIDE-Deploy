@@ -83,6 +83,52 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Update GitHub release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $releaseName = "Tree IDE $tag"
+          $isPrerelease = $tag -match "(beta|alpha|rc)"
+
+          for ($attempt = 1; $attempt -le 6; $attempt++) {
+            gh release view $tag *> $null
+            if ($LASTEXITCODE -eq 0) {
+              break
+            }
+
+            if ($attempt -eq 6) {
+              Write-Error "Release $tag was not created by electron-builder."
+              exit 1
+            }
+
+            Start-Sleep -Seconds 5
+          }
+
+          $previousTag = git tag --sort=-v:refname |
+            Where-Object { $_ -like "v*" -and $_ -ne $tag } |
+            Select-Object -First 1
+
+          if ($previousTag) {
+            $compareUrl = "https://github.com/markelpher/TreeIDE-Deploy/compare/$previousTag...$tag"
+          } else {
+            $compareUrl = "https://github.com/markelpher/TreeIDE-Deploy/compare/$tag"
+          }
+
+          $notesPath = Join-Path $env:RUNNER_TEMP "tree-ide-release-notes.md"
+          "**Full Changelog**: $compareUrl" | Set-Content -Path $notesPath -Encoding UTF8
+
+          $editArgs = @("release", "edit", $tag, "--title", $releaseName, "--notes-file", $notesPath)
+          if ($isPrerelease) {
+            $editArgs += "--prerelease"
+          } else {
+            $editArgs += "--latest"
+          }
+
+          & gh @editArgs
+
       - name: Clean old build caches
         shell: pwsh
         env:

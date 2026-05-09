@@ -2034,7 +2034,7 @@ function bindReleaseUpdateEvents() {
         const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
         downloadBtn.disabled = false;
         downloadBtn.textContent = window.i18n.t('update_download_release');
-        showToast(message || window.i18n.t('update_failed'), 4000);
+        showToast(window.i18n.t(message || 'update_failed'), 4000);
     });
 }
 
@@ -2244,7 +2244,7 @@ document.getElementById('downloadReleaseUpdateBtn').addEventListener('click', as
         releaseUpdateState = 'available';
         downloadBtn.disabled = false;
         downloadBtn.textContent = window.i18n.t('update_download_release');
-        showToast(result.error || window.i18n.t('update_failed'), 4000);
+        showToast(window.i18n.t(result.error || 'update_failed'), 4000);
     }
 });
 

@@ -45,6 +45,25 @@ function buildUpdateInfo(info = {}) {
     };
 }
 
+function getUpdateErrorMessage(err) {
+    const rawMessage = err?.message || String(err || '');
+    const message = rawMessage.toLowerCase();
+
+    if (message.includes('releases.atom') || message.includes('authentication token') || message.includes('404')) {
+        return 'update_repo_inaccessible';
+    }
+
+    if (message.includes('latest.yml') || message.includes('latest-mac.yml') || message.includes('latest-linux.yml')) {
+        return 'update_metadata_missing';
+    }
+
+    if (message.includes('net::') || message.includes('network') || message.includes('enotfound') || message.includes('econnreset')) {
+        return 'update_network_error';
+    }
+
+    return rawMessage.replace(/\s+/g, ' ').slice(0, 180) || 'update_failed';
+}
+
 async function openHttpUrl(url) {
     const parsedUrl = new URL(url);
     if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
@@ -86,7 +105,7 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('release-update-error', err?.message || String(err));
+    mainWindow?.webContents.send('release-update-error', getUpdateErrorMessage(err));
 });
 
 function createWindow() {
@@ -146,7 +165,7 @@ ipcMain.handle('check-release-update', async () => {
     try {
         return await checkReleaseUpdate();
     } catch (err) {
-        return { ok: false, error: err?.message || String(err) };
+        return { ok: false, error: getUpdateErrorMessage(err) };
     }
 });
 
