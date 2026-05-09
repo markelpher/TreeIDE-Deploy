@@ -66,11 +66,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean old build caches
-        if: github.event_name != 'pull_request'
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $currentTag = "${{ github.ref_name }}"
+          $tags = git tag --sort=-v:refname | Where-Object { $_ -like "v*" }
+          $currentTagIndex = [array]::IndexOf($tags, $currentTag)
+
+          if ($currentTagIndex -lt 0) {
+            Write-Host "Current tag $currentTag was not found locally. Skipping cache cleanup."
+            exit 0
+          }
+
+          $previousTagIndex = $currentTagIndex + 1
+          if ($previousTagIndex -ge $tags.Count) {
+            Write-Host "No previous release tag found before $currentTag. Skipping cache cleanup."
+            exit 0
+          }
+
+          $previousTag = $tags[$previousTagIndex]
+          $keepCachesCreatedAfter = [datetime](git log -1 --format=%cI $previousTag)
+          Write-Host "Keeping caches created on or after previous release tag $previousTag ($keepCachesCreatedAfter)."
+
           $prefixes = @(
             "electron-build-${{ runner.os }}-",
             "node-cache-${{ runner.os }}-npm-"
@@ -82,9 +101,9 @@ jobs:
               Sort-Object { [datetime]$_.createdAt } -Descending
 
             $caches |
-              Select-Object -Skip 1 |
+              Where-Object { [datetime]$_.createdAt -lt $keepCachesCreatedAfter } |
               ForEach-Object {
-                Write-Host "Deleting old cache: $($_.key)"
+                Write-Host "Deleting cache older than $previousTag: $($_.key)"
                 gh cache delete $_.id
               }
           }
