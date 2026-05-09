@@ -10,6 +10,7 @@ const { exportTreeZip } = require('./zipCreator');
 let mainWindow;
 let isReadyToClose = false;
 let latestUpdateInfo = null;
+let updateProviderReady = false;
 const updateFeedUrl = 'https://github.com/markelpher/TreeIDE-Deploy/releases/latest/download';
 
 autoUpdater.autoDownload = false;
@@ -51,6 +52,44 @@ function buildUpdateInfo(info = {}) {
     };
 }
 
+function parseLatestYml(content = '') {
+    const version = content.match(/^version:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim();
+    const assetName = content.match(/^\s*-\s*url:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim()
+        || content.match(/^path:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim()
+        || '';
+
+    if (!version) return null;
+
+    return {
+        version,
+        files: assetName ? [{ url: assetName }] : []
+    };
+}
+
+async function fetchLatestYmlUpdateInfo() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    try {
+        const response = await fetch(`${updateFeedUrl}/latest.yml`, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'Tree-IDE-Updater'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`latest.yml returned ${response.status}`);
+        }
+
+        const text = await response.text();
+        const parsedInfo = parseLatestYml(text);
+        return parsedInfo ? buildUpdateInfo(parsedInfo) : null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 function getUpdateErrorMessage(err) {
     const rawMessage = err?.message || String(err || '');
     const message = rawMessage.toLowerCase();
@@ -89,14 +128,36 @@ async function checkReleaseUpdate() {
     }
 
     log.info('Checking for updates.');
-    const result = await autoUpdater.checkForUpdates();
-    const updateInfo = buildUpdateInfo(result?.updateInfo);
+    let updateInfo = null;
+
+    try {
+        updateInfo = await fetchLatestYmlUpdateInfo();
+        if (updateInfo) {
+            log.info(updateInfo.updateAvailable
+                ? `Update metadata says ${updateInfo.latestVersion} is available.`
+                : `Update metadata says app is current at ${updateInfo.latestVersion}.`);
+        }
+    } catch (err) {
+        log.warn(`Direct latest.yml check failed: ${err?.message || String(err)}`);
+    }
+
+    try {
+        const result = await autoUpdater.checkForUpdates();
+        updateProviderReady = true;
+        updateInfo = buildUpdateInfo(result?.updateInfo);
+    } catch (err) {
+        updateProviderReady = false;
+        if (!updateInfo) throw err;
+        log.warn(`Electron updater check failed after latest.yml check: ${err?.message || String(err)}`);
+    }
+
     latestUpdateInfo = updateInfo.updateAvailable ? updateInfo : null;
     log.info(updateInfo.updateAvailable ? `Update available: ${updateInfo.latestVersion}` : 'No update available.');
     return updateInfo;
 }
 
 autoUpdater.on('update-available', (info) => {
+    updateProviderReady = true;
     latestUpdateInfo = buildUpdateInfo(info);
     log.info(`Update available event: ${latestUpdateInfo.latestVersion}`);
     mainWindow?.webContents.send('release-update-available', latestUpdateInfo);
@@ -107,6 +168,7 @@ autoUpdater.on('checking-for-update', () => {
 });
 
 autoUpdater.on('update-not-available', () => {
+    updateProviderReady = true;
     latestUpdateInfo = null;
     log.info('Update not available event.');
 });
@@ -120,6 +182,7 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
+    updateProviderReady = false;
     const message = getUpdateErrorMessage(err);
     log.warn(`Update error: ${err?.message || String(err)}`);
     mainWindow?.webContents.send('release-update-error', message);
@@ -189,6 +252,11 @@ ipcMain.handle('check-release-update', async () => {
 ipcMain.handle('download-release-update', async () => {
     if (!latestUpdateInfo) {
         return { ok: false, error: 'No update available.' };
+    }
+
+    if (!updateProviderReady) {
+        await autoUpdater.checkForUpdates();
+        updateProviderReady = true;
     }
 
     await autoUpdater.downloadUpdate();
