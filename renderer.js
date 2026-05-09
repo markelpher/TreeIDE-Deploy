@@ -1855,6 +1855,7 @@ window.addEventListener('DOMContentLoaded', () => {
     updateBuildFolderDisplay();
     updateValidationPanel();
     initializeAppInfo();
+    bindReleaseUpdateEvents();
     setTimeout(checkReleaseUpdateOnStartup, 1200);
 });
 
@@ -1961,9 +1962,11 @@ const templatesModal = document.getElementById('templatesModal');
 const releaseUpdateModal = document.getElementById('releaseUpdateModal');
 let latestReleaseUpdate = null;
 let dismissedReleaseVersion = '';
+let releaseUpdateState = 'available';
 
 function showReleaseUpdateModal(info) {
     latestReleaseUpdate = info;
+    releaseUpdateState = 'available';
     document.getElementById('releaseUpdateCurrent').textContent = `v${info.currentVersion || '---'}`;
     document.getElementById('releaseUpdateLatest').textContent = `v${info.latestVersion || '---'}`;
 
@@ -1972,6 +1975,9 @@ function showReleaseUpdateModal(info) {
         ? `${window.i18n.t('update_asset_label')}: ${info.assetName}`
         : '';
 
+    const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = window.i18n.t('update_download_release');
     releaseUpdateModal.style.display = 'flex';
     refreshIcons();
 }
@@ -2000,6 +2006,36 @@ async function checkReleaseUpdateOnStartup() {
     } catch (err) {
         console.warn('Release update check failed:', err);
     }
+}
+
+function bindReleaseUpdateEvents() {
+    if (!window.electronAPI.onReleaseUpdateAvailable) return;
+
+    window.electronAPI.onReleaseUpdateAvailable((info) => {
+        queueOrShowReleaseUpdate(info);
+    });
+
+    window.electronAPI.onReleaseUpdateProgress((percent) => {
+        releaseUpdateState = 'downloading';
+        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = `${window.i18n.t('update_downloading')} ${percent}%`;
+    });
+
+    window.electronAPI.onReleaseUpdateDownloaded(() => {
+        releaseUpdateState = 'downloaded';
+        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = window.i18n.t('update_install_restart');
+    });
+
+    window.electronAPI.onReleaseUpdateError((message) => {
+        releaseUpdateState = 'available';
+        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = window.i18n.t('update_download_release');
+        showToast(message || window.i18n.t('update_failed'), 4000);
+    });
 }
 
 async function initializeAppInfo() {
@@ -2192,9 +2228,24 @@ document.getElementById('declineReleaseUpdateBtn').addEventListener('click', clo
 document.getElementById('closeReleaseUpdateModal').addEventListener('click', closeReleaseUpdateModal);
 
 document.getElementById('downloadReleaseUpdateBtn').addEventListener('click', async () => {
-    const url = latestReleaseUpdate?.downloadUrl || latestReleaseUpdate?.releaseUrl;
-    await window.electronAPI.openReleaseUpdateDownload(url);
-    releaseUpdateModal.style.display = 'none';
+    const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+
+    if (releaseUpdateState === 'downloaded') {
+        window.electronAPI.installReleaseUpdate();
+        return;
+    }
+
+    releaseUpdateState = 'downloading';
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = window.i18n.t('update_downloading');
+
+    const result = await window.electronAPI.downloadReleaseUpdate();
+    if (result?.ok === false) {
+        releaseUpdateState = 'available';
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = window.i18n.t('update_download_release');
+        showToast(result.error || window.i18n.t('update_failed'), 4000);
+    }
 });
 
 window.addEventListener('click', (e) => {

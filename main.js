@@ -1,26 +1,23 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 const { parseTreeFile } = require('./treeParser');
 const { createStructure, inspectStructure } = require('./treeCreator');
 const { exportTreeZip } = require('./zipCreator');
 
 let mainWindow;
 let isReadyToClose = false;
-const releaseRepo = {
-    owner: 'markelpher',
-    repo: 'TreeIDE-Deploy'
-};
-const releasesUrl = `https://github.com/${releaseRepo.owner}/${releaseRepo.repo}/releases`;
-const repoApiUrl = `https://api.github.com/repos/${releaseRepo.owner}/${releaseRepo.repo}`;
-const updateManifestUrl = `${releasesUrl}/latest/download/update.json`;
+let latestUpdateInfo = null;
+
+autoUpdater.autoDownload = false;
+autoUpdater.allowPrerelease = false;
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 function normalizeVersion(version = '') {
     return String(version).trim().replace(/^v/i, '').split('-')[0];
-}
-
-function isStableVersionTag(version = '') {
-    return /^v?\d+\.\d+\.\d+$/i.test(String(version).trim());
 }
 
 function compareVersions(a, b) {
@@ -36,134 +33,15 @@ function compareVersions(a, b) {
     return 0;
 }
 
-function sortNewestVersionFirst(items) {
-    return [...items].sort((a, b) => compareVersions(b.version, a.version));
-}
-
-function pickWindowsReleaseAsset(release) {
-    const assets = Array.isArray(release?.assets) ? release.assets : [];
-
-    return assets.find((asset) => /setup.*\.exe$/i.test(asset.name))
-        || assets.find((asset) => /\.exe$/i.test(asset.name) && !/portable/i.test(asset.name))
-        || assets.find((asset) => /\.msi$/i.test(asset.name))
-        || assets.find((asset) => /\.exe$/i.test(asset.name))
-        || assets[0];
-}
-
-async function fetchGitHubJson(url) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-        const response = await fetch(url, {
-            signal: controller.signal,
-            headers: {
-                Accept: 'application/vnd.github+json',
-                'User-Agent': 'Tree-IDE-Release-Notifier'
-            }
-        });
-
-        if (response.status === 404) return null;
-        if (!response.ok) {
-            throw new Error(`GitHub update check failed with status ${response.status}`);
-        }
-
-        return response.json();
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-async function fetchReleaseCandidates() {
-    const releases = await fetchGitHubJson(`${repoApiUrl}/releases?per_page=30`) || [];
-    const releaseCandidates = releases
-        .filter((release) => !release.draft)
-        .map((release) => ({
-            type: 'release',
-            version: normalizeVersion(release.tag_name || release.name),
-            tagName: release.tag_name,
-            release
-        }))
-        .filter((candidate) => isStableVersionTag(candidate.tagName || candidate.version));
-
-    const tags = await fetchGitHubJson(`${repoApiUrl}/tags?per_page=30`) || [];
-    const tagCandidates = tags
-        .map((tag) => ({
-            type: 'tag',
-            version: normalizeVersion(tag.name),
-            tagName: tag.name,
-            release: null
-        }))
-        .filter((candidate) => isStableVersionTag(candidate.tagName));
-
-    const candidatesByVersion = new Map();
-    for (const candidate of [...tagCandidates, ...releaseCandidates]) {
-        const existing = candidatesByVersion.get(candidate.version);
-        if (!existing || candidate.type === 'release') {
-            candidatesByVersion.set(candidate.version, candidate);
-        }
-    }
-
-    return sortNewestVersionFirst([...candidatesByVersion.values()]);
-}
-
-async function fetchUpdateManifest() {
-    return fetchGitHubJson(updateManifestUrl);
-}
-
-function getUpdateInfoFromManifest(manifest, currentVersion) {
-    const latestVersion = normalizeVersion(manifest?.version);
-
-    if (!latestVersion || !isStableVersionTag(latestVersion) || compareVersions(latestVersion, currentVersion) <= 0) {
-        return null;
-    }
-
+function buildUpdateInfo(info = {}) {
+    const latestVersion = normalizeVersion(info.version);
     return {
         ok: true,
-        updateAvailable: true,
-        currentVersion,
+        updateAvailable: compareVersions(latestVersion, app.getVersion()) > 0,
+        currentVersion: app.getVersion(),
         latestVersion,
-        releaseName: manifest.releaseName || `Tree IDE v${latestVersion}`,
-        releaseUrl: manifest.releaseUrl || `${releasesUrl}/latest`,
-        downloadUrl: manifest.downloadUrl || manifest.releaseUrl || `${releasesUrl}/latest`,
-        assetName: manifest.assetName || ''
-    };
-}
-
-async function checkReleaseUpdate() {
-    const currentVersion = app.getVersion();
-    const manifestUpdate = getUpdateInfoFromManifest(await fetchUpdateManifest(), currentVersion);
-
-    if (manifestUpdate) {
-        return manifestUpdate;
-    }
-
-    const candidates = await fetchReleaseCandidates();
-    const latestCandidate = candidates.find((candidate) => compareVersions(candidate.version, currentVersion) > 0);
-
-    if (!latestCandidate) {
-        return {
-            ok: true,
-            updateAvailable: false,
-            currentVersion,
-            latestVersion: candidates[0]?.version || ''
-        };
-    }
-
-    const release = latestCandidate.release;
-    const asset = pickWindowsReleaseAsset(release);
-    const tagName = latestCandidate.tagName || `v${latestCandidate.version}`;
-    const releaseUrl = release?.html_url || `${releasesUrl}/tag/${tagName}`;
-
-    return {
-        ok: true,
-        updateAvailable: true,
-        currentVersion,
-        latestVersion: latestCandidate.version,
-        releaseName: release?.name || `Tree IDE ${tagName}`,
-        releaseUrl,
-        downloadUrl: asset?.browser_download_url || releaseUrl,
-        assetName: asset?.name || ''
+        releaseName: `Tree IDE v${latestVersion}`,
+        assetName: info.files?.[0]?.url || ''
     };
 }
 
@@ -173,6 +51,43 @@ async function openHttpUrl(url) {
         await shell.openExternal(parsedUrl.toString());
     }
 }
+
+async function checkReleaseUpdate() {
+    if (!app.isPackaged) {
+        return {
+            ok: true,
+            updateAvailable: false,
+            currentVersion: app.getVersion(),
+            latestVersion: app.getVersion()
+        };
+    }
+
+    const result = await autoUpdater.checkForUpdates();
+    const updateInfo = buildUpdateInfo(result?.updateInfo);
+    latestUpdateInfo = updateInfo.updateAvailable ? updateInfo : null;
+    return updateInfo;
+}
+
+autoUpdater.on('update-available', (info) => {
+    latestUpdateInfo = buildUpdateInfo(info);
+    mainWindow?.webContents.send('release-update-available', latestUpdateInfo);
+});
+
+autoUpdater.on('update-not-available', () => {
+    latestUpdateInfo = null;
+});
+
+autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('release-update-progress', Math.round(progress.percent || 0));
+});
+
+autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('release-update-downloaded');
+});
+
+autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('release-update-error', err?.message || String(err));
+});
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -235,10 +150,17 @@ ipcMain.handle('check-release-update', async () => {
     }
 });
 
-ipcMain.handle('open-release-update-download', async (event, url) => {
-    const targetUrl = url || `${releasesUrl}/latest`;
-    await openHttpUrl(targetUrl);
+ipcMain.handle('download-release-update', async () => {
+    if (!latestUpdateInfo) {
+        return { ok: false, error: 'No update available.' };
+    }
+
+    await autoUpdater.downloadUpdate();
     return { ok: true };
+});
+
+ipcMain.on('install-release-update', () => {
+    autoUpdater.quitAndInstall();
 });
 
 ipcMain.handle('load-tree', async () => {

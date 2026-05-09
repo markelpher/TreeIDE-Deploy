@@ -62,10 +62,11 @@ jobs:
         shell: pwsh
         run: |
           $maxAttempts = 3
+          $publishMode = if ("${{ github.ref }}" -like "refs/tags/v*") { "always" } else { "never" }
 
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host "electron-builder attempt $attempt of $maxAttempts"
-            npx electron-builder --win nsis msi portable --x64 --publish never
+            npx electron-builder --win nsis msi portable --x64 --publish $publishMode
 
             if ($LASTEXITCODE -eq 0) {
               exit 0
@@ -81,28 +82,6 @@ jobs:
           exit $LASTEXITCODE
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate update manifest
-        shell: pwsh
-        run: |
-          $package = Get-Content -Path package.json -Raw | ConvertFrom-Json
-          $version = [string]$package.version
-          $refName = "${{ github.ref_name }}"
-          $tag = if ($refName -match "^v\d+\.\d+\.\d+") { $refName } else { "v$version" }
-          $repository = "${{ github.repository }}"
-          $setupAsset = "Tree-IDE-Setup-$version.exe"
-
-          $manifest = [ordered]@{
-            version = $version
-            releaseName = "Tree IDE $tag"
-            releaseUrl = "https://github.com/$repository/releases/tag/$tag"
-            downloadUrl = "https://github.com/$repository/releases/download/$tag/$setupAsset"
-            assetName = $setupAsset
-          }
-
-          $manifest |
-            ConvertTo-Json -Depth 4 |
-            Set-Content -Path dist/update.json -Encoding UTF8
 
       - name: Clean old build caches
         shell: pwsh
@@ -148,69 +127,5 @@ jobs:
             dist/*.exe
             dist/*.msi
             dist/*.blockmap
-            dist/update.json
+            dist/latest*.yml
           if-no-files-found: error
-
-      - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $releaseName = "Tree IDE $tag"
-          $isPrerelease = $tag -match "(beta|alpha|rc)"
-
-          $files = @(
-            Get-ChildItem -Path dist -File |
-              Where-Object {
-                $_.Name -like "*.exe" -or
-                $_.Name -like "*.msi" -or
-                $_.Name -like "*.blockmap" -or
-                $_.Name -eq "update.json"
-              }
-          )
-
-          if (-not $files) {
-            Write-Error "No release files found in dist."
-            exit 1
-          }
-
-          Write-Host "Release files:"
-          $files | ForEach-Object { Write-Host " - $($_.FullName)" }
-
-          $releaseExists = $false
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            $releaseExists = $true
-          }
-
-          if ($releaseExists) {
-            Write-Host "Release $tag already exists. Updating metadata and replacing assets."
-            $editArgs = @("release", "edit", $tag, "--title", $releaseName)
-            if ($isPrerelease) {
-              $editArgs += "--prerelease"
-            } else {
-              $editArgs += "--latest"
-            }
-
-            & gh @editArgs
-          } else {
-            $createArgs = @("release", "create", $tag, "--title", $releaseName, "--generate-notes")
-            if ($isPrerelease) {
-              $createArgs += "--prerelease"
-            } else {
-              $createArgs += "--latest"
-            }
-
-            & gh @createArgs
-          }
-
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
-
-          $uploadArgs = @("release", "upload", $tag)
-          $uploadArgs += $files.FullName
-          $uploadArgs += "--clobber"
-          & gh @uploadArgs

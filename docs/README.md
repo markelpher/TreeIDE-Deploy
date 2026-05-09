@@ -15,7 +15,7 @@ Tree IDE is a lightweight desktop app for designing project structures in text, 
 - **Smart icons:** show contextual icons for common folders, programming languages, media, archives, and config files.
 - **English and Portuguese:** built-in interface translations with first-run language selection.
 - **Themes and settings:** dark/light themes, build folder selection, and autosaved sessions.
-- **Release notifications:** read `update.json` from the latest GitHub Release and open the installer download when a newer version exists.
+- **Auto-updater:** check GitHub Releases with Electron updater, download updates in-app, and restart to install.
 
 ## Structure Syntax
 
@@ -64,32 +64,37 @@ You can also start from the Templates panel and customize the generated tree and
 
 Clone the repository:
 
-```bash
+```
 git clone https://github.com/markelpher/TreeIDE-Deploy.git
+```
+
+Open the folder:
+
+```
 cd TreeIDE-Deploy
 ```
 
 Install dependencies:
 
-```bash
+```
 npm install
 ```
 
 Run the app locally:
 
-```bash
+```
 npm start
 ```
 
 Run tests:
 
-```bash
+```
 npm test
 ```
 
 Build the Windows installer:
 
-```bash
+```
 npm run build
 ```
 
@@ -101,7 +106,7 @@ TreeIDE/
 |-- docs/               # Documentation and license
 |-- tests/              # Core parser/creator tests
 |-- index.html          # Electron renderer shell
-|-- main.js             # Electron main process and build IPC
+|-- main.js             # Electron main process, updater, and build IPC
 |-- preload.js          # Safe renderer API bridge
 |-- renderer.js         # Editor, preview, templates, validation, and UI logic
 |-- styles.css          # Desktop app styles
@@ -117,4 +122,6 @@ TreeIDE/
 
 Tree IDE is licensed under the [MIT License](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/LICENSE).
 
-Developed by [Mare](https://github.com/git-mare) and [Mark Elpher](https://github.com/markelpher).
+## Credits
+
+Developed by [Mare](https://github.com/git-mare) and contribuited by [Mark Elpher](https://github.com/markelpher) creating the v2 of Tree IDE.

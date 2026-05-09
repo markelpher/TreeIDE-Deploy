@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.28",
+  "version": "2.0.29",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare",
   "license": "MIT",
@@ -31,7 +31,15 @@
         "msi",
         "portable"
       ],
-      "icon": "assets/icon-no-bg.ico"
+      "icon": "assets/icon-no-bg.ico",
+      "publish": [
+        {
+          "provider": "github",
+          "owner": "markelpher",
+          "repo": "TreeIDE-Deploy",
+          "releaseType": "release"
+        }
+      ]
     },
     "nsis": {
       "include": "build/installer.nsh",
@@ -76,5 +84,8 @@
     ],
     "asar": true
   },
-  "dependencies": {}
+  "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3"
+  }
 }
