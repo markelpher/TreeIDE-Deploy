@@ -127,7 +127,7 @@
                         <i data-lucide="palette"></i>
                         <span data-i18n="appearance">Appearance</span>
                     </button>
-                    <button class="sidebar-tab" data-tab="updates">
+                    <button class="sidebar-tab" data-tab="updates" id="updatesSidebarTab">
                         <i data-lucide="refresh-cw"></i>
                         <span data-i18n="updates">Updates</span>
                     </button>
@@ -186,7 +186,7 @@
                             </div>
                             <div class="settings-row">
                                 <span data-i18n="current_version">Current Version</span>
-                                <span id="versionInfo">2.0.4</span>
+                                <span id="versionInfo">---</span>
                             </div>
                             <button id="checkUpdateBtn" class="primary-btn-flat" data-i18n="check_updates">Check for Updates</button>
                             
@@ -290,7 +290,7 @@
                     </div>
                 </div>
 
-                <div class="settings-section">
+                <div class="settings-section" id="welcomeUpdatesSection">
                     <h3 data-i18n="updates">Updates</h3>
                     <div class="settings-row">
                         <label data-i18n="auto_updates">Automatic Updates</label>

@@ -1957,6 +1957,26 @@ const checkUpdateBtn = document.getElementById('checkUpdateBtn');
 const updateDetails = document.getElementById('updateDetails');
 let updaterState = 'idle'; // idle, checking, available, downloading, downloaded
 
+async function initializeAppInfo() {
+    const appInfo = await window.electronAPI.getAppInfo();
+    const versionInfo = document.getElementById('versionInfo');
+    const updatesSidebarTab = document.getElementById('updatesSidebarTab');
+    const updatesTab = document.getElementById('tab-updates');
+    const welcomeUpdatesSection = document.getElementById('welcomeUpdatesSection');
+
+    if (versionInfo) {
+        versionInfo.textContent = `v${appInfo.version}`;
+    }
+
+    if (!appInfo.isPackaged) {
+        if (updatesSidebarTab) updatesSidebarTab.style.display = 'none';
+        if (updatesTab) updatesTab.style.display = 'none';
+        if (welcomeUpdatesSection) welcomeUpdatesSection.style.display = 'none';
+    }
+}
+
+initializeAppInfo().catch((err) => console.error('App info error:', err));
+
 document.getElementById('menu-settings').addEventListener('click', () => {
     // Reset to first tab
     const firstTab = document.querySelector('.sidebar-tab');
@@ -2144,20 +2164,35 @@ document.getElementById('laterUpdateBtn').addEventListener('click', () => {
     updateModal.style.display = 'none';
 });
 
-document.getElementById('nowUpdateBtn').addEventListener('click', () => {
+document.getElementById('nowUpdateBtn').addEventListener('click', async () => {
     updateModal.style.display = 'none';
-    window.electronAPI.downloadUpdate();
+    const result = await window.electronAPI.downloadUpdate();
+    if (result && result.ok === false) {
+        showToast(result.error || 'Update download failed');
+    }
 });
 
 document.getElementById('closeUpdateModal').addEventListener('click', () => {
     updateModal.style.display = 'none';
 });
 
-checkUpdateBtn.addEventListener('click', () => {
+checkUpdateBtn.addEventListener('click', async () => {
     if (updaterState === 'idle' || updaterState === 'error') {
-        window.electronAPI.checkForUpdates();
+        const result = await window.electronAPI.checkForUpdates();
+        if (result && result.ok === false) {
+            updaterState = 'error';
+            checkUpdateBtn.textContent = window.i18n.t('check_updates');
+            checkUpdateBtn.disabled = false;
+            showToast(result.error || 'Update check failed');
+        }
     } else if (updaterState === 'available') {
-        window.electronAPI.downloadUpdate();
+        const result = await window.electronAPI.downloadUpdate();
+        if (result && result.ok === false) {
+            updaterState = 'error';
+            checkUpdateBtn.textContent = window.i18n.t('check_updates');
+            checkUpdateBtn.disabled = false;
+            showToast(result.error || 'Update download failed');
+        }
     } else if (updaterState === 'downloaded') {
         window.electronAPI.installUpdate();
     }
@@ -2181,7 +2216,11 @@ window.electronAPI.onUpdateAvailable((info) => {
     // If auto-update is off, show the custom modal prompt
     // If auto-update is on, it will download automatically via downloadUpdate
     if (localStorage.getItem('auto_update') === 'true') {
-        window.electronAPI.downloadUpdate();
+        window.electronAPI.downloadUpdate().then((result) => {
+            if (result && result.ok === false) {
+                showToast(result.error || 'Update download failed');
+            }
+        });
     } else {
         updateModal.style.display = 'flex';
     }
@@ -2211,6 +2250,7 @@ window.electronAPI.onUpdateError((msg) => {
     checkUpdateBtn.textContent = window.i18n.t('check_updates');
     checkUpdateBtn.disabled = false;
     console.error('Update error:', msg);
+    showToast(msg || 'Update error');
 });
 
 window.addEventListener('click', (e) => {

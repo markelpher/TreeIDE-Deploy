@@ -7,12 +7,18 @@ const { createStructure, inspectStructure } = require('./treeCreator');
 const { exportTreeZip } = require('./zipCreator');
 
 let mainWindow;
+const updateFeed = {
+    provider: 'github',
+    owner: 'markelpher',
+    repo: 'TreeIDE-Deploy'
+};
 
 // Basic auto-updater config
 autoUpdater.autoDownload = false;
 autoUpdater.allowPrerelease = false;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.setFeedURL(updateFeed);
 
 let isReadyToClose = false;
 
@@ -44,7 +50,9 @@ function createWindow() {
     // Check for updates after load
     mainWindow.webContents.once('did-finish-load', () => {
         updateWindowState();
-        autoUpdater.checkForUpdates();
+        if (app.isPackaged) {
+            checkForUpdates();
+        }
     });
 
     mainWindow.on('close', (e) => {
@@ -56,8 +64,21 @@ function createWindow() {
 }
 
 
-function checkForUpdates() {
-    autoUpdater.checkForUpdates();
+async function checkForUpdates() {
+    if (!app.isPackaged) {
+        const message = 'Updates are only available in the installed app, not while running with npm start.';
+        mainWindow?.webContents.send('updater-error', message);
+        return { ok: false, error: message };
+    }
+
+    try {
+        await autoUpdater.checkForUpdates();
+        return { ok: true };
+    } catch (err) {
+        const message = err?.message || String(err);
+        mainWindow?.webContents.send('updater-error', message);
+        return { ok: false, error: message };
+    }
 }
 
 autoUpdater.on('checking-for-update', () => {
@@ -97,13 +118,25 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
+ipcMain.handle('get-app-info', () => ({
+    version: app.getVersion(),
+    isPackaged: app.isPackaged
+}));
+
 // IPC for Manual Update Check & Action
-ipcMain.on('check-for-updates', () => {
-    autoUpdater.checkForUpdates();
+ipcMain.handle('check-for-updates', async () => {
+    return checkForUpdates();
 });
 
-ipcMain.on('download-update', () => {
-    autoUpdater.downloadUpdate();
+ipcMain.handle('download-update', async () => {
+    try {
+        await autoUpdater.downloadUpdate();
+        return { ok: true };
+    } catch (err) {
+        const message = err?.message || String(err);
+        mainWindow?.webContents.send('updater-error', message);
+        return { ok: false, error: message };
+    }
 });
 
 ipcMain.on('install-update', () => {
