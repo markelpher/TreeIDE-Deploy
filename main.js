@@ -128,29 +128,28 @@ async function checkReleaseUpdate() {
     }
 
     log.info('Checking for updates.');
-    let updateInfo = null;
 
     try {
-        updateInfo = await fetchLatestYmlUpdateInfo();
+        const updateInfo = await fetchLatestYmlUpdateInfo();
+        if (updateInfo?.updateAvailable) {
+            latestUpdateInfo = updateInfo;
+            updateProviderReady = false;
+            log.info(`Update metadata found new version ${updateInfo.latestVersion}.`);
+            return updateInfo;
+        }
+
         if (updateInfo) {
-            log.info(updateInfo.updateAvailable
-                ? `Update metadata says ${updateInfo.latestVersion} is available.`
-                : `Update metadata says app is current at ${updateInfo.latestVersion}.`);
+            latestUpdateInfo = null;
+            log.info(`Update metadata says app is current at ${updateInfo.latestVersion}.`);
+            return updateInfo;
         }
     } catch (err) {
         log.warn(`Direct latest.yml check failed: ${err?.message || String(err)}`);
     }
 
-    try {
-        const result = await autoUpdater.checkForUpdates();
-        updateProviderReady = true;
-        updateInfo = buildUpdateInfo(result?.updateInfo);
-    } catch (err) {
-        updateProviderReady = false;
-        if (!updateInfo) throw err;
-        log.warn(`Electron updater check failed after latest.yml check: ${err?.message || String(err)}`);
-    }
-
+    const result = await autoUpdater.checkForUpdates();
+    updateProviderReady = true;
+    const updateInfo = buildUpdateInfo(result?.updateInfo);
     latestUpdateInfo = updateInfo.updateAvailable ? updateInfo : null;
     log.info(updateInfo.updateAvailable ? `Update available: ${updateInfo.latestVersion}` : 'No update available.');
     return updateInfo;

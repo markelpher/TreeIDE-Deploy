@@ -1,4 +1,5 @@
 const editor = document.getElementById('editor');
+const editorShell = document.querySelector('.editor-shell');
 const treeView = document.getElementById('treeView');
 const filePreviewPanel = document.getElementById('filePreviewPanel');
 const filePreviewEditor = document.getElementById('filePreviewEditor');
@@ -17,6 +18,12 @@ let installationId = localStorage.getItem('installation_id');
 let buildFolderPath = localStorage.getItem('build_folder_path') || '';
 let fileContents = {};
 let activePreviewPath = '';
+
+function updateEditorExampleVisibility() {
+    if (editorShell) {
+        editorShell.classList.toggle('has-content', editor.value.length > 0);
+    }
+}
 
 const defaultFileContentsByExtension = {
     html: `<!doctype html>
@@ -1245,6 +1252,7 @@ document.getElementById('loadBtn').addEventListener('click', async () => {
     currentFilePath = result.filePath;
     currentTree = result.treeData;
     editor.value = result.content;
+    updateEditorExampleVisibility();
     fileContents = {};
     syncFileContentsWithTree(currentTree);
     treeView.innerHTML = renderTree(currentTree);
@@ -1726,6 +1734,7 @@ function applyTemplate(templateName) {
     if (!template) return;
 
     editor.value = template.tree;
+    updateEditorExampleVisibility();
     fileContents = { ...template.files };
     currentTree = parseEditorContent(editor.value);
     syncFileContentsWithTree(currentTree);
@@ -1780,6 +1789,7 @@ function openTemplatesModal() {
 
 let debounceTimer;
 editor.addEventListener('input', () => {
+    updateEditorExampleVisibility();
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
         currentTree = parseEditorContent(editor.value);
@@ -1815,6 +1825,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     if (savedContent !== null) {
         editor.value = savedContent;
+        updateEditorExampleVisibility();
         currentFilePath = savedPath || '';
         currentTree = parseEditorContent(editor.value);
         syncFileContentsWithTree(currentTree);
@@ -1836,6 +1847,8 @@ window.addEventListener('DOMContentLoaded', () => {
     } else {
         updateFileNameDisplay(window.i18n.t('untitled'));
     }
+
+    updateEditorExampleVisibility();
 
 
 
@@ -1893,6 +1906,7 @@ document.getElementById('closeBtn').addEventListener('click', () => window.elect
 document.getElementById('menu-new').addEventListener('click', () => {
     showConfirm(window.i18n.t('confirm_new'), window.i18n.t('confirm_title'), () => {
         editor.value = '';
+        updateEditorExampleVisibility();
         currentTree = {};
         fileContents = {};
         persistFileContents();

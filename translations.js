@@ -246,10 +246,11 @@ function updateUI() {
         el.textContent = t(key);
     });
 
-    // Update placeholders
+    // Update starter example
     const editor = document.getElementById('editor');
-    if (editor) {
-        editor.placeholder = currentLang === 'pt'
+    const editorExample = document.getElementById('editorExample');
+    if (editorExample) {
+        editorExample.textContent = currentLang === 'pt'
             ? "raiz/\n    pasta/\n        arquivo.js\n        estilo.css\n    Readme.md"
             : "root/\n    folder/\n        file.js\n        style.css\n    Readme.md";
     }

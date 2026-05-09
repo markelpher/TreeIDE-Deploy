@@ -89,11 +89,14 @@
         <div id="toast">Saved!</div>
         <div id="validationPanel" class="validation-panel"></div>
 
-        <textarea id="editor" spellcheck="false" placeholder="root/
+        <div class="editor-shell">
+            <pre id="editorExample" class="editor-example">root/
     folder/
         file.js
         style.css
-    Readme.md"></textarea>
+    Readme.md</pre>
+            <textarea id="editor" spellcheck="false"></textarea>
+        </div>
 
         <div class="preview-area">
             <div id="treeView"></div>

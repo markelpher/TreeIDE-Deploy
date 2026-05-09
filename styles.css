@@ -391,8 +391,39 @@ body.light-theme .dropdown-item:hover {
     overflow: hidden;
 }
 
-#editor {
+.editor-shell {
+    position: relative;
     flex: 1;
+    min-width: 0;
+    border-right: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+}
+
+.editor-example {
+    position: absolute;
+    inset: 0;
+    padding: 32px 32px 32px 24px;
+    color: var(--text-secondary);
+    opacity: 0.62;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.8;
+    letter-spacing: 0;
+    white-space: pre-wrap;
+    pointer-events: none;
+    user-select: none;
+}
+
+.editor-shell.has-content .editor-example,
+.editor-shell:focus-within .editor-example {
+    display: none;
+}
+
+#editor {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: var(--font-mono);
@@ -400,7 +431,6 @@ body.light-theme .dropdown-item:hover {
     line-height: 1.8;
     padding: 32px 32px 32px 24px;
     border: none;
-    border-right: 1px solid var(--border-color);
     outline: none;
     resize: none;
     tab-size: 4;
