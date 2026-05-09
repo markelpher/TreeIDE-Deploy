@@ -936,14 +936,16 @@ body.light-theme .tree-connector {
     justify-content: center;
     color: var(--accent-color);
     box-sizing: border-box;
+    line-height: 0;
 }
 
 .release-update-icon .lucide {
-    width: 28px;
-    height: 28px;
+    width: 27px;
+    height: 27px;
     display: block;
     margin: 0;
     stroke-width: 2;
+    transform: translateY(0);
 }
 
 .release-update-copy p {
@@ -987,12 +989,12 @@ body.light-theme .tree-connector {
     justify-content: center;
 }
 
-.release-update-actions.is-downloading {
+.release-update-actions.is-primary-only {
     display: grid;
     grid-template-columns: 1fr;
 }
 
-.release-update-actions.is-downloading #declineReleaseUpdateBtn {
+.release-update-actions.is-primary-only #declineReleaseUpdateBtn {
     display: none;
 }
 
@@ -1002,7 +1004,7 @@ body.light-theme .tree-connector {
     min-width: 170px;
 }
 
-.release-update-actions.is-downloading .update-download-btn {
+.release-update-actions.is-primary-only .update-download-btn {
     width: 100%;
     min-height: 42px;
 }

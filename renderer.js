@@ -1972,7 +1972,8 @@ function setReleaseUpdateButton(state, percent = 0) {
     const progress = Math.max(0, Math.min(100, Number(percent) || 0));
 
     releaseUpdateState = state;
-    actions.classList.toggle('is-downloading', state === 'downloading');
+    const isPrimaryOnly = state === 'downloading' || state === 'downloaded';
+    actions.classList.toggle('is-primary-only', isPrimaryOnly);
     downloadBtn.classList.toggle('is-downloading', state === 'downloading');
     downloadBtn.disabled = state === 'downloading';
     downloadProgress.style.width = state === 'downloading' ? `${progress}%` : '0%';

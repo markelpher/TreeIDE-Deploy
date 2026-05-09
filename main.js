@@ -13,6 +13,7 @@ let latestUpdateInfo = null;
 
 autoUpdater.autoDownload = false;
 autoUpdater.allowPrerelease = false;
+autoUpdater.autoInstallOnAppQuit = false;
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
