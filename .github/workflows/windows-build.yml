@@ -82,6 +82,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate update manifest
+        shell: pwsh
+        run: |
+          $package = Get-Content -Path package.json -Raw | ConvertFrom-Json
+          $version = [string]$package.version
+          $refName = "${{ github.ref_name }}"
+          $tag = if ($refName -match "^v\d+\.\d+\.\d+") { $refName } else { "v$version" }
+          $repository = "${{ github.repository }}"
+          $setupAsset = "Tree-IDE-Setup-$version.exe"
+
+          $manifest = [ordered]@{
+            version = $version
+            releaseName = "Tree IDE $tag"
+            releaseUrl = "https://github.com/$repository/releases/tag/$tag"
+            downloadUrl = "https://github.com/$repository/releases/download/$tag/$setupAsset"
+            assetName = $setupAsset
+          }
+
+          $manifest |
+            ConvertTo-Json -Depth 4 |
+            Set-Content -Path dist/update.json -Encoding UTF8
+
       - name: Clean old build caches
         shell: pwsh
         env:
@@ -126,6 +148,7 @@ jobs:
             dist/*.exe
             dist/*.msi
             dist/*.blockmap
+            dist/update.json
           if-no-files-found: error
 
       - name: Publish GitHub release
@@ -143,7 +166,8 @@ jobs:
               Where-Object {
                 $_.Name -like "*.exe" -or
                 $_.Name -like "*.msi" -or
-                $_.Name -like "*.blockmap"
+                $_.Name -like "*.blockmap" -or
+                $_.Name -eq "update.json"
               }
           )
 

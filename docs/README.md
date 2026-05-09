@@ -15,7 +15,7 @@ Tree IDE is a lightweight desktop app for designing project structures in text, 
 - **Smart icons:** show contextual icons for common folders, programming languages, media, archives, and config files.
 - **English and Portuguese:** built-in interface translations with first-run language selection.
 - **Themes and settings:** dark/light themes, build folder selection, and autosaved sessions.
-- **Release notifications:** notify when a newer GitHub Release is available and open the installer download.
+- **Release notifications:** read `update.json` from the latest GitHub Release and open the installer download when a newer version exists.
 
 ## Structure Syntax
 

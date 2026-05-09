@@ -12,10 +12,15 @@ const releaseRepo = {
     repo: 'TreeIDE-Deploy'
 };
 const releasesUrl = `https://github.com/${releaseRepo.owner}/${releaseRepo.repo}/releases`;
-const latestReleaseApiUrl = `https://api.github.com/repos/${releaseRepo.owner}/${releaseRepo.repo}/releases/latest`;
+const repoApiUrl = `https://api.github.com/repos/${releaseRepo.owner}/${releaseRepo.repo}`;
+const updateManifestUrl = `${releasesUrl}/latest/download/update.json`;
 
 function normalizeVersion(version = '') {
     return String(version).trim().replace(/^v/i, '').split('-')[0];
+}
+
+function isStableVersionTag(version = '') {
+    return /^v?\d+\.\d+\.\d+$/i.test(String(version).trim());
 }
 
 function compareVersions(a, b) {
@@ -31,6 +36,10 @@ function compareVersions(a, b) {
     return 0;
 }
 
+function sortNewestVersionFirst(items) {
+    return [...items].sort((a, b) => compareVersions(b.version, a.version));
+}
+
 function pickWindowsReleaseAsset(release) {
     const assets = Array.isArray(release?.assets) ? release.assets : [];
 
@@ -41,12 +50,12 @@ function pickWindowsReleaseAsset(release) {
         || assets[0];
 }
 
-async function fetchLatestRelease() {
+async function fetchGitHubJson(url) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
-        const response = await fetch(latestReleaseApiUrl, {
+        const response = await fetch(url, {
             signal: controller.signal,
             headers: {
                 Accept: 'application/vnd.github+json',
@@ -56,7 +65,7 @@ async function fetchLatestRelease() {
 
         if (response.status === 404) return null;
         if (!response.ok) {
-            throw new Error(`GitHub release check failed with status ${response.status}`);
+            throw new Error(`GitHub update check failed with status ${response.status}`);
         }
 
         return response.json();
@@ -65,29 +74,95 @@ async function fetchLatestRelease() {
     }
 }
 
-async function checkReleaseUpdate() {
-    const currentVersion = app.getVersion();
-    const release = await fetchLatestRelease();
+async function fetchReleaseCandidates() {
+    const releases = await fetchGitHubJson(`${repoApiUrl}/releases?per_page=30`) || [];
+    const releaseCandidates = releases
+        .filter((release) => !release.draft)
+        .map((release) => ({
+            type: 'release',
+            version: normalizeVersion(release.tag_name || release.name),
+            tagName: release.tag_name,
+            release
+        }))
+        .filter((candidate) => isStableVersionTag(candidate.tagName || candidate.version));
 
-    if (!release || release.draft || release.prerelease) {
-        return { ok: true, updateAvailable: false, currentVersion };
+    const tags = await fetchGitHubJson(`${repoApiUrl}/tags?per_page=30`) || [];
+    const tagCandidates = tags
+        .map((tag) => ({
+            type: 'tag',
+            version: normalizeVersion(tag.name),
+            tagName: tag.name,
+            release: null
+        }))
+        .filter((candidate) => isStableVersionTag(candidate.tagName));
+
+    const candidatesByVersion = new Map();
+    for (const candidate of [...tagCandidates, ...releaseCandidates]) {
+        const existing = candidatesByVersion.get(candidate.version);
+        if (!existing || candidate.type === 'release') {
+            candidatesByVersion.set(candidate.version, candidate);
+        }
     }
 
-    const latestVersion = normalizeVersion(release.tag_name || release.name);
-    if (!latestVersion || compareVersions(latestVersion, currentVersion) <= 0) {
-        return { ok: true, updateAvailable: false, currentVersion, latestVersion };
-    }
+    return sortNewestVersionFirst([...candidatesByVersion.values()]);
+}
 
-    const asset = pickWindowsReleaseAsset(release);
+async function fetchUpdateManifest() {
+    return fetchGitHubJson(updateManifestUrl);
+}
+
+function getUpdateInfoFromManifest(manifest, currentVersion) {
+    const latestVersion = normalizeVersion(manifest?.version);
+
+    if (!latestVersion || !isStableVersionTag(latestVersion) || compareVersions(latestVersion, currentVersion) <= 0) {
+        return null;
+    }
 
     return {
         ok: true,
         updateAvailable: true,
         currentVersion,
         latestVersion,
-        releaseName: release.name || `Tree IDE v${latestVersion}`,
-        releaseUrl: release.html_url || `${releasesUrl}/latest`,
-        downloadUrl: asset?.browser_download_url || release.html_url || `${releasesUrl}/latest`,
+        releaseName: manifest.releaseName || `Tree IDE v${latestVersion}`,
+        releaseUrl: manifest.releaseUrl || `${releasesUrl}/latest`,
+        downloadUrl: manifest.downloadUrl || manifest.releaseUrl || `${releasesUrl}/latest`,
+        assetName: manifest.assetName || ''
+    };
+}
+
+async function checkReleaseUpdate() {
+    const currentVersion = app.getVersion();
+    const manifestUpdate = getUpdateInfoFromManifest(await fetchUpdateManifest(), currentVersion);
+
+    if (manifestUpdate) {
+        return manifestUpdate;
+    }
+
+    const candidates = await fetchReleaseCandidates();
+    const latestCandidate = candidates.find((candidate) => compareVersions(candidate.version, currentVersion) > 0);
+
+    if (!latestCandidate) {
+        return {
+            ok: true,
+            updateAvailable: false,
+            currentVersion,
+            latestVersion: candidates[0]?.version || ''
+        };
+    }
+
+    const release = latestCandidate.release;
+    const asset = pickWindowsReleaseAsset(release);
+    const tagName = latestCandidate.tagName || `v${latestCandidate.version}`;
+    const releaseUrl = release?.html_url || `${releasesUrl}/tag/${tagName}`;
+
+    return {
+        ok: true,
+        updateAvailable: true,
+        currentVersion,
+        latestVersion: latestCandidate.version,
+        releaseName: release?.name || `Tree IDE ${tagName}`,
+        releaseUrl,
+        downloadUrl: asset?.browser_download_url || releaseUrl,
         assetName: asset?.name || ''
     };
 }
