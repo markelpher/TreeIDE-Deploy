@@ -935,11 +935,15 @@ body.light-theme .tree-connector {
     align-items: center;
     justify-content: center;
     color: var(--accent-color);
+    box-sizing: border-box;
 }
 
 .release-update-icon .lucide {
     width: 28px;
     height: 28px;
+    display: block;
+    margin: 0;
+    stroke-width: 2;
 }
 
 .release-update-copy p {
@@ -981,6 +985,58 @@ body.light-theme .tree-connector {
     border-top: 0;
     gap: 12px;
     justify-content: center;
+}
+
+.release-update-actions.is-downloading {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.release-update-actions.is-downloading #declineReleaseUpdateBtn {
+    display: none;
+}
+
+.update-download-btn {
+    position: relative;
+    overflow: hidden;
+    min-width: 170px;
+}
+
+.release-update-actions.is-downloading .update-download-btn {
+    width: 100%;
+    min-height: 42px;
+}
+
+.update-download-progress {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: rgba(255, 255, 255, 0.18);
+    transition: width 0.25s ease;
+    pointer-events: none;
+}
+
+.update-download-btn.is-downloading .update-download-progress::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    animation: updateProgressSweep 1.2s infinite;
+}
+
+.update-download-label {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes updateProgressSweep {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(100%);
+    }
 }
 
 .validation-panel {
