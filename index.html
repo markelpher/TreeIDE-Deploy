@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree IDE</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-header">
+        <div class="menu-bar">
+            <div class="menu-item" id="menu-file">
+                <span class="menu-label" data-i18n="file">File</span>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" id="menu-new" data-i18n="new">New</div>
+                    <div class="dropdown-item" id="menu-open" data-i18n="open">Open...</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-save" data-i18n="save">Save</div>
+                    <div class="dropdown-item" id="menu-save-as" data-i18n="save_as">Save As...</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-settings" data-i18n="settings">Settings</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-exit" data-i18n="exit">Exit</div>
+                </div>
+            </div>
+            <div class="menu-item" id="menu-edit">
+                <span class="menu-label" data-i18n="edit">Edit</span>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" id="menu-undo" data-i18n="undo">Undo</div>
+                    <div class="dropdown-item" id="menu-redo" data-i18n="redo">Redo</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-cut" data-i18n="cut">Cut</div>
+                    <div class="dropdown-item" id="menu-copy" data-i18n="copy">Copy</div>
+                    <div class="dropdown-item" id="menu-paste" data-i18n="paste">Paste</div>
+                </div>
+            </div>
+            <div class="menu-item" id="menu-view">
+                <span class="menu-label" data-i18n="view">View</span>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" id="menu-reload" data-i18n="reload">Reload</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-zoom-in" data-i18n="zoom_in">Zoom In</div>
+                    <div class="dropdown-item" id="menu-zoom-out" data-i18n="zoom_out">Zoom Out</div>
+                    <div class="dropdown-item" id="menu-zoom-reset" data-i18n="actual_size">Actual Size</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-fullscreen" data-i18n="fullscreen">Toggle Full Screen</div>
+                </div>
+            </div>
+            <div class="menu-item" id="menu-window">
+                <span class="menu-label" data-i18n="window">Window</span>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" id="menu-minimize" data-i18n="minimize">Minimize</div>
+                    <div class="dropdown-item" id="menu-close-win" data-i18n="close">Close</div>
+                </div>
+            </div>
+            <div class="menu-item" id="menu-help">
+                <span class="menu-label" data-i18n="about_menu">About</span>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" id="menu-credits" data-i18n="about">About Tree IDE</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="window-controls">
+            <button class="control-btn" id="minBtn"><i data-lucide="minus"></i></button>
+            <button class="control-btn" id="maxBtn"><i data-lucide="square"></i></button>
+            <button class="control-btn close" id="closeBtn"><i data-lucide="x"></i></button>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <button id="templatesBtn" data-i18n="templates">Templates</button>
+        <button id="loadBtn" data-i18n="load_file">Load .tree file</button>
+        <button id="saveBtn" data-i18n="save_file">Save File</button>
+        <button id="createBtn" data-i18n="build">Build</button>
+        <div style="flex: 1;"></div>
+    </div>
+
+    <div id="titleBar" class="title-bar">
+        <span style="margin-right: 8px;" data-i18n="project">Project:</span>
+        <span id="fileName" contenteditable="true" spellcheck="false">Untitled</span>
+        <span id="pathMessage" class="path-message"></span>
+    </div>
+
+    <div class="container">
+        <div id="toast">Saved!</div>
+        <div id="validationPanel" class="validation-panel"></div>
+
+        <textarea id="editor" spellcheck="false" placeholder="root/
+    folder/
+        file.js
+        style.css
+    Readme.md"></textarea>
+
+        <div class="preview-area">
+            <div id="treeView"></div>
+            <aside id="filePreviewPanel" class="file-preview-panel">
+                <div class="file-preview-header">
+                    <span id="filePreviewName" class="file-preview-name">Select a file</span>
+                    <div id="filePreviewMode" class="file-preview-mode"></div>
+                    <button id="closeFilePreviewBtn" class="modal-close" type="button"><i data-lucide="x"></i></button>
+                </div>
+                <div class="file-preview-body">
+                    <textarea id="filePreviewEditor" spellcheck="false"></textarea>
+                    <div id="markdownPreview" class="markdown-preview"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="settings">Settings</h2>
+                <button class="modal-close" id="closeSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="settings-container">
+                <div class="modal-sidebar">
+                    <button class="sidebar-tab active" data-tab="general">
+                        <i data-lucide="settings"></i>
+                        <span data-i18n="general">General</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="appearance">
+                        <i data-lucide="palette"></i>
+                        <span data-i18n="appearance">Appearance</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="updates">
+                        <i data-lucide="refresh-cw"></i>
+                        <span data-i18n="updates">Updates</span>
+                    </button>
+                    <button class="sidebar-tab" data-tab="shortcuts">
+                        <i data-lucide="keyboard"></i>
+                        <span data-i18n="shortcuts">Shortcuts</span>
+                    </button>
+                </div>
+                <div class="modal-main">
+                    <!-- General Tab -->
+                    <div id="tab-general" class="tab-pane active">
+                        <div class="settings-section">
+                            <h3 data-i18n="general">General</h3>
+                            <div class="settings-row">
+                                <label data-i18n="language">Language</label>
+                                <select id="langSelect" class="styled-select">
+                                    <option value="en">English</option>
+                                    <option value="pt">Português</option>
+                                </select>
+                            </div>
+                            <div class="settings-row folder-setting-row">
+                                <label data-i18n="build_folder">Save files in</label>
+                                <div class="folder-picker">
+                                    <span id="buildFolderPath" class="folder-path">No folder selected</span>
+                                    <button id="chooseBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="choose_folder">Choose Folder</button>
+                                    <button id="clearBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="clear_folder">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appearance Tab -->
+                    <div id="tab-appearance" class="tab-pane">
+                        <div class="settings-section">
+                            <h3 data-i18n="appearance">Appearance</h3>
+                            <div class="settings-row">
+                                <label data-i18n="theme">Theme</label>
+                                <select id="themeSelect" class="styled-select">
+                                    <option value="dark" data-i18n="theme_dark">Dark</option>
+                                    <option value="light" data-i18n="theme_light">Light</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Updates Tab -->
+                    <div id="tab-updates" class="tab-pane">
+                        <div class="settings-section">
+                            <h3 data-i18n="updates">Updates</h3>
+                            <div class="settings-row">
+                                <label data-i18n="auto_updates">Automatic Updates</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="autoUpdateToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-row">
+                                <span data-i18n="current_version">Current Version</span>
+                                <span id="versionInfo">v2.0.0</span>
+                            </div>
+                            <button id="checkUpdateBtn" class="primary-btn-flat" data-i18n="check_updates">Check for Updates</button>
+                            
+                            <div id="updateDetails" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg-accent); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="font-weight: 600; font-size: 13px; color: var(--accent-color); margin-bottom: 4px;">TREE IDE</div>
+                                <div style="font-size: 12px; margin-bottom: 2px;"><span data-i18n="version">Version</span>: <span id="newVersion">---</span></div>
+                                <div style="font-size: 12px; margin-bottom: 8px;"><span data-i18n="size">Size</span>: <span id="newSize">---</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shortcuts Tab -->
+                    <div id="tab-shortcuts" class="tab-pane">
+                        <div class="settings-section">
+                            <h3 data-i18n="shortcuts">Shortcuts</h3>
+                            <table class="shortcuts-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="command">Command</th>
+                                        <th data-i18n="key">Key</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td data-i18n="shortcut_new">New Project</td><td><kbd>Ctrl+N</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_open">Open Project</td><td><kbd>Ctrl+O</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_save">Save Project</td><td><kbd>Ctrl+S</kbd></td></tr>
+                                    <tr><td><span data-i18n="shortcut_save">Save Project</span> (As)</td><td><kbd>Ctrl+Shift+S</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_zoom">Zoom In/Out</td><td><kbd>Ctrl + / -</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_reset">Reset Zoom</td><td><kbd>Ctrl+0</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_fullscreen">Toggle Full Screen</td><td><kbd>F11</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_reload">Reload App</td><td><kbd>Ctrl+R</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_indent">Indent</td><td><kbd>Tab</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_indent">Outdent</td><td><kbd>Shift+Tab</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_undo">Undo</td><td><kbd>Ctrl+Z</kbd></td></tr>
+                                    <tr><td data-i18n="shortcut_redo">Redo</td><td><kbd>Ctrl+Shift+Z</kbd></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="aboutModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header">
+                <h2 data-i18n="about_menu">About Tree IDE</h2>
+                <button class="modal-close" id="closeAbout"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 40px 24px;">
+                <h1 style="font-size: 24px; margin-bottom: 12px;">Tree IDE</h1>
+                <p style="margin-bottom: 16px; color: var(--text-secondary); line-height: 1.6;"
+                    data-i18n="credits_desc">A minimalist tool for rapid project structure scaffolding.</p>
+                <p style="margin-bottom: 24px;"><span data-i18n="developed_by">Developed with ❤️ by</span> <a
+                        href="https://github.com/git-mare"
+                        style="color: var(--accent-color); text-decoration: underline;">Mare</a></p>
+                <p style="font-size: 12px; opacity: 0.6; margin-top: 20px;" data-i18n="license">Licensed under MIT
+                    License</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcomeModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 data-i18n="welcome_title">Welcome to Tree IDE</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 24px; color: var(--text-secondary); line-height: 1.6;"
+                    data-i18n="welcome_desc">To get started, please select your preferred language, theme, and update settings.</p>
+
+                <div class="settings-section">
+                    <h3 data-i18n="general">General</h3>
+                    <div class="settings-row">
+                        <label data-i18n="language">Language</label>
+                        <select id="welcomeLangSelect" class="styled-select">
+
+                            <option value="en">English</option>
+                            <option value="pt">Português</option>
+                        </select>
+                    </div>
+                    <div class="settings-row folder-setting-row">
+                        <label data-i18n="build_folder">Save files in</label>
+                        <div class="folder-picker">
+                            <span id="welcomeBuildFolderPath" class="folder-path">No folder selected</span>
+                            <button id="welcomeChooseBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="choose_folder">Choose Folder</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="appearance">Appearance</h3>
+                    <div class="settings-row">
+                        <label data-i18n="theme">Theme</label>
+                        <select id="welcomeThemeSelect" class="styled-select">
+
+                            <option value="dark" data-i18n="theme_dark">Dark</option>
+                            <option value="light" data-i18n="theme_light">Light</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="updates">Updates</h3>
+                    <div class="settings-row">
+                        <label data-i18n="auto_updates">Automatic Updates</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="welcomeAutoUpdateToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="startBtn" class="primary-btn" data-i18n="start">Get Started</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="templatesModal" class="modal">
+        <div class="modal-content templates-modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="templates">Templates</h2>
+                <button class="modal-close" id="closeTemplatesModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="template-select-row">
+                <label for="templateSelect" data-i18n="select_template">Selecionar modelo</label>
+                <select id="templateSelect" class="styled-select"></select>
+            </div>
+            <div class="templates-browser">
+                <div class="template-preview">
+                    <div id="templateTreePreview" class="template-tree-preview"></div>
+                    <div class="template-file-preview">
+                        <div id="templateFileName" class="template-file-name" data-i18n="file_preview_empty">Select a file</div>
+                        <div id="templateFileContent" class="template-file-content"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="useTemplateBtn" class="primary-btn" data-i18n="use_template">Use Template</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog: Update Available -->
+    <div id="updateModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h2 data-i18n="update_available">Update Available</h2>
+                <button class="modal-close" id="closeUpdateModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 30px 20px;">
+                <div style="margin-bottom: 20px;">
+                    <i data-lucide="refresh-cw" style="width: 48px; height: 48px; color: var(--accent-color); opacity: 0.8;"></i>
+                </div>
+                <p style="margin-bottom: 30px; line-height: 1.6;" data-i18n="update_msg">A new version of Tree IDE is available. Would you like to update now?</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="laterUpdateBtn" class="secondary-btn" data-i18n="update_later">Later</button>
+                    <button id="nowUpdateBtn" class="primary-btn" data-i18n="update_now">Update Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog: Confirmation -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h2 id="confirmTitle" data-i18n="confirm_title">Confirmation</h2>
+                <button class="modal-close" id="closeConfirmModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 30px 20px;">
+                <p id="confirmMsg" style="margin-bottom: 30px; line-height: 1.6;">Are you sure?</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="agreeConfirmBtn" class="primary-btn" data-i18n="yes">Yes</button>
+                    <button id="cancelConfirmBtn" class="secondary-btn" data-i18n="no">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog: Unsaved Changes -->
+    <div id="unsavedModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h2 data-i18n="unsaved_changes_title">Unsaved Changes</h2>
+                <button class="modal-close" id="closeUnsavedModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 30px 20px;">
+                <p data-i18n="unsaved_changes_msg" style="margin-bottom: 30px; line-height: 1.6;">You have unsaved changes. Do you want to save them before closing?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="saveUnsavedBtn" class="primary-btn" style="flex: 1;" data-i18n="button_save">Save</button>
+                    <button id="dontSaveUnsavedBtn" class="secondary-btn" style="flex: 1;" data-i18n="button_dont_save">Don't Save</button>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <script src="translations.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>

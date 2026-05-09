@@ -1,0 +1,88 @@
+{
+  "name": "tree-ide",
+  "version": "2.0.0",
+  "description": "Tree IDE, a lightweight, open-source project structure editor",
+  "author": "Mare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markelpher/TreeIDE-Deploy.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/treeCore.test.js",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^41.1.0",
+    "electron-builder": "^26.0.12",
+    "electron-reloader": "^1.2.3"
+  },
+  "build": {
+    "appId": "com.treeide.treeide",
+    "productName": "Tree IDE",
+    "win": {
+      "target": [
+        "nsis",
+        "msi",
+        "portable"
+      ],
+      "icon": "assets/icon-no-bg.ico",
+      "publish": [
+        {
+          "provider": "github",
+          "owner": "markelpher",
+          "repo": "TreeIDE-Deploy"
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "Tree-IDE-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "perMachine": false,
+      "installerIcon": "assets/icon-no-bg.ico",
+      "uninstallerIcon": "assets/icon-no-bg.ico",
+      "installerLanguages": [
+        "en_US",
+        "pt_BR"
+      ],
+      "multiLanguageInstaller": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tree IDE",
+      "deleteAppDataOnUninstall": true,
+      "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "Tree-IDE-Portable-${version}.${ext}"
+    },
+    "msi": {
+      "artifactName": "Tree-IDE-${version}.${ext}"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "styles.css",
+      "translations.js",
+      "treeParser.js",
+      "treeCreator.js",
+      "zipCreator.js",
+      "assets/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+
+    "asar": true
+
+
+  },
+  "dependencies": {
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3"
+  }
+}
