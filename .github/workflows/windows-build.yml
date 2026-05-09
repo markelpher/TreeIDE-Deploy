@@ -86,9 +86,7 @@ jobs:
             exit 0
           }
 
-          $previousTag = $tags[$previousTagIndex]
-          $keepCachesCreatedAfter = [datetime](git log -1 --format=%cI $previousTag)
-          Write-Host "Keeping caches created on or after previous release tag $previousTag ($keepCachesCreatedAfter)."
+          $currentTagDate = [datetime](git log -1 --format=%cI $currentTag)
 
           $prefixes = @(
             "electron-build-${{ runner.os }}-",
@@ -96,14 +94,29 @@ jobs:
           )
 
           foreach ($prefix in $prefixes) {
-            $caches = gh cache list --key $prefix --limit 100 --json id,key,createdAt |
+            $caches = @(gh cache list --key $prefix --limit 100 --json id,key,createdAt |
               ConvertFrom-Json |
-              Sort-Object { [datetime]$_.createdAt } -Descending
+              Sort-Object { [datetime]$_.createdAt } -Descending)
+
+            if (-not $caches) {
+              Write-Host "No caches found for prefix $prefix."
+              continue
+            }
+
+            $cacheToKeep = $caches |
+              Where-Object { [datetime]$_.createdAt -lt $currentTagDate } |
+              Select-Object -First 1
+
+            if (-not $cacheToKeep) {
+              $cacheToKeep = $caches | Select-Object -First 1
+            }
+
+            Write-Host "Keeping latest previous cache for ${prefix}: $($cacheToKeep.key)"
 
             $caches |
-              Where-Object { [datetime]$_.createdAt -lt $keepCachesCreatedAfter } |
+              Where-Object { $_.id -ne $cacheToKeep.id } |
               ForEach-Object {
-                Write-Host "Deleting cache older than ${previousTag}: $($_.key)"
+                Write-Host "Deleting old cache for ${prefix}: $($_.key)"
                 gh cache delete $_.id
               }
           }
