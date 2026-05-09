@@ -1145,7 +1145,10 @@ function showToast(message, duration = 2000) {
     const toast = document.getElementById('toast');
     if (toast) {
         if (toastTimer) clearTimeout(toastTimer);
-        toast.textContent = message;
+        const messageKey = String(message || '').trim();
+        const translatedMessage = messageKey && window.i18n ? window.i18n.t(messageKey) : messageKey;
+        const text = String(translatedMessage || '').replace(/\s+/g, ' ').trim();
+        toast.textContent = text.length > 180 ? `${text.slice(0, 177)}...` : text;
         toast.style.display = 'block';
         toastTimer = setTimeout(() => {
             toast.style.display = 'none';

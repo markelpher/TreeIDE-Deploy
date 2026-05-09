@@ -22,6 +22,34 @@ autoUpdater.setFeedURL(updateFeed);
 
 let isReadyToClose = false;
 
+function getUpdateErrorMessage(err) {
+    const rawMessage = err?.message || String(err || '');
+    const statusCode = err?.statusCode || err?.response?.statusCode;
+    const message = rawMessage.toLowerCase();
+
+    if (statusCode === 404 || message.includes('404')) {
+        return 'update_not_found';
+    }
+
+    if (message.includes('authentication token') || message.includes('unauthorized') || message.includes('401')) {
+        return 'update_check_failed';
+    }
+
+    if (message.includes('latest.yml') || message.includes('latest-mac.yml') || message.includes('latest-linux.yml')) {
+        return 'update_not_found';
+    }
+
+    if (message.includes('net::') || message.includes('network') || message.includes('enotfound') || message.includes('econnreset')) {
+        return 'update_network_error';
+    }
+
+    if (!rawMessage.trim()) {
+        return 'update_check_failed';
+    }
+
+    return rawMessage.replace(/\s+/g, ' ').slice(0, 180);
+}
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1000,
@@ -75,7 +103,7 @@ async function checkForUpdates() {
         await autoUpdater.checkForUpdates();
         return { ok: true };
     } catch (err) {
-        const message = err?.message || String(err);
+        const message = getUpdateErrorMessage(err);
         mainWindow?.webContents.send('updater-error', message);
         return { ok: false, error: message };
     }
@@ -105,7 +133,7 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('updater-error', err.message);
+    mainWindow?.webContents.send('updater-error', getUpdateErrorMessage(err));
 });
 
 app.whenReady().then(createWindow);
@@ -133,7 +161,7 @@ ipcMain.handle('download-update', async () => {
         await autoUpdater.downloadUpdate();
         return { ok: true };
     } catch (err) {
-        const message = err?.message || String(err);
+        const message = getUpdateErrorMessage(err);
         mainWindow?.webContents.send('updater-error', message);
         return { ok: false, error: message };
     }
