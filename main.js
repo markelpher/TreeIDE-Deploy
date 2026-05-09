@@ -222,17 +222,7 @@ async function checkForUpdates(channel = 'release') {
         }
 
         latestUpdateInfo = updateInfo;
-
-        if (updateInfo.canInstall) {
-            try {
-                await autoUpdater.checkForUpdates();
-            } catch (err) {
-                const message = getUpdateErrorMessage(err);
-                sendManualUpdateFallback(message);
-            }
-        } else {
-            mainWindow?.webContents.send('updater-available', updateInfo);
-        }
+        mainWindow?.webContents.send('updater-available', updateInfo);
 
         return { ok: true };
     } catch (err) {
@@ -261,6 +251,10 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', () => {
+    if (latestUpdateInfo && compareVersions(latestUpdateInfo.version, app.getVersion()) > 0) {
+        return;
+    }
+
     mainWindow?.webContents.send('updater-not-available');
 });
 
@@ -307,6 +301,10 @@ ipcMain.handle('download-update', async () => {
     }
 
     try {
+        if (latestUpdateInfo?.canInstall) {
+            await autoUpdater.checkForUpdates();
+        }
+
         await autoUpdater.downloadUpdate();
         return { ok: true };
     } catch (err) {
