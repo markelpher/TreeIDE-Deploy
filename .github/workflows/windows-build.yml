@@ -126,7 +126,6 @@ jobs:
             dist/*.exe
             dist/*.msi
             dist/*.blockmap
-            dist/latest*.yml
           if-no-files-found: error
 
       - name: Publish GitHub release
@@ -144,8 +143,7 @@ jobs:
               Where-Object {
                 $_.Name -like "*.exe" -or
                 $_.Name -like "*.msi" -or
-                $_.Name -like "*.blockmap" -or
-                $_.Name -like "latest*.yml"
+                $_.Name -like "*.blockmap"
               }
           )
 

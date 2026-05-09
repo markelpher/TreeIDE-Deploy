@@ -1854,6 +1854,7 @@ window.addEventListener('DOMContentLoaded', () => {
     syncLanguageControls();
     updateBuildFolderDisplay();
     updateValidationPanel();
+    setTimeout(checkReleaseUpdateOnStartup, 1200);
 });
 
 const menuItems = document.querySelectorAll('.menu-item');
@@ -1956,20 +1957,49 @@ const settingsModal = document.getElementById('settingsModal');
 const aboutModal = document.getElementById('aboutModal');
 const welcomeModal = document.getElementById('welcomeModal');
 const templatesModal = document.getElementById('templatesModal');
-const checkUpdateBtn = document.getElementById('checkUpdateBtn');
-const updateDetails = document.getElementById('updateDetails');
-let updaterState = 'idle'; // idle, checking, available, downloading, downloaded
-let latestUpdateInfo = null;
+const releaseUpdateModal = document.getElementById('releaseUpdateModal');
+let latestReleaseUpdate = null;
+let dismissedReleaseVersion = '';
 
-async function initializeAppInfo() {
-    const appInfo = await window.electronAPI.getAppInfo();
-    const versionInfo = document.getElementById('versionInfo');
-    if (versionInfo) {
-        versionInfo.textContent = appInfo.isPackaged ? `v${appInfo.version}` : `v${appInfo.version} (dev)`;
-    }
+function showReleaseUpdateModal(info) {
+    latestReleaseUpdate = info;
+    document.getElementById('releaseUpdateCurrent').textContent = `v${info.currentVersion || '---'}`;
+    document.getElementById('releaseUpdateLatest').textContent = `v${info.latestVersion || '---'}`;
+
+    const assetLabel = document.getElementById('releaseUpdateAsset');
+    assetLabel.textContent = info.assetName
+        ? `${window.i18n.t('update_asset_label')}: ${info.assetName}`
+        : '';
+
+    releaseUpdateModal.style.display = 'flex';
+    refreshIcons();
 }
 
-initializeAppInfo().catch((err) => console.error('App info error:', err));
+function queueOrShowReleaseUpdate(info) {
+    if (info.latestVersion === dismissedReleaseVersion) return;
+
+    if (welcomeModal.style.display === 'flex') {
+        latestReleaseUpdate = info;
+        return;
+    }
+
+    showReleaseUpdateModal(info);
+}
+
+async function checkReleaseUpdateOnStartup() {
+    if (!window.electronAPI.checkReleaseUpdate) return;
+
+    try {
+        const result = await window.electronAPI.checkReleaseUpdate();
+        if (result?.ok && result.updateAvailable) {
+            queueOrShowReleaseUpdate(result);
+        } else if (result?.ok === false) {
+            console.warn('Release update check failed:', result.error);
+        }
+    } catch (err) {
+        console.warn('Release update check failed:', err);
+    }
+}
 
 document.getElementById('menu-settings').addEventListener('click', () => {
     // Reset to first tab
@@ -2026,6 +2056,10 @@ document.getElementById('useTemplateBtn').addEventListener('click', () => {
 document.getElementById('startBtn').addEventListener('click', () => {
     welcomeModal.style.display = 'none';
     localStorage.setItem('onboarding_done', 'true');
+
+    if (latestReleaseUpdate && latestReleaseUpdate.latestVersion !== dismissedReleaseVersion) {
+        showReleaseUpdateModal(latestReleaseUpdate);
+    }
 });
 
 // Language selection in settings & onboarding
@@ -2088,45 +2122,6 @@ sidebarTabs.forEach(tab => {
     });
 });
 
-// Automatic Updates toggle
-const autoUpdateToggle = document.getElementById('autoUpdateToggle');
-const welcomeAutoUpdateToggle = document.getElementById('welcomeAutoUpdateToggle');
-const updateChannelSelect = document.getElementById('updateChannelSelect');
-const welcomeUpdateChannelSelect = document.getElementById('welcomeUpdateChannelSelect');
-
-const handleAutoUpdateChange = (val) => {
-    localStorage.setItem('auto_update', val);
-    if (autoUpdateToggle) autoUpdateToggle.checked = val;
-    if (welcomeAutoUpdateToggle) welcomeAutoUpdateToggle.checked = val;
-};
-
-if (autoUpdateToggle) {
-    autoUpdateToggle.addEventListener('change', (e) => handleAutoUpdateChange(e.target.checked));
-}
-if (welcomeAutoUpdateToggle) {
-    welcomeAutoUpdateToggle.addEventListener('change', (e) => handleAutoUpdateChange(e.target.checked));
-}
-
-// Initial state for auto-update
-const savedAutoUpdate = localStorage.getItem('auto_update') === 'true';
-handleAutoUpdateChange(savedAutoUpdate);
-
-const handleUpdateChannelChange = (val) => {
-    const channel = val === 'beta' ? 'beta' : 'release';
-    localStorage.setItem('update_channel', channel);
-    if (updateChannelSelect) updateChannelSelect.value = channel;
-    if (welcomeUpdateChannelSelect) welcomeUpdateChannelSelect.value = channel;
-};
-
-if (updateChannelSelect) {
-    updateChannelSelect.addEventListener('change', (e) => handleUpdateChannelChange(e.target.value));
-}
-if (welcomeUpdateChannelSelect) {
-    welcomeUpdateChannelSelect.addEventListener('change', (e) => handleUpdateChannelChange(e.target.value));
-}
-
-handleUpdateChannelChange(localStorage.getItem('update_channel') || 'release');
-
 // Custom Confirmation Modal Logic
 let confirmCallback = null;
 let confirmResolver = null;
@@ -2170,115 +2165,21 @@ document.getElementById('closeConfirmModal').addEventListener('click', () => {
     confirmModal.style.display = 'none';
 });
 
-// Update Modal Logic
-const updateModal = document.getElementById('updateModal');
-document.getElementById('laterUpdateBtn').addEventListener('click', () => {
-    updateModal.style.display = 'none';
-});
-
-document.getElementById('nowUpdateBtn').addEventListener('click', async () => {
-    updateModal.style.display = 'none';
-    const result = await window.electronAPI.downloadUpdate();
-    if (result && result.ok === false) {
-        showToast(window.i18n.t(result.manualAvailable ? 'update_manual_fallback' : 'update_download_failed'));
-    }
-});
-
-document.getElementById('closeUpdateModal').addEventListener('click', () => {
-    updateModal.style.display = 'none';
-});
-
-checkUpdateBtn.addEventListener('click', async () => {
-    if (updaterState === 'idle' || updaterState === 'error') {
-        const result = await window.electronAPI.checkForUpdates(localStorage.getItem('update_channel') || 'release');
-        if (result && result.ok === false) {
-            updaterState = 'error';
-            checkUpdateBtn.textContent = window.i18n.t('check_updates');
-            checkUpdateBtn.disabled = false;
-            showToast(result.error || 'Update check failed');
-        }
-    } else if (updaterState === 'available') {
-        const result = await window.electronAPI.downloadUpdate();
-        if (result && result.ok === false) {
-            if (result.manualAvailable) {
-                updaterState = 'available';
-                checkUpdateBtn.textContent = window.i18n.t('open_download_page');
-                checkUpdateBtn.disabled = false;
-                showToast(window.i18n.t('update_manual_fallback'));
-            } else {
-                updaterState = 'error';
-                checkUpdateBtn.textContent = window.i18n.t('check_updates');
-                checkUpdateBtn.disabled = false;
-                showToast(result.error || window.i18n.t('update_download_failed'));
-            }
-        }
-    } else if (updaterState === 'downloaded') {
-        window.electronAPI.installUpdate();
-    }
-});
-
-window.electronAPI.onUpdateChecking(() => {
-    updaterState = 'checking';
-    latestUpdateInfo = null;
-    checkUpdateBtn.textContent = window.i18n.t('checking');
-    checkUpdateBtn.disabled = true;
-    updateDetails.style.display = 'none';
-});
-
-window.electronAPI.onUpdateAvailable((info) => {
-    latestUpdateInfo = info;
-    updaterState = 'available';
-    checkUpdateBtn.textContent = window.i18n.t('download_now');
-    checkUpdateBtn.disabled = false;
-    document.getElementById('newVersion').textContent = info.version;
-    document.getElementById('newSize').textContent = info.size;
-    updateDetails.style.display = 'block';
-
-    if (localStorage.getItem('auto_update') === 'true' && info.silentAvailable) {
-        window.electronAPI.trySilentUpdate().then((result) => {
-            if (result && result.ok === false) {
-                console.warn('Silent update unavailable:', result.error || 'skipped');
-            }
-        });
-    } else {
-        updateModal.style.display = 'flex';
-    }
-});
-
-window.electronAPI.onUpdateNotAvailable(() => {
-    updaterState = 'idle';
-    latestUpdateInfo = null;
-    checkUpdateBtn.textContent = window.i18n.t('check_updates');
-    checkUpdateBtn.disabled = false;
-    showToast(window.i18n.t('up_to_date'));
-});
-
-window.electronAPI.onUpdateProgress((percent) => {
-    updaterState = 'downloading';
-    checkUpdateBtn.textContent = `${percent}%`;
-    checkUpdateBtn.disabled = true;
-});
-
-window.electronAPI.onUpdateDownloaded(() => {
-    updaterState = 'downloaded';
-    checkUpdateBtn.textContent = window.i18n.t('install_now');
-    checkUpdateBtn.disabled = false;
-});
-
-window.electronAPI.onUpdateError((msg) => {
-    if (msg === 'update_manual_fallback') {
-        updaterState = 'available';
-        checkUpdateBtn.textContent = window.i18n.t('open_download_page');
-        checkUpdateBtn.disabled = false;
-        showToast(window.i18n.t('update_manual_fallback'));
-        return;
+function closeReleaseUpdateModal() {
+    if (latestReleaseUpdate?.latestVersion) {
+        dismissedReleaseVersion = latestReleaseUpdate.latestVersion;
     }
 
-    updaterState = 'error';
-    checkUpdateBtn.textContent = window.i18n.t('check_updates');
-    checkUpdateBtn.disabled = false;
-    console.error('Update error:', msg);
-    showToast(msg || 'Update error');
+    releaseUpdateModal.style.display = 'none';
+}
+
+document.getElementById('declineReleaseUpdateBtn').addEventListener('click', closeReleaseUpdateModal);
+document.getElementById('closeReleaseUpdateModal').addEventListener('click', closeReleaseUpdateModal);
+
+document.getElementById('downloadReleaseUpdateBtn').addEventListener('click', async () => {
+    const url = latestReleaseUpdate?.downloadUrl || latestReleaseUpdate?.releaseUrl;
+    await window.electronAPI.openReleaseUpdateDownload(url);
+    releaseUpdateModal.style.display = 'none';
 });
 
 window.addEventListener('click', (e) => {
@@ -2295,6 +2196,9 @@ window.addEventListener('click', (e) => {
     }
     if (e.target === templatesModal) {
         templatesModal.style.display = 'none';
+    }
+    if (e.target === releaseUpdateModal) {
+        closeReleaseUpdateModal();
     }
     if (e.target === unsavedModal) {
         unsavedModal.style.display = 'none';

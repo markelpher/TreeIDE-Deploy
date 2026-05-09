@@ -127,10 +127,6 @@
                         <i data-lucide="palette"></i>
                         <span data-i18n="appearance">Appearance</span>
                     </button>
-                    <button class="sidebar-tab" data-tab="updates" id="updatesSidebarTab">
-                        <i data-lucide="refresh-cw"></i>
-                        <span data-i18n="updates">Updates</span>
-                    </button>
                     <button class="sidebar-tab" data-tab="shortcuts">
                         <i data-lucide="keyboard"></i>
                         <span data-i18n="shortcuts">Shortcuts</span>
@@ -169,38 +165,6 @@
                                     <option value="dark" data-i18n="theme_dark">Dark</option>
                                     <option value="light" data-i18n="theme_light">Light</option>
                                 </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Updates Tab -->
-                    <div id="tab-updates" class="tab-pane">
-                        <div class="settings-section">
-                            <h3 data-i18n="updates">Updates</h3>
-                            <div class="settings-row">
-                                <label data-i18n="auto_updates">Automatic Updates</label>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="autoUpdateToggle">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="settings-row">
-                                <label data-i18n="update_channel">Update Channel</label>
-                                <select id="updateChannelSelect" class="styled-select">
-                                    <option value="release" data-i18n="release">Release</option>
-                                    <option value="beta" data-i18n="beta">Beta</option>
-                                </select>
-                            </div>
-                            <div class="settings-row">
-                                <span data-i18n="current_version">Current Version</span>
-                                <span id="versionInfo">---</span>
-                            </div>
-                            <button id="checkUpdateBtn" class="primary-btn-flat" data-i18n="check_updates">Check for Updates</button>
-                            
-                            <div id="updateDetails" style="display: none; margin-top: 16px; padding: 12px; background: var(--bg-accent); border-radius: 8px; border: 1px solid var(--border-color);">
-                                <div style="font-weight: 600; font-size: 13px; color: var(--accent-color); margin-bottom: 4px;">TREE IDE</div>
-                                <div style="font-size: 12px; margin-bottom: 2px;"><span data-i18n="version">Version</span>: <span id="newVersion">---</span></div>
-                                <div style="font-size: 12px; margin-bottom: 8px;"><span data-i18n="size">Size</span>: <span id="newSize">---</span></div>
                             </div>
                         </div>
                     </div>
@@ -264,7 +228,7 @@
             </div>
             <div class="modal-body" style="text-align: center;">
                 <p style="margin-bottom: 24px; color: var(--text-secondary); line-height: 1.6;"
-                    data-i18n="welcome_desc">To get started, please select your preferred language, theme, and update settings.</p>
+                    data-i18n="welcome_desc">To get started, please select your preferred language, theme, and build folder.</p>
 
                 <div class="settings-section">
                     <h3 data-i18n="general">General</h3>
@@ -293,24 +257,6 @@
 
                             <option value="dark" data-i18n="theme_dark">Dark</option>
                             <option value="light" data-i18n="theme_light">Light</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section" id="welcomeUpdatesSection">
-                    <h3 data-i18n="updates">Updates</h3>
-                    <div class="settings-row">
-                        <label data-i18n="auto_updates">Automatic Updates</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="welcomeAutoUpdateToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-row">
-                        <label data-i18n="update_channel">Update Channel</label>
-                        <select id="welcomeUpdateChannelSelect" class="styled-select">
-                            <option value="release" data-i18n="release">Release</option>
-                            <option value="beta" data-i18n="beta">Beta</option>
                         </select>
                     </div>
                 </div>
@@ -345,21 +291,28 @@
         </div>
     </div>
 
-    <!-- Custom Dialog: Update Available -->
-    <div id="updateModal" class="modal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
+    <div id="releaseUpdateModal" class="modal">
+        <div class="modal-content release-update-modal-content">
             <div class="modal-header">
-                <h2 data-i18n="update_available">Update Available</h2>
-                <button class="modal-close" id="closeUpdateModal"><i data-lucide="x"></i></button>
+                <h2 data-i18n="update_available_title">Update available</h2>
+                <button class="modal-close" id="closeReleaseUpdateModal"><i data-lucide="x"></i></button>
             </div>
-            <div class="modal-body" style="padding: 30px 20px;">
-                <div style="margin-bottom: 20px;">
-                    <i data-lucide="refresh-cw" style="width: 48px; height: 48px; color: var(--accent-color); opacity: 0.8;"></i>
+            <div class="modal-body release-update-body">
+                <div class="release-update-icon">
+                    <i data-lucide="download"></i>
                 </div>
-                <p style="margin-bottom: 30px; line-height: 1.6;" data-i18n="update_msg">A new version of Tree IDE is available. Would you like to update now?</p>
-                <div style="display: flex; gap: 12px; justify-content: center;">
-                    <button id="laterUpdateBtn" class="secondary-btn" data-i18n="update_later">Later</button>
-                    <button id="nowUpdateBtn" class="primary-btn" data-i18n="update_now">Update Now</button>
+                <div class="release-update-copy">
+                    <p data-i18n="update_available_msg">A new Tree IDE version is available on GitHub Releases.</p>
+                    <div class="release-update-version">
+                        <span id="releaseUpdateCurrent">v---</span>
+                        <i data-lucide="arrow-right"></i>
+                        <strong id="releaseUpdateLatest">v---</strong>
+                    </div>
+                    <p id="releaseUpdateAsset" class="release-update-asset"></p>
+                </div>
+                <div class="modal-actions release-update-actions">
+                    <button id="declineReleaseUpdateBtn" class="secondary-btn" data-i18n="update_decline">Not now</button>
+                    <button id="downloadReleaseUpdateBtn" class="primary-btn" data-i18n="update_download_release">Download from GitHub</button>
                 </div>
             </div>
         </div>

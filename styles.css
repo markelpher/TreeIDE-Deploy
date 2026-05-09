@@ -900,6 +900,74 @@ body.light-theme .tree-connector {
     justify-content: flex-end;
 }
 
+.release-update-modal-content {
+    max-width: 460px;
+}
+
+.release-update-body {
+    padding: 28px 24px 24px;
+    text-align: center;
+}
+
+.release-update-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    border-radius: 16px;
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+}
+
+.release-update-icon .lucide {
+    width: 28px;
+    height: 28px;
+}
+
+.release-update-copy p {
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.release-update-version {
+    margin: 18px 0 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+}
+
+.release-update-version .lucide {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.release-update-version strong {
+    color: var(--accent-color);
+}
+
+.release-update-asset {
+    min-height: 18px;
+    font-size: 12px;
+}
+
+.release-update-actions {
+    padding: 22px 0 0;
+    border-top: 0;
+    gap: 12px;
+    justify-content: center;
+}
+
 .validation-panel {
     position: fixed;
     left: 24px;

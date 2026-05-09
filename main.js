@@ -1,30 +1,18 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { autoUpdater } = require('electron-updater');
 const { parseTreeFile } = require('./treeParser');
 const { createStructure, inspectStructure } = require('./treeCreator');
 const { exportTreeZip } = require('./zipCreator');
 
 let mainWindow;
-const updateFeed = {
-    provider: 'github',
+let isReadyToClose = false;
+const releaseRepo = {
     owner: 'markelpher',
     repo: 'TreeIDE-Deploy'
 };
-const updateRepoUrl = `https://github.com/${updateFeed.owner}/${updateFeed.repo}`;
-const releasesApiUrl = `https://api.github.com/repos/${updateFeed.owner}/${updateFeed.repo}/releases`;
-
-// Basic auto-updater config
-autoUpdater.autoDownload = false;
-autoUpdater.allowPrerelease = false;
-autoUpdater.logger = require('electron-log');
-autoUpdater.logger.transports.file.level = 'info';
-autoUpdater.setFeedURL(updateFeed);
-
-let isReadyToClose = false;
-let latestUpdateInfo = null;
-let silentUpdaterAttempted = false;
+const releasesUrl = `https://github.com/${releaseRepo.owner}/${releaseRepo.repo}/releases`;
+const latestReleaseApiUrl = `https://api.github.com/repos/${releaseRepo.owner}/${releaseRepo.repo}/releases/latest`;
 
 function normalizeVersion(version = '') {
     return String(version).trim().replace(/^v/i, '').split('-')[0];
@@ -43,127 +31,72 @@ function compareVersions(a, b) {
     return 0;
 }
 
-function formatBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '---';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let value = bytes;
-    let unitIndex = 0;
-
-    while (value >= 1024 && unitIndex < units.length - 1) {
-        value /= 1024;
-        unitIndex += 1;
-    }
-
-    return `${value.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
-}
-
-function pickReleaseAsset(release) {
+function pickWindowsReleaseAsset(release) {
     const assets = Array.isArray(release?.assets) ? release.assets : [];
-    const platform = process.platform;
 
-    if (platform === 'win32') {
-        return assets.find((asset) => /setup.*\.exe$/i.test(asset.name))
-            || assets.find((asset) => /\.exe$/i.test(asset.name) && !/portable/i.test(asset.name))
-            || assets.find((asset) => /\.msi$/i.test(asset.name))
-            || assets.find((asset) => /\.exe$/i.test(asset.name));
-    }
-
-    if (platform === 'darwin') {
-        return assets.find((asset) => /\.(dmg|zip)$/i.test(asset.name));
-    }
-
-    return assets.find((asset) => /\.(appimage|deb|rpm|tar\.gz)$/i.test(asset.name));
+    return assets.find((asset) => /setup.*\.exe$/i.test(asset.name))
+        || assets.find((asset) => /\.exe$/i.test(asset.name) && !/portable/i.test(asset.name))
+        || assets.find((asset) => /\.msi$/i.test(asset.name))
+        || assets.find((asset) => /\.exe$/i.test(asset.name))
+        || assets[0];
 }
 
-function releaseToUpdateInfo(release) {
-    const asset = pickReleaseAsset(release);
-    const version = normalizeVersion(release?.tag_name || release?.name);
-    const hasUpdaterMetadata = Array.isArray(release?.assets)
-        && release.assets.some((item) => /^latest.*\.ya?ml$/i.test(item.name));
+async function fetchLatestRelease() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    try {
+        const response = await fetch(latestReleaseApiUrl, {
+            signal: controller.signal,
+            headers: {
+                Accept: 'application/vnd.github+json',
+                'User-Agent': 'Tree-IDE-Release-Notifier'
+            }
+        });
+
+        if (response.status === 404) return null;
+        if (!response.ok) {
+            throw new Error(`GitHub release check failed with status ${response.status}`);
+        }
+
+        return response.json();
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function checkReleaseUpdate() {
+    const currentVersion = app.getVersion();
+    const release = await fetchLatestRelease();
+
+    if (!release || release.draft || release.prerelease) {
+        return { ok: true, updateAvailable: false, currentVersion };
+    }
+
+    const latestVersion = normalizeVersion(release.tag_name || release.name);
+    if (!latestVersion || compareVersions(latestVersion, currentVersion) <= 0) {
+        return { ok: true, updateAvailable: false, currentVersion, latestVersion };
+    }
+
+    const asset = pickWindowsReleaseAsset(release);
 
     return {
-        version,
-        size: formatBytes(asset?.size),
-        releaseName: release?.name || `v${version}`,
-        releaseUrl: release?.html_url || `${updateRepoUrl}/releases`,
-        downloadUrl: asset?.browser_download_url || release?.html_url || `${updateRepoUrl}/releases`,
-        assetName: asset?.name || '',
-        canInstall: app.isPackaged && process.platform === 'win32' && hasUpdaterMetadata,
-        manual: true,
-        silentAvailable: app.isPackaged && process.platform === 'win32' && hasUpdaterMetadata,
-        prerelease: Boolean(release?.prerelease)
+        ok: true,
+        updateAvailable: true,
+        currentVersion,
+        latestVersion,
+        releaseName: release.name || `Tree IDE v${latestVersion}`,
+        releaseUrl: release.html_url || `${releasesUrl}/latest`,
+        downloadUrl: asset?.browser_download_url || release.html_url || `${releasesUrl}/latest`,
+        assetName: asset?.name || ''
     };
 }
 
-function sendUpdateInfo(extra = {}) {
-    if (!latestUpdateInfo) return false;
-
-    latestUpdateInfo = {
-        ...latestUpdateInfo,
-        manual: true,
-        ...extra
-    };
-
-    mainWindow?.webContents.send('updater-available', latestUpdateInfo);
-    return true;
-}
-
-function sendManualUpdateFallback(errorMessage = '') {
-    return sendUpdateInfo({ error: errorMessage });
-}
-
-async function fetchJson(url) {
-    const response = await fetch(url, {
-        headers: {
-            'Accept': 'application/vnd.github+json',
-            'User-Agent': 'Tree-IDE-Updater'
-        }
-    });
-
-    if (!response.ok) {
-        const error = new Error(`GitHub update check failed with status ${response.status}`);
-        error.statusCode = response.status;
-        throw error;
+async function openHttpUrl(url) {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        await shell.openExternal(parsedUrl.toString());
     }
-
-    return response.json();
-}
-
-async function getLatestRelease(channel = 'release') {
-    const releases = await fetchJson(`${releasesApiUrl}?per_page=20`);
-    const usableReleases = releases
-        .filter((release) => !release.draft)
-        .filter((release) => channel === 'beta' || !release.prerelease);
-
-    return usableReleases[0] || null;
-}
-
-function getUpdateErrorMessage(err) {
-    const rawMessage = err?.message || String(err || '');
-    const statusCode = err?.statusCode || err?.response?.statusCode;
-    const message = rawMessage.toLowerCase();
-
-    if (statusCode === 404 || message.includes('404')) {
-        return 'update_not_found';
-    }
-
-    if (message.includes('authentication token') || message.includes('unauthorized') || message.includes('401')) {
-        return 'update_check_failed';
-    }
-
-    if (message.includes('latest.yml') || message.includes('latest-mac.yml') || message.includes('latest-linux.yml')) {
-        return 'update_not_found';
-    }
-
-    if (message.includes('net::') || message.includes('network') || message.includes('enotfound') || message.includes('econnreset')) {
-        return 'update_network_error';
-    }
-
-    if (!rawMessage.trim()) {
-        return 'update_check_failed';
-    }
-
-    return rawMessage.replace(/\s+/g, ' ').slice(0, 180);
 }
 
 function createWindow() {
@@ -191,12 +124,8 @@ function createWindow() {
     mainWindow.on('resize', updateWindowState);
     mainWindow.maximize();
     
-    // Check for updates after load
     mainWindow.webContents.once('did-finish-load', () => {
         updateWindowState();
-        if (app.isPackaged) {
-            checkForUpdates();
-        }
     });
 
     mainWindow.on('close', (e) => {
@@ -206,83 +135,6 @@ function createWindow() {
         }
     });
 }
-
-
-async function checkForUpdates(channel = 'release') {
-    latestUpdateInfo = null;
-    silentUpdaterAttempted = false;
-    autoUpdater.allowPrerelease = channel === 'beta';
-    mainWindow?.webContents.send('updater-checking');
-
-    try {
-        const release = await getLatestRelease(channel);
-
-        if (!release) {
-            mainWindow?.webContents.send('updater-not-available');
-            return { ok: true, updateAvailable: false };
-        }
-
-        const updateInfo = releaseToUpdateInfo(release);
-        if (compareVersions(updateInfo.version, app.getVersion()) <= 0) {
-            mainWindow?.webContents.send('updater-not-available');
-            return { ok: true, updateAvailable: false };
-        }
-
-        latestUpdateInfo = updateInfo;
-        sendUpdateInfo();
-
-        return { ok: true };
-    } catch (err) {
-        const message = getUpdateErrorMessage(err);
-        mainWindow?.webContents.send('updater-error', message);
-        return { ok: false, error: message };
-    }
-}
-
-autoUpdater.on('checking-for-update', () => {
-    mainWindow?.webContents.send('updater-checking');
-});
-
-autoUpdater.on('update-available', (info) => {
-    // Get version and size (if available)
-    const version = info.version;
-    const size = info.files && info.files[0] ? (info.files[0].size / (1024 * 1024)).toFixed(2) + ' MB' : '---';
-    latestUpdateInfo = {
-        ...latestUpdateInfo,
-        version,
-        size,
-        canInstall: true,
-        manual: true,
-        silentAvailable: true
-    };
-    mainWindow?.webContents.send('updater-available', latestUpdateInfo);
-});
-
-autoUpdater.on('update-not-available', () => {
-    if (latestUpdateInfo && compareVersions(latestUpdateInfo.version, app.getVersion()) > 0) {
-        return;
-    }
-
-    mainWindow?.webContents.send('updater-not-available');
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-    mainWindow?.webContents.send('updater-progress', progressObj.percent.toFixed(0));
-});
-
-autoUpdater.on('update-downloaded', () => {
-    mainWindow?.webContents.send('updater-downloaded');
-});
-
-autoUpdater.on('error', (err) => {
-    const message = getUpdateErrorMessage(err);
-    if (latestUpdateInfo) {
-        sendManualUpdateFallback(message);
-        return;
-    }
-
-    mainWindow?.webContents.send('updater-error', message);
-});
 
 app.whenReady().then(createWindow);
 
@@ -294,55 +146,21 @@ app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-ipcMain.handle('get-app-info', () => ({
-    version: app.getVersion(),
-    isPackaged: app.isPackaged
-}));
-
-// IPC for Manual Update Check & Action
-ipcMain.handle('check-for-updates', async () => {
-    return checkForUpdates();
-});
-
-ipcMain.handle('check-for-updates-channel', async (event, channel) => {
-    return checkForUpdates(channel);
-});
-
-ipcMain.handle('download-update', async () => {
-    const url = latestUpdateInfo?.downloadUrl || latestUpdateInfo?.releaseUrl || `${updateRepoUrl}/releases/latest`;
-    await shell.openExternal(url);
-    return { ok: true, manual: true };
-});
-
-ipcMain.handle('try-silent-update', async () => {
-    if (!latestUpdateInfo?.silentAvailable || silentUpdaterAttempted) {
-        return { ok: false, skipped: true };
-    }
-
-    silentUpdaterAttempted = true;
-
+// IPC handlers
+ipcMain.handle('check-release-update', async () => {
     try {
-        await autoUpdater.checkForUpdates();
-        await autoUpdater.downloadUpdate();
-        return { ok: true };
+        return await checkReleaseUpdate();
     } catch (err) {
-        const message = getUpdateErrorMessage(err);
-        sendManualUpdateFallback(message);
-        return { ok: false, error: message, manualAvailable: true };
+        return { ok: false, error: err?.message || String(err) };
     }
 });
 
-ipcMain.on('install-update', () => {
-    autoUpdater.quitAndInstall();
-});
-
-ipcMain.handle('open-update-download', async () => {
-    const url = latestUpdateInfo?.downloadUrl || `${updateRepoUrl}/releases/latest`;
-    await shell.openExternal(url);
+ipcMain.handle('open-release-update-download', async (event, url) => {
+    const targetUrl = url || `${releasesUrl}/latest`;
+    await openHttpUrl(targetUrl);
     return { ok: true };
 });
 
-// IPC handlers
 ipcMain.handle('load-tree', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
         filters: [{ name: 'Tree files', extensions: ['tree'] }],
@@ -462,10 +280,7 @@ ipcMain.on('force-close', () => {
 
 ipcMain.on('open-external', (event, url) => {
     try {
-        const parsedUrl = new URL(url);
-        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
-            shell.openExternal(parsedUrl.toString());
-        }
+        openHttpUrl(url);
     } catch {
         // Ignore invalid URLs from the renderer.
     }

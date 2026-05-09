@@ -14,8 +14,8 @@ Tree IDE is a lightweight desktop app for designing project structures in text, 
 - **Validation:** catch bad indentation, duplicate names, invalid paths, and empty structures before writing files.
 - **Smart icons:** show contextual icons for common folders, programming languages, media, archives, and config files.
 - **English and Portuguese:** built-in interface translations with first-run language selection.
-- **Themes and settings:** dark/light themes, build folder selection, update preferences, and autosaved sessions.
-- **Auto-updater:** Electron updater integration with release and beta channels.
+- **Themes and settings:** dark/light themes, build folder selection, and autosaved sessions.
+- **Release notifications:** notify when a newer GitHub Release is available and open the installer download.
 
 ## Structure Syntax
 
@@ -101,7 +101,7 @@ TreeIDE/
 |-- docs/               # Documentation and license
 |-- tests/              # Core parser/creator tests
 |-- index.html          # Electron renderer shell
-|-- main.js             # Electron main process and updater/build IPC
+|-- main.js             # Electron main process and build IPC
 |-- preload.js          # Safe renderer API bridge
 |-- renderer.js         # Editor, preview, templates, validation, and UI logic
 |-- styles.css          # Desktop app styles
