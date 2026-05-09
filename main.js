@@ -92,6 +92,20 @@ function releaseToUpdateInfo(release) {
     };
 }
 
+function sendManualUpdateFallback(errorMessage = '') {
+    if (!latestUpdateInfo) return false;
+
+    latestUpdateInfo = {
+        ...latestUpdateInfo,
+        canInstall: false,
+        manual: true,
+        error: errorMessage
+    };
+
+    mainWindow?.webContents.send('updater-available', latestUpdateInfo);
+    return true;
+}
+
 async function fetchJson(url) {
     const response = await fetch(url, {
         headers: {
@@ -210,7 +224,12 @@ async function checkForUpdates(channel = 'release') {
         latestUpdateInfo = updateInfo;
 
         if (updateInfo.canInstall) {
-            await autoUpdater.checkForUpdates();
+            try {
+                await autoUpdater.checkForUpdates();
+            } catch (err) {
+                const message = getUpdateErrorMessage(err);
+                sendManualUpdateFallback(message);
+            }
         } else {
             mainWindow?.webContents.send('updater-available', updateInfo);
         }
@@ -231,7 +250,14 @@ autoUpdater.on('update-available', (info) => {
     // Get version and size (if available)
     const version = info.version;
     const size = info.files && info.files[0] ? (info.files[0].size / (1024 * 1024)).toFixed(2) + ' MB' : '---';
-    mainWindow?.webContents.send('updater-available', { version, size });
+    latestUpdateInfo = {
+        ...latestUpdateInfo,
+        version,
+        size,
+        canInstall: true,
+        manual: false
+    };
+    mainWindow?.webContents.send('updater-available', latestUpdateInfo);
 });
 
 autoUpdater.on('update-not-available', () => {
@@ -285,8 +311,9 @@ ipcMain.handle('download-update', async () => {
         return { ok: true };
     } catch (err) {
         const message = getUpdateErrorMessage(err);
-        mainWindow?.webContents.send('updater-error', message);
-        return { ok: false, error: message };
+        const hasManualFallback = sendManualUpdateFallback(message);
+        mainWindow?.webContents.send('updater-error', hasManualFallback ? 'update_manual_fallback' : message);
+        return { ok: false, error: message, manualAvailable: hasManualFallback };
     }
 });
 

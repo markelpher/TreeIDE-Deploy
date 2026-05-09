@@ -2182,7 +2182,7 @@ document.getElementById('nowUpdateBtn').addEventListener('click', async () => {
         ? await window.electronAPI.openUpdateDownload()
         : await window.electronAPI.downloadUpdate();
     if (result && result.ok === false) {
-        showToast(result.error || 'Update download failed');
+        showToast(window.i18n.t(result.manualAvailable ? 'update_manual_fallback' : 'update_download_failed'));
     }
 });
 
@@ -2204,10 +2204,17 @@ checkUpdateBtn.addEventListener('click', async () => {
             ? await window.electronAPI.openUpdateDownload()
             : await window.electronAPI.downloadUpdate();
         if (result && result.ok === false) {
-            updaterState = 'error';
-            checkUpdateBtn.textContent = window.i18n.t('check_updates');
-            checkUpdateBtn.disabled = false;
-            showToast(result.error || 'Update download failed');
+            if (result.manualAvailable) {
+                updaterState = 'available';
+                checkUpdateBtn.textContent = window.i18n.t('open_download_page');
+                checkUpdateBtn.disabled = false;
+                showToast(window.i18n.t('update_manual_fallback'));
+            } else {
+                updaterState = 'error';
+                checkUpdateBtn.textContent = window.i18n.t('check_updates');
+                checkUpdateBtn.disabled = false;
+                showToast(result.error || window.i18n.t('update_download_failed'));
+            }
         }
     } else if (updaterState === 'downloaded') {
         window.electronAPI.installUpdate();
@@ -2236,7 +2243,7 @@ window.electronAPI.onUpdateAvailable((info) => {
     if (localStorage.getItem('auto_update') === 'true' && !info.manual) {
         window.electronAPI.downloadUpdate().then((result) => {
             if (result && result.ok === false) {
-                showToast(result.error || 'Update download failed');
+                showToast(window.i18n.t(result.manualAvailable ? 'update_manual_fallback' : 'update_download_failed'));
             }
         });
     } else {
@@ -2265,6 +2272,14 @@ window.electronAPI.onUpdateDownloaded(() => {
 });
 
 window.electronAPI.onUpdateError((msg) => {
+    if (msg === 'update_manual_fallback') {
+        updaterState = 'available';
+        checkUpdateBtn.textContent = window.i18n.t('open_download_page');
+        checkUpdateBtn.disabled = false;
+        showToast(window.i18n.t('update_manual_fallback'));
+        return;
+    }
+
     updaterState = 'error';
     checkUpdateBtn.textContent = window.i18n.t('check_updates');
     checkUpdateBtn.disabled = false;
