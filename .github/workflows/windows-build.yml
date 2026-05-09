@@ -1,6 +1,7 @@
 name: Build Windows
 
 permissions:
+  actions: write
   contents: write
 
 on:
@@ -13,7 +14,6 @@ on:
   pull_request:
     branches:
       - main
-      - master
 
 jobs:
   build-windows:
@@ -30,6 +30,16 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
@@ -40,6 +50,30 @@ jobs:
         run: npx electron-builder --win nsis msi portable --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean old build caches
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $prefixes = @(
+            "electron-build-${{ runner.os }}-",
+            "node-cache-${{ runner.os }}-npm-"
+          )
+
+          foreach ($prefix in $prefixes) {
+            $caches = gh cache list --key $prefix --limit 100 --json id,key,createdAt |
+              ConvertFrom-Json |
+              Sort-Object { [datetime]$_.createdAt } -Descending
+
+            $caches |
+              Select-Object -Skip 1 |
+              ForEach-Object {
+                Write-Host "Deleting old cache: $($_.key)"
+                gh cache delete $_.id
+              }
+          }
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
@@ -56,6 +90,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.TREE_IDE_BOT_TOKEN }}
+          name: Tree IDE ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
           files: |
             dist/*.exe
             dist/*.msi
