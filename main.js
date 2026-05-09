@@ -24,6 +24,7 @@ autoUpdater.setFeedURL(updateFeed);
 
 let isReadyToClose = false;
 let latestUpdateInfo = null;
+let silentUpdaterAttempted = false;
 
 function normalizeVersion(version = '') {
     return String(version).trim().replace(/^v/i, '').split('-')[0];
@@ -86,24 +87,29 @@ function releaseToUpdateInfo(release) {
         releaseName: release?.name || `v${version}`,
         releaseUrl: release?.html_url || `${updateRepoUrl}/releases`,
         downloadUrl: asset?.browser_download_url || release?.html_url || `${updateRepoUrl}/releases`,
+        assetName: asset?.name || '',
         canInstall: app.isPackaged && process.platform === 'win32' && hasUpdaterMetadata,
-        manual: !app.isPackaged || !hasUpdaterMetadata,
+        manual: true,
+        silentAvailable: app.isPackaged && process.platform === 'win32' && hasUpdaterMetadata,
         prerelease: Boolean(release?.prerelease)
     };
 }
 
-function sendManualUpdateFallback(errorMessage = '') {
+function sendUpdateInfo(extra = {}) {
     if (!latestUpdateInfo) return false;
 
     latestUpdateInfo = {
         ...latestUpdateInfo,
-        canInstall: false,
         manual: true,
-        error: errorMessage
+        ...extra
     };
 
     mainWindow?.webContents.send('updater-available', latestUpdateInfo);
     return true;
+}
+
+function sendManualUpdateFallback(errorMessage = '') {
+    return sendUpdateInfo({ error: errorMessage });
 }
 
 async function fetchJson(url) {
@@ -204,6 +210,7 @@ function createWindow() {
 
 async function checkForUpdates(channel = 'release') {
     latestUpdateInfo = null;
+    silentUpdaterAttempted = false;
     autoUpdater.allowPrerelease = channel === 'beta';
     mainWindow?.webContents.send('updater-checking');
 
@@ -222,7 +229,7 @@ async function checkForUpdates(channel = 'release') {
         }
 
         latestUpdateInfo = updateInfo;
-        mainWindow?.webContents.send('updater-available', updateInfo);
+        sendUpdateInfo();
 
         return { ok: true };
     } catch (err) {
@@ -245,7 +252,8 @@ autoUpdater.on('update-available', (info) => {
         version,
         size,
         canInstall: true,
-        manual: false
+        manual: true,
+        silentAvailable: true
     };
     mainWindow?.webContents.send('updater-available', latestUpdateInfo);
 });
@@ -267,7 +275,13 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 autoUpdater.on('error', (err) => {
-    mainWindow?.webContents.send('updater-error', getUpdateErrorMessage(err));
+    const message = getUpdateErrorMessage(err);
+    if (latestUpdateInfo) {
+        sendManualUpdateFallback(message);
+        return;
+    }
+
+    mainWindow?.webContents.send('updater-error', message);
 });
 
 app.whenReady().then(createWindow);
@@ -295,23 +309,26 @@ ipcMain.handle('check-for-updates-channel', async (event, channel) => {
 });
 
 ipcMain.handle('download-update', async () => {
-    if (latestUpdateInfo?.manual) {
-        await shell.openExternal(latestUpdateInfo.downloadUrl || latestUpdateInfo.releaseUrl);
-        return { ok: true, manual: true };
+    const url = latestUpdateInfo?.downloadUrl || latestUpdateInfo?.releaseUrl || `${updateRepoUrl}/releases/latest`;
+    await shell.openExternal(url);
+    return { ok: true, manual: true };
+});
+
+ipcMain.handle('try-silent-update', async () => {
+    if (!latestUpdateInfo?.silentAvailable || silentUpdaterAttempted) {
+        return { ok: false, skipped: true };
     }
 
-    try {
-        if (latestUpdateInfo?.canInstall) {
-            await autoUpdater.checkForUpdates();
-        }
+    silentUpdaterAttempted = true;
 
+    try {
+        await autoUpdater.checkForUpdates();
         await autoUpdater.downloadUpdate();
         return { ok: true };
     } catch (err) {
         const message = getUpdateErrorMessage(err);
-        const hasManualFallback = sendManualUpdateFallback(message);
-        mainWindow?.webContents.send('updater-error', hasManualFallback ? 'update_manual_fallback' : message);
-        return { ok: false, error: message, manualAvailable: hasManualFallback };
+        sendManualUpdateFallback(message);
+        return { ok: false, error: message, manualAvailable: true };
     }
 });
 

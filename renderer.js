@@ -2178,9 +2178,7 @@ document.getElementById('laterUpdateBtn').addEventListener('click', () => {
 
 document.getElementById('nowUpdateBtn').addEventListener('click', async () => {
     updateModal.style.display = 'none';
-    const result = latestUpdateInfo?.manual
-        ? await window.electronAPI.openUpdateDownload()
-        : await window.electronAPI.downloadUpdate();
+    const result = await window.electronAPI.downloadUpdate();
     if (result && result.ok === false) {
         showToast(window.i18n.t(result.manualAvailable ? 'update_manual_fallback' : 'update_download_failed'));
     }
@@ -2200,9 +2198,7 @@ checkUpdateBtn.addEventListener('click', async () => {
             showToast(result.error || 'Update check failed');
         }
     } else if (updaterState === 'available') {
-        const result = latestUpdateInfo?.manual
-            ? await window.electronAPI.openUpdateDownload()
-            : await window.electronAPI.downloadUpdate();
+        const result = await window.electronAPI.downloadUpdate();
         if (result && result.ok === false) {
             if (result.manualAvailable) {
                 updaterState = 'available';
@@ -2232,18 +2228,16 @@ window.electronAPI.onUpdateChecking(() => {
 window.electronAPI.onUpdateAvailable((info) => {
     latestUpdateInfo = info;
     updaterState = 'available';
-    checkUpdateBtn.textContent = info.manual ? window.i18n.t('open_download_page') : window.i18n.t('download_now');
+    checkUpdateBtn.textContent = window.i18n.t('download_now');
     checkUpdateBtn.disabled = false;
     document.getElementById('newVersion').textContent = info.version;
     document.getElementById('newSize').textContent = info.size;
     updateDetails.style.display = 'block';
 
-    // If auto-update is off, show the custom modal prompt
-    // If auto-update is on, it will download automatically via downloadUpdate
-    if (localStorage.getItem('auto_update') === 'true' && !info.manual) {
-        window.electronAPI.downloadUpdate().then((result) => {
+    if (localStorage.getItem('auto_update') === 'true' && info.silentAvailable) {
+        window.electronAPI.trySilentUpdate().then((result) => {
             if (result && result.ok === false) {
-                showToast(window.i18n.t(result.manualAvailable ? 'update_manual_fallback' : 'update_download_failed'));
+                console.warn('Silent update unavailable:', result.error || 'skipped');
             }
         });
     } else {
