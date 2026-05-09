@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare",
   "license": "MIT",
@@ -41,6 +41,7 @@
       ]
     },
     "nsis": {
+      "include": "build/installer.nsh",
       "artifactName": "Tree-IDE-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -53,6 +54,7 @@
         "pt_BR"
       ],
       "multiLanguageInstaller": true,
+      "displayLanguageSelector": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Tree IDE",
