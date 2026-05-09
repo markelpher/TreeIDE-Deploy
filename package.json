@@ -1,9 +1,12 @@
 {
   "name": "tree-ide",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/markelpher/TreeIDE-Deploy.git"
@@ -15,8 +18,8 @@
     "build": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^41.1.0",
-    "electron-builder": "^26.0.12",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
     "electron-reloader": "^1.2.3"
   },
   "build": {
@@ -76,10 +79,7 @@
       "package.json",
       "node_modules/**/*"
     ],
-
     "asar": true
-
-
   },
   "dependencies": {
     "electron-log": "^5.4.3",

@@ -23,11 +23,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Cache Electron build dependencies
@@ -42,6 +44,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+
+          if ($packageVersion -ne $tagVersion) {
+            Write-Error "Release tag ${{ github.ref_name }} does not match package.json version $packageVersion."
+            exit 1
+          }
 
       - name: Run tests
         run: npm test
@@ -91,7 +105,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.TREE_IDE_BOT_TOKEN }}
-          name: Tree IDE ${{ github.ref_name }}
+          name: Release: Tree IDE ${{ github.ref_name }}
           draft: true
           generate_release_notes: true
           files: |
