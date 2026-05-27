@@ -16,14 +16,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onWindowStateChanged: (callback) => ipcRenderer.on('window-state-changed', (event, value) => callback(value)),
     getAppInfo: () => ipcRenderer.invoke('get-app-info'),
     checkReleaseUpdate: () => ipcRenderer.invoke('check-release-update'),
-    downloadReleaseUpdate: () => ipcRenderer.invoke('download-release-update'),
-    installReleaseUpdate: () => ipcRenderer.send('install-release-update'),
+    downloadUpdate: () => ipcRenderer.invoke('download-update'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
     onReleaseUpdateAvailable: (callback) => ipcRenderer.on('release-update-available', (event, info) => callback(info)),
-    onReleaseUpdateProgress: (callback) => ipcRenderer.on('release-update-progress', (event, percent) => callback(percent)),
-    onReleaseUpdateDownloaded: (callback) => ipcRenderer.on('release-update-downloaded', () => callback()),
     onReleaseUpdateError: (callback) => ipcRenderer.on('release-update-error', (event, message) => callback(message)),
+    onUpdateDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (event, progress) => callback(progress)),
+    onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
     openExternal: (url) => ipcRenderer.send('open-external', url),
     onAttemptClose: (callback) => ipcRenderer.on('attempt-close', () => callback()),
     forceClose: () => ipcRenderer.send('force-close')
 });
-

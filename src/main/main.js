@@ -1,7 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 const { parseTreeFile } = require('./treeParser');
 const { createStructure, inspectStructure } = require('./treeCreator');
@@ -9,85 +8,19 @@ const { exportTreeZip } = require('./zipCreator');
 
 let mainWindow;
 let isReadyToClose = false;
-let latestUpdateInfo = null;
-let updateProviderReady = false;
-const updateFeedUrl = 'https://github.com/markelpher/TreeIDE-Deploy/releases/latest/download';
+let autoUpdater = null;
 
-autoUpdater.autoDownload = false;
-autoUpdater.allowPrerelease = false;
-autoUpdater.autoInstallOnAppQuit = false;
-autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = 'info';
-autoUpdater.setFeedURL({
-    provider: 'generic',
-    url: updateFeedUrl
-});
-
-function normalizeVersion(version = '') {
-    return String(version).trim().replace(/^v/i, '').split('-')[0];
-}
-
-function compareVersions(a, b) {
-    const left = normalizeVersion(a).split('.').map((part) => Number.parseInt(part, 10) || 0);
-    const right = normalizeVersion(b).split('.').map((part) => Number.parseInt(part, 10) || 0);
-    const length = Math.max(left.length, right.length);
-
-    for (let i = 0; i < length; i += 1) {
-        const diff = (left[i] || 0) - (right[i] || 0);
-        if (diff !== 0) return diff > 0 ? 1 : -1;
-    }
-
-    return 0;
-}
-
-function buildUpdateInfo(info = {}) {
-    const latestVersion = normalizeVersion(info.version);
-    return {
-        ok: true,
-        updateAvailable: compareVersions(latestVersion, app.getVersion()) > 0,
-        currentVersion: app.getVersion(),
-        latestVersion,
-        releaseName: `Tree IDE v${latestVersion}`,
-        assetName: info.files?.[0]?.url || ''
-    };
-}
-
-function parseLatestYml(content = '') {
-    const version = content.match(/^version:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim();
-    const assetName = content.match(/^\s*-\s*url:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim()
-        || content.match(/^path:\s*['"]?([^'"\r\n]+)['"]?/m)?.[1]?.trim()
-        || '';
-
-    if (!version) return null;
-
-    return {
-        version,
-        files: assetName ? [{ url: assetName }] : []
-    };
-}
-
-async function fetchLatestYmlUpdateInfo() {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-        const response = await fetch(`${updateFeedUrl}/latest.yml`, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'Tree-IDE-Updater'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`latest.yml returned ${response.status}`);
-        }
-
-        const text = await response.text();
-        const parsedInfo = parseLatestYml(text);
-        return parsedInfo ? buildUpdateInfo(parsedInfo) : null;
-    } finally {
-        clearTimeout(timeout);
-    }
+// Safely load electron-updater (may not be available in dev)
+try {
+    const updater = require('electron-updater');
+    autoUpdater = updater.autoUpdater;
+    autoUpdater.autoDownload = false;
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.logger = log;
+    autoUpdater.logger.transports.file.level = 'info';
+} catch (err) {
+    log.warn('electron-updater not available:', err.message);
 }
 
 function getUpdateErrorMessage(err) {
@@ -117,6 +50,10 @@ async function openHttpUrl(url) {
 }
 
 async function checkReleaseUpdate() {
+    if (!autoUpdater) {
+        return { ok: true, updateAvailable: false, currentVersion: app.getVersion(), latestVersion: app.getVersion() };
+    }
+
     if (!app.isPackaged) {
         log.info('Skipping update check because the app is not packaged.');
         return {
@@ -128,80 +65,86 @@ async function checkReleaseUpdate() {
     }
 
     log.info('Checking for updates.');
-
-    try {
-        const updateInfo = await fetchLatestYmlUpdateInfo();
-        if (updateInfo?.updateAvailable) {
-            latestUpdateInfo = updateInfo;
-            updateProviderReady = false;
-            log.info(`Update metadata found new version ${updateInfo.latestVersion}.`);
-            return updateInfo;
-        }
-
-        if (updateInfo) {
-            latestUpdateInfo = null;
-            log.info(`Update metadata says app is current at ${updateInfo.latestVersion}.`);
-            return updateInfo;
-        }
-    } catch (err) {
-        log.warn(`Direct latest.yml check failed: ${err?.message || String(err)}`);
-    }
-
     const result = await autoUpdater.checkForUpdates();
-    updateProviderReady = true;
-    const updateInfo = buildUpdateInfo(result?.updateInfo);
-    latestUpdateInfo = updateInfo.updateAvailable ? updateInfo : null;
-    log.info(updateInfo.updateAvailable ? `Update available: ${updateInfo.latestVersion}` : 'No update available.');
+    const info = result?.updateInfo;
+    const latestVersion = info?.version;
+    const updateAvailable = latestVersion && latestVersion !== app.getVersion();
+
+    const updateInfo = {
+        ok: true,
+        updateAvailable,
+        currentVersion: app.getVersion(),
+        latestVersion: latestVersion || app.getVersion(),
+        releaseName: info?.releaseName || `Tree IDE v${latestVersion}`,
+        assetName: info?.files?.[0]?.url || ''
+    };
+
+    log.info(updateAvailable ? `Update available: ${latestVersion}` : 'No update available.');
     return updateInfo;
 }
 
-autoUpdater.on('update-available', (info) => {
-    updateProviderReady = true;
-    latestUpdateInfo = buildUpdateInfo(info);
-    log.info(`Update available event: ${latestUpdateInfo.latestVersion}`);
-    mainWindow?.webContents.send('release-update-available', latestUpdateInfo);
-});
+// Auto-updater event handlers (only registered if updater is available)
+if (autoUpdater) {
+    autoUpdater.on('update-available', (info) => {
+        log.info(`Update available: ${info.version}`);
+        mainWindow?.webContents.send('release-update-available', {
+            ok: true,
+            updateAvailable: true,
+            currentVersion: app.getVersion(),
+            latestVersion: info.version,
+            releaseName: info.releaseName || `Tree IDE v${info.version}`,
+            assetName: info.files?.[0]?.url || ''
+        });
+    });
 
-autoUpdater.on('checking-for-update', () => {
-    log.info(`Checking update feed: ${updateFeedUrl}`);
-});
+    autoUpdater.on('checking-for-update', () => {
+        log.info('Checking for update...');
+    });
 
-autoUpdater.on('update-not-available', () => {
-    updateProviderReady = true;
-    latestUpdateInfo = null;
-    log.info('Update not available event.');
-});
+    autoUpdater.on('update-not-available', () => {
+        log.info('Update not available event.');
+    });
 
-autoUpdater.on('download-progress', (progress) => {
-    mainWindow?.webContents.send('release-update-progress', Math.round(progress.percent || 0));
-});
+    autoUpdater.on('download-progress', (progress) => {
+        log.info(`Download progress: ${Math.round(progress.percent)}%`);
+        mainWindow?.webContents.send('update-download-progress', {
+            percent: Math.round(progress.percent),
+            bytesPerSecond: progress.bytesPerSecond,
+            transferred: progress.transferred,
+            total: progress.total
+        });
+    });
 
-autoUpdater.on('update-downloaded', () => {
-    mainWindow?.webContents.send('release-update-downloaded');
-});
+    autoUpdater.on('update-downloaded', (info) => {
+        log.info(`Update downloaded: ${info.version}`);
+        mainWindow?.webContents.send('update-downloaded', {
+            version: info.version,
+            releaseName: info.releaseName || `Tree IDE v${info.version}`
+        });
+    });
 
-autoUpdater.on('error', (err) => {
-    updateProviderReady = false;
-    const message = getUpdateErrorMessage(err);
-    log.warn(`Update error: ${err?.message || String(err)}`);
-    mainWindow?.webContents.send('release-update-error', message);
-});
+    autoUpdater.on('error', (err) => {
+        const message = getUpdateErrorMessage(err);
+        log.warn(`Update error: ${err?.message || String(err)}`);
+        mainWindow?.webContents.send('release-update-error', message);
+    });
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1000,
         height: 700,
         frame: false,
-        icon: path.join(__dirname, 'assets', 'icon-no-bg.png'),
+        icon: path.join(__dirname, '..', '..', 'assets', 'icon-no-bg.png'),
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, '..', 'preload', 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true
         }
     });
     mainWindow.setMenu(null);
 
-    mainWindow.loadFile('index.html');
+    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
     const updateWindowState = () => {
         mainWindow.webContents.send('window-state-changed', mainWindow.isMaximized());
@@ -211,7 +154,7 @@ function createWindow() {
     mainWindow.on('unmaximize', updateWindowState);
     mainWindow.on('resize', updateWindowState);
     mainWindow.maximize();
-    
+
     mainWindow.webContents.once('did-finish-load', () => {
         updateWindowState();
     });
@@ -248,22 +191,28 @@ ipcMain.handle('check-release-update', async () => {
     }
 });
 
-ipcMain.handle('download-release-update', async () => {
-    if (!latestUpdateInfo) {
-        return { ok: false, error: 'No update available.' };
+ipcMain.handle('download-update', async () => {
+    if (!autoUpdater) {
+        return { ok: false, error: 'update_failed' };
     }
-
-    if (!updateProviderReady) {
-        await autoUpdater.checkForUpdates();
-        updateProviderReady = true;
+    try {
+        log.info('Starting update download...');
+        await autoUpdater.downloadUpdate();
+        return { ok: true };
+    } catch (err) {
+        log.warn(`Download error: ${err?.message || String(err)}`);
+        return { ok: false, error: getUpdateErrorMessage(err) };
     }
-
-    await autoUpdater.downloadUpdate();
-    return { ok: true };
 });
 
-ipcMain.on('install-release-update', () => {
-    autoUpdater.quitAndInstall();
+ipcMain.handle('install-update', () => {
+    if (!autoUpdater) {
+        return { ok: false, error: 'update_failed' };
+    }
+    log.info('Installing update and restarting...');
+    isReadyToClose = true;
+    autoUpdater.quitAndInstall(true, true);
+    return { ok: true };
 });
 
 ipcMain.handle('load-tree', async () => {
@@ -346,7 +295,6 @@ ipcMain.handle('save-tree-as', async (event, content, defaultName = 'project') =
         filters: [{ name: 'Tree files', extensions: ['tree'] }]
     });
 
-
     if (canceled || !filePath) return { canceled: true };
 
     fs.writeFileSync(filePath, content, 'utf-8');
@@ -382,7 +330,6 @@ ipcMain.on('force-close', () => {
     mainWindow?.close();
 });
 
-
 ipcMain.on('open-external', (event, url) => {
     try {
         openHttpUrl(url);
@@ -390,4 +337,3 @@ ipcMain.on('open-external', (event, url) => {
         // Ignore invalid URLs from the renderer.
     }
 });
-

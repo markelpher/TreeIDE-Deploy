@@ -19,6 +19,12 @@
         palette: '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 22a10 10 0 1 1 10-10c0 2.2-1.8 4-4 4h-1.5a2.5 2.5 0 0 0 0 5H12Z"/>',
         settings: '<path d="M12.2 2h-.4l-1 3a7 7 0 0 0-1.7.7L6.3 4.3l-2 2 1.4 2.8A7 7 0 0 0 5 10.8l-3 1v.4l3 1a7 7 0 0 0 .7 1.7l-1.4 2.8 2 2 2.8-1.4a7 7 0 0 0 1.7.7l1 3h.4l1-3a7 7 0 0 0 1.7-.7l2.8 1.4 2-2-1.4-2.8a7 7 0 0 0 .7-1.7l3-1v-.4l-3-1a7 7 0 0 0-.7-1.7l1.4-2.8-2-2-2.8 1.4a7 7 0 0 0-1.7-.7Z"/><circle cx="12" cy="12" r="3"/>',
         square: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+        'terminal': '<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
+        'table': '<path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
+        'type': '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
+        'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        'refresh-cw': '<polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>',
+        'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
         video: '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
         x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
     };

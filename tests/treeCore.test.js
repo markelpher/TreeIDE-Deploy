@@ -2,9 +2,9 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { parseTreeContent } = require('../treeParser');
-const { createStructure, inspectStructure, resolveTreePath } = require('../treeCreator');
-const { collectZipEntries, buildZipBuffer } = require('../zipCreator');
+const { parseTreeContent } = require('../src/main/treeParser');
+const { createStructure, inspectStructure, resolveTreePath } = require('../src/main/treeCreator');
+const { collectZipEntries, buildZipBuffer } = require('../src/main/zipCreator');
 
 function makeTempDir() {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'treeide-'));
