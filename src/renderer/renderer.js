@@ -261,6 +261,10 @@ async function saveProject(askPath = false) {
             currentFilePath = result.filePath;
             lastSavedProjectName = currentName;
             isModified = false;
+            localStorage.setItem('autosave_content', editor.value);
+            localStorage.setItem('autosave_path', currentFilePath);
+            localStorage.setItem('autosave_project_name', currentName);
+            persistFileContents();
             showToast(window.i18n.t('saved'));
             showPathMessage(currentFilePath);
             return true;
@@ -269,6 +273,10 @@ async function saveProject(askPath = false) {
     } else {
         await window.electronAPI.saveTree(currentFilePath, editor.value);
         isModified = false;
+        localStorage.setItem('autosave_content', editor.value);
+        localStorage.setItem('autosave_path', currentFilePath);
+        localStorage.setItem('autosave_project_name', currentName);
+        persistFileContents();
         showToast(window.i18n.t('saved'));
         showPathMessage(currentFilePath);
         lastSavedProjectName = currentName;
@@ -851,12 +859,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if (welcomeModal) welcomeModal.style.display = 'flex';
     }
 
+    const currentSessionMode = localStorage.getItem('session_mode') || 'restore';
     const savedContent = localStorage.getItem('temp_content') || localStorage.getItem('autosave_content');
     const savedPath = localStorage.getItem('temp_path') || localStorage.getItem('autosave_path');
     const savedProjectName = localStorage.getItem('autosave_project_name');
     loadSavedFileContents();
-    
-    if (savedContent !== null && editor) {
+
+    if (currentSessionMode === 'restore' && savedContent !== null && editor) {
         editor.value = savedContent;
         updateEditorExampleVisibility();
         currentFilePath = savedPath || '';
@@ -873,11 +882,18 @@ window.addEventListener('DOMContentLoaded', () => {
         isModified = false;
         localStorage.removeItem('temp_content');
         localStorage.removeItem('temp_path');
-    } else if (savedProjectName) {
+    } else if (currentSessionMode === 'restore' && savedProjectName) {
         document.getElementById('fileName').textContent = savedProjectName;
         lastSavedProjectName = savedProjectName;
     } else {
         updateFileNameDisplay(window.i18n.t('untitled'));
+        if (currentSessionMode === 'clean') {
+            localStorage.removeItem('autosave_content');
+            localStorage.removeItem('autosave_path');
+            localStorage.removeItem('autosave_project_name');
+            localStorage.removeItem('autosave_file_contents');
+            fileContents = {};
+        }
     }
 
     updateEditorExampleVisibility();
@@ -888,6 +904,13 @@ window.addEventListener('DOMContentLoaded', () => {
     handleThemeChange(savedTheme);
     const themeSelectElement = document.getElementById('themeSelect');
     if (themeSelectElement) themeSelectElement.value = savedTheme;
+
+    // Session setting
+    const sessionMode = localStorage.getItem('session_mode') || 'restore';
+    const sessionSelect = document.getElementById('sessionSelect');
+    if (sessionSelect) sessionSelect.value = sessionMode;
+    const welcomeSessionSelect = document.getElementById('welcomeSessionSelect');
+    if (welcomeSessionSelect) welcomeSessionSelect.value = sessionMode;
 
     refreshIcons();
     if (window.i18n) window.i18n.updateUI();
@@ -986,6 +1009,10 @@ window.addEventListener('DOMContentLoaded', () => {
         updateFileNameDisplay();
         lastSavedProjectName = document.getElementById('fileName').textContent.trim();
         isModified = false;
+        localStorage.setItem('autosave_content', editor.value);
+        localStorage.setItem('autosave_path', currentFilePath);
+        localStorage.setItem('autosave_project_name', document.getElementById('fileName').textContent);
+        persistFileContents();
     });
 
     const menuSave = document.getElementById('menu-save');
@@ -1165,6 +1192,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const welcomeThemeSelect = document.getElementById('welcomeThemeSelect');
     if (welcomeThemeSelect) welcomeThemeSelect.addEventListener('change', (e) => handleThemeChange(e.target.value));
 
+    if (sessionSelect) sessionSelect.addEventListener('change', (e) => {
+        localStorage.setItem('session_mode', e.target.value);
+        if (welcomeSessionSelect) welcomeSessionSelect.value = e.target.value;
+    });
+
+    if (welcomeSessionSelect) welcomeSessionSelect.addEventListener('change', (e) => {
+        localStorage.setItem('session_mode', e.target.value);
+        if (sessionSelect) sessionSelect.value = e.target.value;
+    });
+
     const chooseBuildFolderBtn = document.getElementById('chooseBuildFolderBtn');
     if (chooseBuildFolderBtn) chooseBuildFolderBtn.addEventListener('click', chooseBuildFolder);
 
@@ -1234,6 +1271,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (startBtn) startBtn.addEventListener('click', () => {
         document.getElementById('welcomeModal').style.display = 'none';
         localStorage.setItem('onboarding_done', 'true');
+        if (welcomeSessionSelect) localStorage.setItem('session_mode', welcomeSessionSelect.value);
         if (latestReleaseUpdate && latestReleaseUpdate.latestVersion !== dismissedReleaseVersion) {
             showReleaseUpdateModal(latestReleaseUpdate);
         }

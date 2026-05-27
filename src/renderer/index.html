@@ -155,6 +155,14 @@
                                     <button id="clearBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="clear_folder">Clear</button>
                                 </div>
                             </div>
+                            <div class="settings-row">
+                                <label data-i18n="session">Session</label>
+                                <select id="sessionSelect" class="styled-select">
+                                    <option value="restore" data-i18n="session_restore">Restore last session</option>
+                                    <option value="clean" data-i18n="session_clean">Start clean</option>
+                                </select>
+                            </div>
+                            <p class="settings-hint" data-i18n="session_desc">Choose whether to restore your last project on startup or start with a clean workspace.</p>
                         </div>
                     </div>
 
@@ -261,6 +269,17 @@
 
                             <option value="dark" data-i18n="theme_dark">Dark</option>
                             <option value="light" data-i18n="theme_light">Light</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 data-i18n="session">Session</h3>
+                    <div class="settings-row">
+                        <label data-i18n="session">Session</label>
+                        <select id="welcomeSessionSelect" class="styled-select">
+                            <option value="restore" data-i18n="session_restore">Restore last session</option>
+                            <option value="clean" data-i18n="session_clean">Start clean</option>
                         </select>
                     </div>
                 </div>
