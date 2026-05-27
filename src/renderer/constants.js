@@ -52,14 +52,6 @@ main();
 if __name__ == "__main__":
     main()
 `,
-    md: `# New Document
-
-Write your content here.
-`,
-    markdown: `# New Document
-
-Write your content here.
-`,
     json: `{
   "name": "Tree IDE-project",
   "version": "1.0.0"

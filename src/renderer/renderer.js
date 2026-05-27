@@ -413,6 +413,11 @@ function getDefaultContentForFile(filePath) {
     if (fileName === 'readme.md') return `# ${filePath.split('/')[0] || 'Project'}\n\nGenerated with Tree IDE.\n`;
     if (fileName === '.gitignore') return `node_modules/\ndist/\n.env\n`;
 
+    if (ext === 'md' || ext === 'markdown') {
+        const t = window.i18n ? window.i18n.t : (k) => k;
+        return `# ${t('new_document')}\n\n${t('write_content_here')}\n`;
+    }
+
     return defaultFileContentsByExtension[ext] || '';
 }
 
@@ -459,13 +464,66 @@ function updateMarkdownPreview() {
     markdownPreview.innerHTML = renderMarkdown(filePreviewEditor.value);
 }
 
+function getFileTypeLabel(filePath) {
+    const name = filePath.split('/').pop().toLowerCase();
+    const ext = name.includes('.') ? name.split('.').pop() : '';
+
+    const typeMap = {
+        js: 'JavaScript', mjs: 'JavaScript', cjs: 'JavaScript',
+        ts: 'TypeScript', mts: 'TypeScript', cts: 'TypeScript',
+        jsx: 'JSX', tsx: 'TSX',
+        py: 'Python',
+        rb: 'Ruby',
+        java: 'Java',
+        kt: 'Kotlin', kts: 'Kotlin',
+        c: 'C', h: 'C',
+        cpp: 'C++', cxx: 'C++', cc: 'C++', hpp: 'C++',
+        cs: 'C#',
+        go: 'Go',
+        rs: 'Rust',
+        swift: 'Swift',
+        php: 'PHP',
+        lua: 'Lua',
+        r: 'R',
+        dart: 'Dart',
+        scala: 'Scala',
+        sh: 'Shell', bash: 'Shell', zsh: 'Shell',
+        ps1: 'PowerShell', psm1: 'PowerShell',
+        bat: 'Batch', cmd: 'Batch',
+        html: 'HTML', htm: 'HTML',
+        css: 'CSS', scss: 'SCSS', sass: 'Sass', less: 'Less',
+        json: 'JSON', jsonc: 'JSON',
+        xml: 'XML',
+        yaml: 'YAML', yml: 'YAML',
+        toml: 'TOML',
+        ini: 'INI', cfg: 'INI',
+        sql: 'SQL',
+        graphql: 'GraphQL', gql: 'GraphQL',
+        md: 'Markdown', markdown: 'Markdown',
+        txt: 'Text',
+        csv: 'CSV',
+        env: 'Env',
+        dockerfile: 'Dockerfile',
+        makefile: 'Makefile',
+        vue: 'Vue',
+        svelte: 'Svelte',
+    };
+
+    if (name === 'dockerfile') return 'Dockerfile';
+    if (name === 'makefile') return 'Makefile';
+    if (name === '.gitignore' || name === '.gitkeep') return 'Git';
+    if (name === '.env' || name.startsWith('.env.')) return 'Env';
+
+    return typeMap[ext] || ext.toUpperCase() || '';
+}
+
 function openFilePreview(filePath) {
     activePreviewPath = filePath;
     filePreviewPanel.classList.add('show');
     filePreviewPanel.classList.toggle('markdown-file', isMarkdownFile(filePath));
     filePreviewName.textContent = filePath;
     filePreviewName.title = filePath;
-    filePreviewMode.textContent = isMarkdownFile(filePath) ? 'Markdown' : '';
+    filePreviewMode.textContent = getFileTypeLabel(filePath);
     filePreviewEditor.value = fileContents[filePath] || '';
     updateMarkdownPreview();
 
@@ -855,7 +913,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const maxBtn = document.getElementById('maxBtn');
             if (maxBtn) {
                 maxBtn.innerHTML = isMaximized 
-                    ? '<i data-lucide="copy"></i>' 
+                    ? '<i data-lucide="restore"></i>'
                     : '<i data-lucide="square"></i>';
                 refreshIcons();
             }
@@ -1259,14 +1317,20 @@ function resetReleaseUpdateButton() {
     const actions = document.querySelector('.release-update-actions');
     const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
     const downloadLabel = document.getElementById('updateDownloadLabel');
-    const downloadProgress = document.getElementById('updateDownloadProgress');
+    const progressEl = document.getElementById('releaseUpdateProgress');
+    const progressFill = document.getElementById('releaseUpdateProgressFill');
+    const progressText = document.getElementById('releaseUpdateProgressText');
 
     if (actions) actions.classList.remove('is-primary-only');
     if (downloadBtn) {
-        downloadBtn.classList.remove('is-downloading');
         downloadBtn.disabled = false;
+        downloadBtn.style.display = '';
     }
-    if (downloadProgress) downloadProgress.style.width = '0%';
+    if (progressEl) {
+        progressEl.classList.remove('show', 'downloading', 'complete');
+    }
+    if (progressFill) progressFill.style.width = '0%';
+    if (progressText) progressText.textContent = '0%';
     if (downloadLabel) downloadLabel.textContent = window.i18n.t('update_download_release');
     isDownloadingUpdate = false;
     isUpdateDownloaded = false;
@@ -1278,13 +1342,6 @@ function showReleaseUpdateModal(info) {
     const latestVer = document.getElementById('releaseUpdateLatest');
     if (currentVer) currentVer.textContent = `v${info.currentVersion || '---'}`;
     if (latestVer) latestVer.textContent = `v${info.latestVersion || '---'}`;
-
-    const assetLabel = document.getElementById('releaseUpdateAsset');
-    if (assetLabel) {
-        assetLabel.textContent = info.assetName
-            ? `${window.i18n.t('update_asset_label')}: ${info.assetName}`
-            : '';
-    }
 
     resetReleaseUpdateButton();
     if (releaseUpdateModal) releaseUpdateModal.style.display = 'flex';
@@ -1330,13 +1387,13 @@ function bindReleaseUpdateEvents() {
     }
     if (window.electronAPI.onUpdateDownloadProgress) {
         window.electronAPI.onUpdateDownloadProgress((progress) => {
-            const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
-            const downloadLabel = document.getElementById('updateDownloadLabel');
-            const downloadProgress = document.getElementById('updateDownloadProgress');
+            const progressEl = document.getElementById('releaseUpdateProgress');
+            const progressFill = document.getElementById('releaseUpdateProgressFill');
+            const progressText = document.getElementById('releaseUpdateProgressText');
 
-            if (downloadBtn) downloadBtn.classList.add('is-downloading');
-            if (downloadProgress) downloadProgress.style.width = `${progress.percent}%`;
-            if (downloadLabel) downloadLabel.textContent = `${window.i18n.t('update_downloading')} ${progress.percent}%`;
+            if (progressEl) progressEl.classList.add('show', 'downloading');
+            if (progressFill) progressFill.style.width = `${progress.percent}%`;
+            if (progressText) progressText.textContent = `${Math.round(progress.percent)}%`;
         });
     }
     if (window.electronAPI.onUpdateDownloaded) {
@@ -1346,14 +1403,20 @@ function bindReleaseUpdateEvents() {
             const actions = document.querySelector('.release-update-actions');
             const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
             const downloadLabel = document.getElementById('updateDownloadLabel');
-            const downloadProgress = document.getElementById('updateDownloadProgress');
+            const progressEl = document.getElementById('releaseUpdateProgress');
+            const progressFill = document.getElementById('releaseUpdateProgressFill');
+            const progressText = document.getElementById('releaseUpdateProgressText');
 
             if (actions) actions.classList.add('is-primary-only');
             if (downloadBtn) {
-                downloadBtn.classList.remove('is-downloading');
                 downloadBtn.disabled = false;
             }
-            if (downloadProgress) downloadProgress.style.width = '100%';
+            if (progressEl) {
+                progressEl.classList.remove('downloading');
+                progressEl.classList.add('show', 'complete');
+            }
+            if (progressFill) progressFill.style.width = '100%';
+            if (progressText) progressText.textContent = '100%';
             if (downloadLabel) downloadLabel.textContent = window.i18n.t('update_install_restart');
         });
     }
@@ -1452,8 +1515,9 @@ if (downloadReleaseUpdateBtn) {
 
         isDownloadingUpdate = true;
         const downloadLabel = document.getElementById('updateDownloadLabel');
-        if (downloadLabel) downloadLabel.textContent = `${window.i18n.t('update_downloading')} 0%`;
-        downloadReleaseUpdateBtn.classList.add('is-downloading');
+        const progressEl = document.getElementById('releaseUpdateProgress');
+        if (downloadLabel) downloadLabel.textContent = window.i18n.t('update_downloading');
+        if (progressEl) progressEl.classList.add('show', 'downloading');
         downloadReleaseUpdateBtn.disabled = true;
 
         try {

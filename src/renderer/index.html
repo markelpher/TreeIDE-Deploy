@@ -312,13 +312,17 @@
                         <i data-lucide="arrow-right"></i>
                         <strong id="releaseUpdateLatest">v---</strong>
                     </div>
-                    <p id="releaseUpdateAsset" class="release-update-asset"></p>
+                </div>
+                <div class="release-update-progress" id="releaseUpdateProgress">
+                    <div class="release-update-progress-bar">
+                        <div class="release-update-progress-fill" id="releaseUpdateProgressFill"></div>
+                    </div>
+                    <span class="release-update-progress-text" id="releaseUpdateProgressText">0%</span>
                 </div>
                 <div class="modal-actions release-update-actions">
                     <button id="declineReleaseUpdateBtn" class="secondary-btn" data-i18n="update_decline">Not now</button>
-                    <button id="downloadReleaseUpdateBtn" class="primary-btn update-download-btn" data-i18n="update_download_release">
-                        <span class="update-download-progress" id="updateDownloadProgress"></span>
-                        <span class="update-download-label" id="updateDownloadLabel">Download update</span>
+                    <button id="downloadReleaseUpdateBtn" class="primary-btn update-download-btn">
+                        <span class="update-download-label" id="updateDownloadLabel" data-i18n="update_download_release">Download update</span>
                     </button>
                 </div>
             </div>
