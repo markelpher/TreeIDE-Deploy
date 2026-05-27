@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.47",
+  "version": "2.0.48",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare",
   "license": "MIT",
@@ -14,6 +14,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "simulate-update": "electron src/main/dev-simulate-update.js",
     "test": "node tests/treeCore.test.js",
     "build": "electron-builder"
   },

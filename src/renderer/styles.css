@@ -1095,20 +1095,37 @@ body.light-theme .tree-connector {
     align-items: center;
 }
 
-.release-update-actions.is-primary-only {
-    display: flex;
-}
-
-.release-update-actions.is-primary-only #declineReleaseUpdateBtn {
-    display: none;
-}
 
 .update-download-btn {
     min-width: 170px;
 }
 
-.release-update-actions.is-primary-only .update-download-btn {
-    min-height: 42px;
+.update-download-btn:hover,
+.update-download-btn:focus {
+    background-color: var(--accent-color);
+    transform: none;
+    box-shadow: none;
+}
+
+.update-download-btn:active {
+    transform: none;
+}
+
+.update-download-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#declineReleaseUpdateBtn:hover,
+#declineReleaseUpdateBtn:focus {
+    background-color: rgba(232, 17, 35, 0.1);
+    border-color: rgba(232, 17, 35, 0.5);
+    color: #ff4d4d;
+    transform: translateY(-1px);
+}
+
+#declineReleaseUpdateBtn:active {
+    transform: translateY(0);
 }
 
 .validation-panel {

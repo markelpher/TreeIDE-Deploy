@@ -1352,17 +1352,17 @@ let isDownloadingUpdate = false;
 let isUpdateDownloaded = false;
 
 function resetReleaseUpdateButton() {
-    const actions = document.querySelector('.release-update-actions');
     const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
     const downloadLabel = document.getElementById('updateDownloadLabel');
     const progressEl = document.getElementById('releaseUpdateProgress');
     const progressFill = document.getElementById('releaseUpdateProgressFill');
     const progressText = document.getElementById('releaseUpdateProgressText');
+    const declineBtn = document.getElementById('declineReleaseUpdateBtn');
 
-    if (actions) actions.classList.remove('is-primary-only');
+    if (declineBtn) declineBtn.style.display = '';
     if (downloadBtn) {
-        downloadBtn.disabled = false;
         downloadBtn.style.display = '';
+        downloadBtn.disabled = false;
     }
     if (progressEl) {
         progressEl.classList.remove('show', 'downloading', 'complete');
@@ -1438,15 +1438,14 @@ function bindReleaseUpdateEvents() {
         window.electronAPI.onUpdateDownloaded((info) => {
             isDownloadingUpdate = false;
             isUpdateDownloaded = true;
-            const actions = document.querySelector('.release-update-actions');
             const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
             const downloadLabel = document.getElementById('updateDownloadLabel');
             const progressEl = document.getElementById('releaseUpdateProgress');
             const progressFill = document.getElementById('releaseUpdateProgressFill');
             const progressText = document.getElementById('releaseUpdateProgressText');
 
-            if (actions) actions.classList.add('is-primary-only');
             if (downloadBtn) {
+                downloadBtn.style.display = '';
                 downloadBtn.disabled = false;
             }
             if (progressEl) {
@@ -1552,11 +1551,11 @@ if (downloadReleaseUpdateBtn) {
         if (isDownloadingUpdate) return;
 
         isDownloadingUpdate = true;
-        const downloadLabel = document.getElementById('updateDownloadLabel');
         const progressEl = document.getElementById('releaseUpdateProgress');
-        if (downloadLabel) downloadLabel.textContent = window.i18n.t('update_downloading');
+        const declineBtn = document.getElementById('declineReleaseUpdateBtn');
         if (progressEl) progressEl.classList.add('show', 'downloading');
-        downloadReleaseUpdateBtn.disabled = true;
+        if (declineBtn) declineBtn.style.display = 'none';
+        downloadReleaseUpdateBtn.style.display = 'none';
 
         try {
             const result = await window.electronAPI.downloadUpdate();
