@@ -337,7 +337,7 @@ jobs:
           tag="${{ steps.meta.outputs.tag }}"
           version="${tag#v}"
           release_name="Tree IDE v${version}"
-          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelogs/en.md")
+          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelogs/github-release.md")
           if [ "${{ steps.meta.outputs.is_prerelease }}" = 'true' ]; then
             edit_args+=(--prerelease)
           else

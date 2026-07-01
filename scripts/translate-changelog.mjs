@@ -101,7 +101,7 @@ Your output MUST be valid Markdown that preserves the source structure exactly:
 6. Markdown emphasis markers (*, **, _, __, ~~) are kept verbatim. Translate the enclosed text.
 7. Markdown link syntax [text](url) is kept. Translate the link TEXT only.
 8. The H2 title "## What's new in v…" line should be translated EXCEPT for the version string itself.
-9. The trailing "**Full Changelog**: <url>" line keeps the bold markers, the English label, and the URL unchanged (it is rendered as a button by GitHub).
+9. Do NOT add a "**Full Changelog**" footer — that link is GitHub-only and is not part of the source.
 
 Output ONLY the translated markdown. No preamble, no explanation, no code-fence wrapper.`;
 

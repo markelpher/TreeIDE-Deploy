@@ -21,7 +21,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { argv, exit } from 'node:process';
-import { combineChangelogs, writeEnglishNotes } from './release-changelog-lib.mjs';
+import { combineChangelogs, stripFullChangelogLink, writeEnglishNotes } from './release-changelog-lib.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(__dirname);
@@ -86,7 +86,9 @@ async function main() {
             '--target', locale.code,
             '--source', locale.translateFrom || sourceLocale.code,
         ]);
-        notesByLocale.set(locale.code, await readFile(targetPath, 'utf8'));
+        const localized = stripFullChangelogLink(await readFile(targetPath, 'utf8'));
+        await writeFile(targetPath, localized, 'utf8');
+        notesByLocale.set(locale.code, localized);
     }
 
     const combinedPath = path.join(outDir, 'changelog.md');

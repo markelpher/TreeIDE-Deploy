@@ -2,6 +2,7 @@ import {
     buildCompareUrl,
     combineChangelogs,
     ensureFullChangelogLink,
+    stripFullChangelogLink,
     formatReleaseTitle,
     readManualChangelog,
     writeEnglishNotes,
@@ -47,6 +48,13 @@ describe('buildCompareUrl', () => {
     it('builds a single-tag compare URL when there is no previous tag', () => {
         expect(buildCompareUrl('-', 'v2.0.55', 'owner/repo'))
             .toBe('https://github.com/owner/repo/compare/v2.0.55');
+    });
+});
+
+describe('stripFullChangelogLink', () => {
+    it('removes the GitHub compare footer', () => {
+        const input = '## Notes\n\n- item\n\n**Full Changelog**: https://github.com/o/r/compare/v1...v2\n';
+        expect(stripFullChangelogLink(input)).toBe('## Notes\n\n- item\n');
     });
 });
 
@@ -118,6 +126,9 @@ describe('writeEnglishNotes', () => {
         expect(source).toBe('manual');
         expect(written).toContain('## Added');
         expect(written).toContain('- manual note');
-        expect(written).toContain('**Full Changelog**: https://github.com/markelpher/TreeIDE-Deploy/compare/v2.0.54...v2.0.55');
+        expect(written).not.toContain('**Full Changelog**');
+
+        const githubRelease = await readFile(path.join(tempDir, 'github-release.md'), 'utf8');
+        expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/TreeIDE-Deploy/compare/v2.0.54...v2.0.55');
     });
 });

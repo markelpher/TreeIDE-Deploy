@@ -66,6 +66,30 @@ export function ensureFullChangelogLink(content, compareUrl) {
     return `${content.trimEnd()}\n\n**Full Changelog**: ${compareUrl}\n`;
 }
 
+/** Removes the GitHub compare footer — used for in-app update notes only. */
+export function stripFullChangelogLink(content) {
+    if (!content) { return content; }
+    const stripped = String(content)
+        .replace(/\r\n/g, '\n')
+        .replace(/\n*\*\*Full Changelog\*\*:\s*\S+\s*/gi, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trimEnd();
+    return stripped ? `${stripped}\n` : '';
+}
+
+/**
+ * @param {string} outPath - Locale file for the app (no compare link).
+ * @param {string} compareUrl
+ * @returns {string} Path to GitHub release body markdown.
+ */
+export async function writeGithubReleaseNotes(outPath, compareUrl) {
+    const outDir = path.dirname(outPath);
+    const githubReleasePath = path.join(outDir, 'github-release.md');
+    const appNotes = await readFile(outPath, 'utf8');
+    await writeFile(githubReleasePath, ensureFullChangelogLink(appNotes, compareUrl), 'utf8');
+    return githubReleasePath;
+}
+
 /**
  * @param {string} filePath
  * @returns {Promise<string|null>}
@@ -101,15 +125,22 @@ function runNode(scriptRelative, args) {
  * @returns {Promise<'manual' | 'git'>}
  */
 export async function writeEnglishNotes({ prev, current, outPath, manualPath = MANUAL_CHANGELOG_PATH }) {
+    const compareUrl = buildCompareUrl(prev, current);
+
     const manual = await readManualChangelog(manualPath);
     if (manual) {
-        const notes = ensureFullChangelogLink(manual, buildCompareUrl(prev, current));
-        await writeFile(outPath, notes, 'utf8');
+        const appNotes = stripFullChangelogLink(manual);
+        await writeFile(outPath, appNotes, 'utf8');
+        await writeGithubReleaseNotes(outPath, compareUrl);
         console.log(`[changelogs] Using manual changelog from ${manualPath}`);
         return 'manual';
     }
 
-    await runNode('scripts/generate-changelog.mjs', [prev || '-', current, outPath]);
+    const generatedPath = path.join(path.dirname(outPath), '.en.generated.md');
+    await runNode('scripts/generate-changelog.mjs', [prev || '-', current, generatedPath]);
+    const appNotes = stripFullChangelogLink(await readFile(generatedPath, 'utf8'));
+    await writeFile(outPath, appNotes, 'utf8');
+    await writeGithubReleaseNotes(outPath, compareUrl);
     console.log('[changelogs] changelog.md empty or missing; generated English notes from git history');
     return 'git';
 }
