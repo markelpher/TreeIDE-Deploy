@@ -1,10 +1,26 @@
 !include LogicLib.nsh
 !include nsDialogs.nsh
 
-; Language picker (1033=en_US, 1046=pt_BR, 3082/1034=es_ES — NSIS Spanish.nlf uses 1034)
+; Language picker (1033=en_US, 1046=pt_BR, 1034/3082=Spanish International)
 !macro SPANISH_LANGSTRING NAME VALUE
-  LangString ${NAME} 3082 "${VALUE}"
   LangString ${NAME} 1034 "${VALUE}"
+  LangString ${NAME} 3082 "${VALUE}"
+!macroend
+
+; Override electron-builder addLangs — stock SpanishInternational.nsh shows a long picker label
+!macro addLangs
+  !insertmacro MUI_LANGUAGE "English"
+  !insertmacro MUI_LANGUAGE "PortugueseBR"
+  LoadLanguageFile "${NSISDIR}\Contrib\Language files\SpanishInternational.nlf"
+  !insertmacro LANGFILE_INCLUDE_WITHDEFAULT \
+    "${BUILD_RESOURCES_DIR}\SpanishInternational.nsh" \
+    "${NSISDIR}\Contrib\Language files\English.nsh"
+  !define /ifndef MUI_LANGDLL_LANGUAGES ""
+  !define /redef MUI_LANGDLL_LANGUAGES \
+    `"${LANGFILE_SpanishInternational_LANGDLL}" "${LANG_SpanishInternational}" ${MUI_LANGDLL_LANGUAGES}`
+  !define /ifndef MUI_LANGDLL_LANGUAGES_CP ""
+  !define /redef MUI_LANGDLL_LANGUAGES_CP \
+    `"${LANGFILE_SpanishInternational_LANGDLL}" "${LANG_SpanishInternational}" "${LANG_SpanishInternational_CP}" ${MUI_LANGDLL_LANGUAGES_CP}`
 !macroend
 
 LangString languagePageTitle 1033 "Installer Language"
@@ -25,7 +41,7 @@ LangString cleanInstallDetails 1033 "Running clean installation. Removing Tree I
 LangString cleanInstallDetails 1046 "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
 !insertmacro SPANISH_LANGSTRING cleanInstallDetails "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
 
-; Uninstaller welcome (MUI_WELCOMEPAGE_* — not MUI_UNWELCOMEPAGE_*)
+; Uninstaller welcome (MUI_WELCOMEPAGE_* — MUI_UNPAGE_WELCOME clears these itself)
 LangString uninstWelcomeTitle 1033 "Tree IDE Uninstall"
 LangString uninstWelcomeTitle 1046 "Desinstalação do Tree IDE"
 !insertmacro SPANISH_LANGSTRING uninstWelcomeTitle "Desinstalación de Tree IDE"
@@ -95,7 +111,5 @@ FunctionEnd
   !define MUI_WELCOMEPAGE_TITLE "$(uninstWelcomeTitle)"
   !define MUI_WELCOMEPAGE_TEXT "$(uninstWelcomeText)"
   !insertmacro MUI_UNPAGE_WELCOME
-  !undef MUI_WELCOMEPAGE_TITLE
-  !undef MUI_WELCOMEPAGE_TEXT
 !macroend
 !endif
