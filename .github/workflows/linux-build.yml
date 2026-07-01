@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-linux-x64:
-    name: Build AppImage and DEB (x64)
+    name: Build AppImage, DEB and Snap (x64)
     runs-on: ubuntu-latest
 
     steps:
@@ -54,10 +54,17 @@ jobs:
             exit 1
           fi
 
+      - name: Install Snapcraft
+        run: |
+          if ! command -v snapcraft >/dev/null 2>&1; then
+            sudo snap install snapcraft --classic --channel=latest/stable
+          fi
+          snapcraft --version
+
       - name: Run tests
         run: npm test
 
-      - name: Build Linux x64 artifacts (AppImage + DEB)
+      - name: Build Linux x64 artifacts (AppImage + DEB + Snap)
         run: |
           MAX_ATTEMPTS=3
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -68,7 +75,7 @@ jobs:
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
-            npx electron-builder --linux AppImage deb --x64 --publish "$PUBLISH_MODE" && break
+            npx electron-builder --linux AppImage deb snap --x64 --publish "$PUBLISH_MODE" && break
 
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
               DELAY=$((20 * attempt))
@@ -121,6 +128,7 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
+            dist/*.snap
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error

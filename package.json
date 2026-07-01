@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.50",
+  "version": "2.0.53",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -91,7 +91,8 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb"
+        "deb",
+        "snap"
       ],
       "icon": "assets/icon-no-bg.png",
       "category": "Development",
