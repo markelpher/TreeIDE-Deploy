@@ -6,6 +6,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     root: path.resolve(__dirname),
+    resolve: {
+        alias: {
+            electron: path.resolve(__dirname, 'tests/mocks/electron.mjs'),
+        },
+    },
     test: {
         include: ['tests/**/*.test.js'],
         globals: true,

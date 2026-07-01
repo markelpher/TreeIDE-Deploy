@@ -115,7 +115,7 @@ function repairMissingPathFile(platformPath) {
     return true;
 }
 
-async function installElectron() {
+export async function installElectron() {
     const platform = process.env.ELECTRON_INSTALL_PLATFORM || process.env.npm_config_platform || process.platform;
     const arch = resolveArch(platform);
     const platformPath = getPlatformPath(platform);
@@ -158,15 +158,20 @@ async function installElectron() {
     console.log('Electron binary ready');
 }
 
-installElectron().catch((err) => {
-    console.error(err?.stack || err);
-    try {
-        console.error('electron dir:', fs.readdirSync(electronDir));
-        if (fs.existsSync(distDir)) {
-            console.error('dist dir:', fs.readdirSync(distDir));
+const scriptPath = fileURLToPath(import.meta.url);
+const isCli = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(scriptPath);
+
+if (isCli) {
+    installElectron().catch((err) => {
+        console.error(err?.stack || err);
+        try {
+            console.error('electron dir:', fs.readdirSync(electronDir));
+            if (fs.existsSync(distDir)) {
+                console.error('dist dir:', fs.readdirSync(distDir));
+            }
+        } catch (listErr) {
+            console.error(listErr?.message || listErr);
         }
-    } catch (listErr) {
-        console.error(listErr?.message || listErr);
-    }
-    process.exit(1);
-});
+        process.exit(1);
+    });
+}
