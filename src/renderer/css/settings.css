@@ -371,12 +371,13 @@
     z-index: 10;
 }
 
-.custom-select.open .custom-select-options {
+.custom-select.open .custom-select-options,
+.custom-select-options.is-open {
     display: block;
 }
 
 .custom-select-option {
-    padding: 12px 14px;
+    padding: 10px 14px;
     font-size: 13px;
     color: var(--text-primary);
     cursor: pointer;

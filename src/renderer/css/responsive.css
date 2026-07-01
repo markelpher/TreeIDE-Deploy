@@ -25,20 +25,25 @@
         flex-direction: column;
     }
 
-    .templates-modal-content,
     .settings-modal-content {
         width: calc(100vw - 32px);
         height: calc(100vh - 32px);
     }
 
-    .template-preview {
+    .templates-browser {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(180px, 0.9fr) minmax(220px, 1.1fr);
+        grid-template-rows: minmax(200px, 0.85fr) minmax(180px, 1fr) minmax(220px, 1.1fr);
+        overflow-y: auto;
     }
 
-    .template-tree-preview {
+    .templates-panel {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
+        min-height: 180px;
+    }
+
+    .templates-panel:last-child {
+        border-bottom: none;
     }
 }
 

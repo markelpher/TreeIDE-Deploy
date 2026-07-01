@@ -71,30 +71,40 @@ function createProjectTab(options = {}) {
     return tab;
 }
 
+function getTabScrollViewport(list) {
+    if (!list) { return null; }
+    const viewport = list.parentElement;
+    if (viewport?.classList?.contains('tab-scroll-viewport')) {
+        return viewport;
+    }
+    return list;
+}
+
 // Animated "scroll element into view" inside a horizontally-scrolling list.
 // Unlike the native scrollIntoView, this uses requestAnimationFrame + cubic
 // easing so the motion is consistent across browsers and respects the same
 // momentum framework used by the arrow buttons.
 function _scrollElementIntoListView(list, el, duration = 320) {
     if (!list || !el) {return;}
+    const scrollEl = getTabScrollViewport(list);
     const elRect = el.getBoundingClientRect();
-    const listRect = list.getBoundingClientRect();
-    const elLeft = elRect.left - listRect.left + list.scrollLeft;
+    const scrollRect = scrollEl.getBoundingClientRect();
+    const elLeft = elRect.left - scrollRect.left + scrollEl.scrollLeft;
     const elRight = elLeft + elRect.width;
     const margin = 24;
 
-    let target = list.scrollLeft;
-    if (elLeft < list.scrollLeft + margin) {
+    let target = scrollEl.scrollLeft;
+    if (elLeft < scrollEl.scrollLeft + margin) {
         target = elLeft - margin;
-    } else if (elRight > list.scrollLeft + list.clientWidth - margin) {
-        target = elRight - list.clientWidth + margin;
+    } else if (elRight > scrollEl.scrollLeft + scrollEl.clientWidth - margin) {
+        target = elRight - scrollEl.clientWidth + margin;
     } else {
         return;
     }
-    target = Math.max(0, Math.min(list.scrollWidth - list.clientWidth, target));
+    target = Math.max(0, Math.min(scrollEl.scrollWidth - scrollEl.clientWidth, target));
 
     // Reuse the same animation pipeline as the arrow buttons
-    const state = list._scrollState;
+    const state = scrollEl._scrollState;
     if (state) {
         cancelAnimationFrame(state.animRaf);
         state.velocity = 0;
@@ -102,19 +112,19 @@ function _scrollElementIntoListView(list, el, duration = 320) {
         state.rafId = 0;
         state.animTarget = target;
         state.animStart = performance.now();
-        state.animFrom = list.scrollLeft;
+        state.animFrom = scrollEl.scrollLeft;
         state.animDuration = duration;
         const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
         const step = (now) => {
             const t = Math.min(1, (now - state.animStart) / state.animDuration);
             const eased = easeOutCubic(t);
-            list.scrollLeft = state.animFrom + (state.animTarget - state.animFrom) * eased;
+            scrollEl.scrollLeft = state.animFrom + (state.animTarget - state.animFrom) * eased;
             if (t < 1) {state.animRaf = requestAnimationFrame(step);}
-            else { list.scrollLeft = state.animTarget; state.animRaf = 0; }
+            else { scrollEl.scrollLeft = state.animTarget; state.animRaf = 0; }
         };
         state.animRaf = requestAnimationFrame(step);
     } else {
-        list.scrollTo({ left: target, behavior: 'smooth' });
+        scrollEl.scrollTo({ left: target, behavior: 'smooth' });
     }
 }
 
@@ -292,6 +302,21 @@ const tabManager = {
         this.saveTabsToStorage();
     },
 
+    reorderProjectTab(draggedId, targetId, insertBefore = true) {
+        const fromIndex = this.projectTabs.findIndex((t) => t.id === draggedId);
+        const targetIndex = this.projectTabs.findIndex((t) => t.id === targetId);
+        if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) { return false; }
+
+        let toIndex = insertBefore ? targetIndex : targetIndex + 1;
+        const [tab] = this.projectTabs.splice(fromIndex, 1);
+        if (fromIndex < toIndex) { toIndex--; }
+        this.projectTabs.splice(toIndex, 0, tab);
+
+        this.renderProjectTabBar();
+        this.saveTabsToStorage();
+        return true;
+    },
+
     openFileInTab(filePath) {
         const tab = this.getActiveTab();
         if (!tab) {return;}
@@ -402,6 +427,12 @@ const tabManager = {
         this._bindScrollControls(list, 'projectTabScrollLeft', 'projectTabScrollRight');
 
         this._tabClickHandler = (e) => {
+            if (this._suppressTabClick) {
+                this._suppressTabClick = false;
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
             if (e.target.closest('#newProjectTabBtn')) {
                 this.createTab();
                 return;
@@ -437,7 +468,152 @@ const tabManager = {
         };
         list.addEventListener('dblclick', this._tabDblClickHandler);
 
+        this._bindTabListReorder(list);
+
         this._listenersInitialized = true;
+    },
+
+    _bindTabListReorder(list) {
+        if (!list || list._tabReorderBound) { return; }
+        list._tabReorderBound = true;
+
+        const DRAG_THRESHOLD = 6;
+        const EDGE_SCROLL_ZONE = 32;
+        const EDGE_SCROLL_SPEED = 8;
+        let dragState = null;
+        let edgeScrollRaf = 0;
+
+        const clearDragOver = () => {
+            list.querySelectorAll(
+                '.project-tab.drag-over-left, .project-tab.drag-over-right, .project-tab.reorder-beside-active'
+            ).forEach((el) => {
+                el.classList.remove('drag-over-left', 'drag-over-right', 'reorder-beside-active');
+            });
+        };
+
+        const finishDrag = () => {
+            if (!dragState) { return; }
+            cancelAnimationFrame(edgeScrollRaf);
+            edgeScrollRaf = 0;
+            dragState.tabEl.classList.remove('dragging');
+            if (dragState.tabEl.hasPointerCapture(dragState.pointerId)) {
+                dragState.tabEl.releasePointerCapture(dragState.pointerId);
+            }
+            list.classList.remove('is-reordering');
+            clearDragOver();
+            dragState = null;
+        };
+
+        const onPointerDown = (e) => {
+            if (e.button !== 0) { return; }
+            if (e.target.closest('.project-tab-close, .project-tab-rename-icon, #newProjectTabBtn, .project-tab-new')) {
+                return;
+            }
+            const tabEl = e.target.closest('.project-tab[data-tab-id]');
+            if (!tabEl) { return; }
+            const nameEl = tabEl.querySelector('.project-tab-name');
+            if (nameEl?.contentEditable === 'true') { return; }
+
+            dragState = {
+                tabId: tabEl.dataset.tabId,
+                tabEl,
+                startX: e.clientX,
+                startY: e.clientY,
+                dragging: false,
+                pointerId: e.pointerId,
+                dropTarget: null
+            };
+            tabEl.setPointerCapture(e.pointerId);
+        };
+
+        const onPointerMove = (e) => {
+            if (!dragState || e.pointerId !== dragState.pointerId) { return; }
+
+            if (!dragState.dragging) {
+                const dx = e.clientX - dragState.startX;
+                const dy = e.clientY - dragState.startY;
+                if (Math.hypot(dx, dy) < DRAG_THRESHOLD) { return; }
+                dragState.dragging = true;
+                dragState.tabEl.classList.add('dragging');
+                list.classList.add('is-reordering');
+            }
+
+            clearDragOver();
+            dragState.dropTarget = null;
+
+            const under = document.elementFromPoint(e.clientX, e.clientY);
+            const targetEl = under?.closest?.('.project-tab[data-tab-id]');
+            if (targetEl && targetEl !== dragState.tabEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const insertBefore = e.clientX < rect.left + rect.width / 2;
+                targetEl.classList.add(insertBefore ? 'drag-over-left' : 'drag-over-right');
+                dragState.dropTarget = { tabId: targetEl.dataset.tabId, insertBefore };
+
+                const activeEl = list.querySelector('.project-tab.active[data-tab-id]');
+                if (
+                    activeEl
+                    && dragState.tabId !== this.activeProjectTabId
+                    && this.activeProjectTabId
+                ) {
+                    const fromIndex = this.projectTabs.findIndex((t) => t.id === dragState.tabId);
+                    const activeIndex = this.projectTabs.findIndex((t) => t.id === this.activeProjectTabId);
+                    const targetIndex = this.projectTabs.findIndex((t) => t.id === targetEl.dataset.tabId);
+                    if (fromIndex >= 0 && activeIndex >= 0 && targetIndex >= 0) {
+                        let insertPos = insertBefore ? targetIndex : targetIndex + 1;
+                        if (fromIndex < insertPos) { insertPos--; }
+                        if (insertPos === activeIndex || insertPos === activeIndex + 1) {
+                            activeEl.classList.add('reorder-beside-active');
+                        }
+                    }
+                }
+            }
+
+            const viewport = getTabScrollViewport(list);
+            if (viewport) {
+                const rect = viewport.getBoundingClientRect();
+                let scrollDelta = 0;
+                if (e.clientX < rect.left + EDGE_SCROLL_ZONE) { scrollDelta = -EDGE_SCROLL_SPEED; }
+                else if (e.clientX > rect.right - EDGE_SCROLL_ZONE) { scrollDelta = EDGE_SCROLL_SPEED; }
+
+                if (scrollDelta) {
+                    cancelAnimationFrame(edgeScrollRaf);
+                    const step = () => {
+                        if (!dragState?.dragging) { return; }
+                        viewport.scrollLeft += scrollDelta;
+                        edgeScrollRaf = requestAnimationFrame(step);
+                    };
+                    edgeScrollRaf = requestAnimationFrame(step);
+                } else {
+                    cancelAnimationFrame(edgeScrollRaf);
+                    edgeScrollRaf = 0;
+                }
+            }
+        };
+
+        const onPointerUp = (e) => {
+            if (!dragState || e.pointerId !== dragState.pointerId) { return; }
+
+            if (dragState.dragging) {
+                this._suppressTabClick = true;
+                const { dropTarget, tabId } = dragState;
+                if (dropTarget && dropTarget.tabId !== tabId) {
+                    this.reorderProjectTab(tabId, dropTarget.tabId, dropTarget.insertBefore);
+                }
+            }
+            finishDrag();
+        };
+
+        const onPointerCancel = (e) => {
+            if (!dragState || e.pointerId !== dragState.pointerId) { return; }
+            finishDrag();
+        };
+
+        list.addEventListener('pointerdown', onPointerDown);
+        list.addEventListener('pointermove', onPointerMove);
+        list.addEventListener('pointerup', onPointerUp);
+        list.addEventListener('pointercancel', onPointerCancel);
+
+        list._tabReorderHandlers = { onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
     },
 
     destroyTabBarListeners() {
@@ -446,6 +622,16 @@ const tabManager = {
 
         list.removeEventListener('click', this._tabClickHandler);
         list.removeEventListener('dblclick', this._tabDblClickHandler);
+
+        if (list._tabReorderHandlers) {
+            const handlers = list._tabReorderHandlers;
+            list.removeEventListener('pointerdown', handlers.onPointerDown);
+            list.removeEventListener('pointermove', handlers.onPointerMove);
+            list.removeEventListener('pointerup', handlers.onPointerUp);
+            list.removeEventListener('pointercancel', handlers.onPointerCancel);
+            list._tabReorderHandlers = null;
+            list._tabReorderBound = false;
+        }
 
         if (list._scrollResizeObserver) {
             list._scrollResizeObserver.disconnect();
@@ -457,17 +643,37 @@ const tabManager = {
 
     // Wire up wheel-to-scroll with momentum, click handlers, and visibility tracking for a tab list
     _boundScrollLists: new Set(),
-    _bindScrollControls(list, leftBtnId, rightBtnId) {
+    _resolveScrollButton(target) {
+        if (!target) { return null; }
+        return typeof target === 'string' ? document.getElementById(target) : target;
+    },
+    bindTabListScrollControls(list, leftBtn, rightBtn) {
+        this._bindScrollControls(list, leftBtn, rightBtn);
+    },
+    updateTabListScrollButtons(list) {
+        if (!list || !this._boundScrollLists.has(list)) { return; }
+        const scrollEl = getTabScrollViewport(list);
+        scrollEl.dispatchEvent(new Event('scroll'));
+    },
+    scrollTabIntoView(list, tabId, duration = 320) {
+        if (!list || !tabId) { return; }
+        const activeEl = list.querySelector(`.project-tab[data-tab-id="${tabId}"]`);
+        if (activeEl) {
+            requestAnimationFrame(() => {
+                _scrollElementIntoListView(list, activeEl, duration);
+            });
+        }
+    },
+    _bindScrollControls(list, leftBtnOrId, rightBtnOrId) {
         if (!list || this._boundScrollLists.has(list)) {return;}
         this._boundScrollLists.add(list);
 
-        const leftBtn = document.getElementById(leftBtnId);
-        const rightBtn = document.getElementById(rightBtnId);
-        const bar = list.parentElement;
+        const leftBtn = this._resolveScrollButton(leftBtnOrId);
+        const rightBtn = this._resolveScrollButton(rightBtnOrId);
+        const scrollEl = getTabScrollViewport(list);
+        const bar = scrollEl.parentElement;
 
         const SCROLL_STEP = 160;
-        const FRICTION = 0.92;
-        const MIN_VELOCITY = 0.4;
 
         // Per-list momentum state
         const state = {
@@ -479,113 +685,94 @@ const tabManager = {
             animDuration: 0,
             animRaf: 0
         };
-        list._scrollState = state;
+        scrollEl._scrollState = state;
 
         const updateButtons = () => {
-            const canScrollLeft = list.scrollLeft > 1;
-            const canScrollRight = list.scrollLeft + list.clientWidth < list.scrollWidth - 1;
+            const hasOverflow = scrollEl.scrollWidth > scrollEl.clientWidth + 1;
+            const canScrollLeft = hasOverflow && scrollEl.scrollLeft > 1;
+            const canScrollRight = hasOverflow
+                && scrollEl.scrollLeft + scrollEl.clientWidth < scrollEl.scrollWidth - 1;
             if (leftBtn) {leftBtn.classList.toggle('visible', canScrollLeft);}
             if (rightBtn) {rightBtn.classList.toggle('visible', canScrollRight);}
+            scrollEl.classList.toggle('has-tab-overflow', hasOverflow);
             if (bar) {
+                bar.classList.toggle('has-tab-overflow', hasOverflow);
                 bar.classList.toggle('has-scroll-left', canScrollLeft);
                 bar.classList.toggle('has-scroll-right', canScrollRight);
+            }
+            if (!hasOverflow && scrollEl.scrollLeft !== 0) {
+                scrollEl.scrollLeft = 0;
             }
         };
 
         const clampScroll = () => {
-            const max = list.scrollWidth - list.clientWidth;
-            if (list.scrollLeft < 0) {list.scrollLeft = 0;}
-            else if (list.scrollLeft > max) {list.scrollLeft = max;}
+            const max = scrollEl.scrollWidth - scrollEl.clientWidth;
+            if (scrollEl.scrollLeft < 0) { scrollEl.scrollLeft = 0; }
+            else if (scrollEl.scrollLeft > max) { scrollEl.scrollLeft = max; }
         };
 
-        // Easing: cubic-out (fast start, soft landing)
-        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+        const canScrollHorizontally = () => scrollEl.scrollWidth > scrollEl.clientWidth + 1;
 
-        // Programmatic animated scroll (cancellable, used by arrow buttons)
-        const animateScrollTo = (target, duration) => {
-            cancelAnimationFrame(state.animRaf);
-            state.animTarget = target;
-            state.animStart = performance.now();
-            state.animFrom = list.scrollLeft;
-            state.animDuration = duration;
+        const resolveWheelDelta = (e) => {
+            const absY = Math.abs(e.deltaY);
+            const absX = Math.abs(e.deltaX);
 
-            // Stop any momentum immediately
-            state.velocity = 0;
-            cancelAnimationFrame(state.rafId);
-            state.rafId = 0;
-
-            const step = (now) => {
-                const elapsed = now - state.animStart;
-                const t = Math.min(1, elapsed / state.animDuration);
-                const eased = easeOutCubic(t);
-                list.scrollLeft = state.animFrom + (state.animTarget - state.animFrom) * eased;
-                if (t < 1) {
-                    state.animRaf = requestAnimationFrame(step);
-                } else {
-                    list.scrollLeft = state.animTarget;
-                    state.animRaf = 0;
-                }
-            };
-            state.animRaf = requestAnimationFrame(step);
-        };
-
-        // Momentum loop (used by wheel)
-        const tickMomentum = () => {
-            if (Math.abs(state.velocity) < MIN_VELOCITY) {
-                state.velocity = 0;
-                state.rafId = 0;
-                return;
+            // Let the browser handle native horizontal trackpad / shift+wheel scrolling.
+            if (absX > absY && e.deltaX !== 0) {
+                return null;
             }
-            list.scrollLeft += state.velocity;
-            clampScroll();
-            state.velocity *= FRICTION;
-            state.rafId = requestAnimationFrame(tickMomentum);
+
+            if (e.deltaY === 0) { return 0; }
+
+            let delta = e.deltaY;
+            if (e.deltaMode === 1) { delta *= 16; }
+            else if (e.deltaMode === 2) { delta *= scrollEl.clientHeight; }
+
+            return delta;
         };
 
-        list.addEventListener('wheel', (e) => {
-            // Convert vertical wheel into horizontal scroll
-            if (e.deltaY === 0 && e.deltaX === 0) {return;}
-            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) {return;}
+        const handleWheel = (e) => {
+            const wheelRoot = bar || list;
+            if (!wheelRoot.contains(e.target)) { return; }
+            if (!scrollEl.classList.contains('has-tab-overflow')) { return; }
+
+            const delta = resolveWheelDelta(e);
+            if (delta === null) { return; }
+            if (!canScrollHorizontally() || delta === 0) { return; }
+
             e.preventDefault();
 
-            // Cancel any in-flight animations
             cancelAnimationFrame(state.animRaf);
             state.animRaf = 0;
-            cancelAnimationFrame(state.rafId);
-            state.rafId = 0;
-
-            // Normalize deltaY to a usable value across browsers
-            let delta = e.deltaY;
-            if (e.deltaMode === 1) {delta *= 16;}        // line mode
-            else if (e.deltaMode === 2) {delta *= list.clientHeight;}  // page mode
-
-            // Apply immediate motion + queue momentum
-            list.scrollLeft += delta;
+            scrollEl.scrollLeft += delta;
             clampScroll();
-            // Velocity in px/frame; clamp extreme values from high-res wheels
-            state.velocity = Math.max(-30, Math.min(30, delta * 0.5));
-            if (!state.rafId) {state.rafId = requestAnimationFrame(tickMomentum);}
-        }, { passive: false });
+        };
 
-        list.addEventListener('scroll', updateButtons, { passive: true });
+        const wheelTarget = bar || scrollEl;
+        wheelTarget.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+
+        scrollEl.addEventListener('scroll', updateButtons, { passive: true });
 
         if (leftBtn) {
             leftBtn.addEventListener('click', () => {
-                const target = Math.max(0, list.scrollLeft - SCROLL_STEP);
-                animateScrollTo(target, 280);
+                cancelAnimationFrame(state.animRaf);
+                state.animRaf = 0;
+                scrollEl.scrollLeft = Math.max(0, scrollEl.scrollLeft - SCROLL_STEP);
             });
         }
         if (rightBtn) {
             rightBtn.addEventListener('click', () => {
-                const max = list.scrollWidth - list.clientWidth;
-                const target = Math.min(max, list.scrollLeft + SCROLL_STEP);
-                animateScrollTo(target, 280);
+                cancelAnimationFrame(state.animRaf);
+                state.animRaf = 0;
+                const max = scrollEl.scrollWidth - scrollEl.clientWidth;
+                scrollEl.scrollLeft = Math.min(max, scrollEl.scrollLeft + SCROLL_STEP);
             });
         }
 
         if (typeof ResizeObserver !== 'undefined') {
             const ro = new ResizeObserver(() => updateButtons());
             ro.observe(list);
+            ro.observe(scrollEl);
             list._scrollResizeObserver = ro;
         } else {
             window.addEventListener('resize', updateButtons);
@@ -596,17 +783,11 @@ const tabManager = {
     },
 
     updateProjectTabScrollButtons() {
-        const list = document.getElementById('projectTabList');
-        if (list && this._boundScrollLists.has(list)) {
-            list.dispatchEvent(new Event('scroll'));
-        }
+        this.updateTabListScrollButtons(document.getElementById('projectTabList'));
     },
 
     updateCodeTabScrollButtons() {
-        const list = document.getElementById('codeTabList');
-        if (list && this._boundScrollLists.has(list)) {
-            list.dispatchEvent(new Event('scroll'));
-        }
+        this.updateTabListScrollButtons(document.getElementById('codeTabList'));
     },
 
     renderProjectTabBar() {

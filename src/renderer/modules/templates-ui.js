@@ -1,8 +1,27 @@
+import {
+    isTreeTemplatePath,
+    parseTemplateFile,
+    serializeTemplateFile
+} from '../../shared/templateFile.js';
+
 export function createTemplatesUi(app) {
 
+    let templateDropCounter = 0;
+
 const CUSTOM_TEMPLATES_KEY = 'custom_templates';
+    const STRUCTURE_SAVE_DEBOUNCE_MS = 400;
+    const FILE_SAVE_DEBOUNCE_MS = 400;
     let selectedTemplateName = 'node';
     let selectedTemplateFile = '';
+    let selectedTemplateSource = 'builtin';
+    let modalListenersBound = false;
+    let structureSaveTimer = null;
+    let fileSaveTimer = null;
+
+    function isCustomEditMode() {
+        return selectedTemplateSource === 'custom'
+            && isCustomTemplate(selectedTemplateName);
+    }
 
     function loadCustomTemplates() {
         try {
@@ -17,12 +36,20 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(map));
     }
 
+    function getBuiltInTemplates() {
+        return app.templatesData;
+    }
+
     function getAllTemplates() {
-        return { ...app.templatesData, ...loadCustomTemplates() };
+        return { ...getBuiltInTemplates(), ...loadCustomTemplates() };
     }
 
     function isCustomTemplate(key) {
-        return key.startsWith('custom-') || Object.prototype.hasOwnProperty.call(loadCustomTemplates(), key);
+        return Object.prototype.hasOwnProperty.call(loadCustomTemplates(), key);
+    }
+
+    function getTemplatesForSource(source = selectedTemplateSource) {
+        return source === 'custom' ? loadCustomTemplates() : getBuiltInTemplates();
     }
 
     function getSortedTemplateKeys(templates) {
@@ -33,7 +60,17 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         });
     }
 
-    /** Resolve {projectName} and other placeholders for preview (same as apply). */
+    function buildBlankTemplate(label) {
+        return {
+            label,
+            tree: `{projectName}/
+    README.md`,
+            files: {
+                '{projectName}/README.md': `# {projectName}\n\n{start_editing}\n`
+            }
+        };
+    }
+
     function resolveTemplateSnapshot(template) {
         const replace = app.fileops.replaceTemplatePlaceholders;
         const treeText = replace(template?.tree || '');
@@ -44,55 +81,247 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         return { treeText, files };
     }
 
+    function findTemplateFileKey(template, resolvedPath) {
+        const replace = app.fileops.replaceTemplatePlaceholders;
+        for (const key of Object.keys(template?.files || {})) {
+            if (replace(key) === resolvedPath) { return key; }
+        }
+        return resolvedPath;
+    }
+
     function ensureSelectedTemplate() {
-        const allTemplates = getAllTemplates();
-        if (allTemplates[selectedTemplateName]) {return allTemplates[selectedTemplateName];}
-        const keys = getSortedTemplateKeys(allTemplates);
-        selectedTemplateName = keys[0] || 'node';
+        const templates = getTemplatesForSource();
+        const keys = getSortedTemplateKeys(templates);
+        if (templates[selectedTemplateName]) {
+            return templates[selectedTemplateName];
+        }
+        selectedTemplateName = keys[0] || '';
         selectedTemplateFile = '';
-        return allTemplates[selectedTemplateName] || null;
+        return templates[selectedTemplateName] || null;
     }
 
     function getPreviewablePaths(paths) {
-        const isPreviewable = app.tree.isPreviewableFile;
-        return paths.filter((p) => isPreviewable(p)).sort();
+        return paths.filter((p) => app.tree.isPreviewableFile(p)).sort();
     }
 
-    function getDefaultTemplateFile(files) {
+    function getDefaultTemplateFile(files, treeText = '') {
         const paths = Object.keys(files || {});
-        if (!paths.length) {return '';}
+        if (!paths.length) { return ''; }
         const treePaths = app.tree.getFilePathsFromTree(
             app.helpers.parseEditorContent(
-                app.fileops.replaceTemplatePlaceholders(
-                    getAllTemplates()[selectedTemplateName]?.tree || ''
-                )
+                app.fileops.replaceTemplatePlaceholders(treeText)
             )
         );
         const treeSet = new Set(treePaths);
         const inTree = paths.filter((p) => treeSet.has(p));
         const previewableInTree = getPreviewablePaths(inTree);
-        if (previewableInTree.length) {return previewableInTree[0];}
+        if (previewableInTree.length) { return previewableInTree[0]; }
         const previewableAll = getPreviewablePaths(paths);
-        if (previewableAll.length) {return previewableAll[0];}
+        if (previewableAll.length) { return previewableAll[0]; }
         return paths.sort()[0] || '';
     }
 
-    function paintTemplateTree(snapshot) {
-        const preview = document.getElementById('templateTreePreview');
-        if (!preview || !snapshot) {return;}
-        preview.innerHTML = app.tree.renderTree(
+    function paintTemplateTree(snapshot, previewEl = document.getElementById('templateTreePreview')) {
+        if (!previewEl || !snapshot) { return; }
+        previewEl.innerHTML = app.tree.renderTree(
             app.helpers.parseEditorContent(snapshot.treeText),
             '', '', 1, {
                 collapsible: false,
+                focusable: false,
                 activeFilePath: selectedTemplateFile
             }
         );
-        app.icons.refreshIcons(preview);
+        app.icons.refreshIcons(previewEl);
+    }
+
+    function getCustomTemplateDraft() {
+        const template = loadCustomTemplates()[selectedTemplateName];
+        const treeEditor = document.getElementById('templateTreeEditor');
+        if (!template) { return null; }
+        if (!isCustomEditMode() || !treeEditor) { return template; }
+        return { ...template, tree: treeEditor.value };
+    }
+
+    function updateLiveStructurePreview() {
+        if (!isCustomEditMode()) { return; }
+        const treeEditor = document.getElementById('templateTreeEditor');
+        if (!treeEditor) { return; }
+        const replace = app.fileops.replaceTemplatePlaceholders;
+        const treeText = replace(treeEditor.value || '');
+        paintTemplateTree({ treeText, files: {} });
+    }
+
+    function clearTemplateFilePanel() {
+        const filePanel = document.getElementById('templateFilePanel');
+        const fileNameEl = document.getElementById('templateFileName');
+        const fileModeEl = document.getElementById('templateFileMode');
+        const fileEditor = document.getElementById('templateFileEditor');
+        filePanel?.classList.remove('has-file');
+        if (fileNameEl) { fileNameEl.textContent = ''; }
+        if (fileModeEl) { fileModeEl.textContent = ''; }
+        if (fileEditor) {
+            fileEditor.value = '';
+            fileEditor.readOnly = true;
+            fileEditor.tabIndex = -1;
+            delete fileEditor.dataset.templateFile;
+        }
+        selectedTemplateFile = '';
+    }
+
+    function refreshFilePanelFromEditorDraft() {
+        const draft = getCustomTemplateDraft();
+        if (!draft) { return; }
+
+        const treeEditor = document.getElementById('templateTreeEditor');
+        const rawTree = isCustomEditMode() && treeEditor ? treeEditor.value : (draft.tree || '');
+        if (!rawTree.trim()) {
+            clearTemplateFilePanel();
+            return;
+        }
+
+        const snapshot = resolveTemplateSnapshot(draft);
+        if (!selectedTemplateFile || !Object.prototype.hasOwnProperty.call(snapshot.files, selectedTemplateFile)) {
+            selectedTemplateFile = getDefaultTemplateFile(snapshot.files, draft.tree || '');
+        }
+        if (!selectedTemplateFile) {
+            clearTemplateFilePanel();
+            return;
+        }
+        renderTemplateFilePreview(snapshot, selectedTemplateFile);
+    }
+
+    function onStructureEditorInput() {
+        updateLiveStructurePreview();
+        refreshFilePanelFromEditorDraft();
+        scheduleStructureSave();
+    }
+
+    function onFileEditorInput() {
+        if (!isCustomEditMode() || !selectedTemplateFile) { return; }
+        scheduleFileSave();
+    }
+
+    function clearTemplatePreview() {
+        const preview = document.getElementById('templateTreePreview');
+        const treeEditor = document.getElementById('templateTreeEditor');
+        if (preview) { preview.innerHTML = ''; }
+        if (treeEditor) {
+            treeEditor.value = '';
+            delete treeEditor.dataset.templateKey;
+        }
+        clearTemplateFilePanel();
+        setStructureMode(false);
+    }
+
+    function setStructureMode(editable) {
+        const body = document.getElementById('templateStructureBody');
+        const preview = document.getElementById('templateTreePreview');
+        const editor = document.getElementById('templateTreeEditor');
+        const previewLabel = document.getElementById('templateStructurePreviewLabel');
+        const label = document.getElementById('templateStructureLabel');
+        body?.classList.toggle('is-editing', editable);
+        editor?.classList.toggle('hidden', !editable);
+        preview?.classList.toggle('is-live-preview', editable);
+        previewLabel?.classList.toggle('hidden', !editable);
+        label?.classList.toggle('is-editable', editable);
+        if (label) {
+            label.textContent = editable
+                ? app.i18n.t('template_panel_structure_edit')
+                : app.i18n.t('template_panel_structure');
+        }
+    }
+
+    function flushStructureEdits() {
+        if (!isCustomEditMode()) { return; }
+        const treeEditor = document.getElementById('templateTreeEditor');
+        const custom = loadCustomTemplates();
+        const entry = custom[selectedTemplateName];
+        if (!entry || !treeEditor) { return; }
+        entry.tree = treeEditor.value;
+        saveCustomTemplates(custom);
+    }
+
+    function flushFileEdits() {
+        if (!isCustomEditMode() || !selectedTemplateFile) { return; }
+        const fileEditor = document.getElementById('templateFileEditor');
+        const custom = loadCustomTemplates();
+        const entry = custom[selectedTemplateName];
+        if (!entry || !fileEditor) { return; }
+        const originalKey = findTemplateFileKey(entry, selectedTemplateFile);
+        entry.files[originalKey] = fileEditor.value;
+        saveCustomTemplates(custom);
+    }
+
+    function flushTemplateEdits() {
+        flushStructureEdits();
+        flushFileEdits();
+    }
+
+    function scheduleStructureSave() {
+        clearTimeout(structureSaveTimer);
+        structureSaveTimer = setTimeout(() => {
+            flushStructureEdits();
+        }, STRUCTURE_SAVE_DEBOUNCE_MS);
+    }
+
+    function scheduleFileSave() {
+        clearTimeout(fileSaveTimer);
+        fileSaveTimer = setTimeout(() => {
+            flushFileEdits();
+        }, FILE_SAVE_DEBOUNCE_MS);
+    }
+
+    function refreshFilePanelForSelectedTemplate() {
+        const template = getAllTemplates()[selectedTemplateName];
+        if (!template) { return; }
+        const snapshot = resolveTemplateSnapshot(template);
+        if (!selectedTemplateFile || !Object.prototype.hasOwnProperty.call(snapshot.files, selectedTemplateFile)) {
+            selectedTemplateFile = getDefaultTemplateFile(snapshot.files, template.tree || '');
+        }
+        renderTemplateFilePreview(snapshot, selectedTemplateFile);
+    }
+
+    function renderStructurePanel(template) {
+        const treeEditor = document.getElementById('templateTreeEditor');
+        const isTypingStructure = document.activeElement === treeEditor;
+
+        if (isCustomEditMode()) {
+            setStructureMode(true);
+            if (!treeEditor) { return; }
+            if (!isTypingStructure || treeEditor.dataset.templateKey !== selectedTemplateName) {
+                treeEditor.value = template.tree || '';
+                treeEditor.dataset.templateKey = selectedTemplateName;
+            }
+            updateLiveStructurePreview();
+            if (!isTypingStructure) {
+                treeEditor.focus({ preventScroll: true });
+            }
+            return;
+        }
+
+        setStructureMode(false);
+        if (treeEditor) {
+            delete treeEditor.dataset.templateKey;
+        }
+        paintTemplateTree(resolveTemplateSnapshot(template));
+    }
+
+    function updateTemplateSourceTabs() {
+        document.querySelectorAll('.templates-source-tab').forEach((btn) => {
+            const active = btn.dataset.source === selectedTemplateSource;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', String(active));
+        });
+    }
+
+    function updateTemplateChrome(hasSelection) {
+        const useBtn = document.getElementById('useTemplateBtn');
+        if (useBtn) { useBtn.disabled = !hasSelection; }
     }
 
     function applyTemplate(templateName) {
         const template = getAllTemplates()[templateName];
-        if (!template) {return;}
+        if (!template) { return; }
 
         const S = app.state;
         const editor = S.editor;
@@ -122,33 +351,85 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         }
     }
 
+    function renderTemplatePreview(template) {
+        renderStructurePanel(template);
+        refreshFilePanelForSelectedTemplate();
+    }
+
     function renderTemplateModal() {
         const list = document.getElementById('templatesList');
-        const allTemplates = getAllTemplates();
-        const template = ensureSelectedTemplate();
-        if (!template) {return;}
-
+        const emptyState = document.getElementById('templatesEmptyState');
         const escapeHtml = app.helpers.escapeHtml;
-        const customLabel = app.i18n.t('template_custom_badge');
-        const snapshot = resolveTemplateSnapshot(template);
+        const t = (key) => app.i18n.t(key);
+        const customTemplates = loadCustomTemplates();
+        const customKeys = getSortedTemplateKeys(customTemplates);
+        const isCustomTab = selectedTemplateSource === 'custom';
+        const hasCustomTemplates = customKeys.length > 0;
+        const showEmptyState = isCustomTab && !hasCustomTemplates;
+
+        const customFooter = document.getElementById('templatesCustomFooter');
+        const listPanel = document.querySelector('.templates-panel-list');
+        const showCustomFooter = isCustomTab && hasCustomTemplates;
+
+        updateTemplateSourceTabs();
+        list?.classList.toggle('hidden', showEmptyState);
+        emptyState?.classList.toggle('hidden', !showEmptyState);
+        customFooter?.classList.toggle('hidden', !showCustomFooter);
+        listPanel?.classList.toggle('has-custom-footer', showCustomFooter);
+
+        if (showEmptyState) {
+            if (list) { list.innerHTML = ''; }
+            listPanel?.classList.remove('has-custom-footer');
+            clearTemplatePreview();
+            updateTemplateChrome(false);
+            return;
+        }
+
+        const templates = getTemplatesForSource();
+        const template = ensureSelectedTemplate();
+        const hasSelection = !!template;
 
         if (list) {
-            list.innerHTML = getSortedTemplateKeys(allTemplates).map((key) => {
-                const active = key === selectedTemplateName ? ' active' : '';
-                const label = allTemplates[key].label || key;
-                const badge = isCustomTemplate(key)
-                    ? `<span class="template-custom-badge">${escapeHtml(customLabel)}</span>`
+            list.innerHTML = getSortedTemplateKeys(templates).map((key) => {
+                const isActive = key === selectedTemplateName;
+                const label = templates[key].label || key;
+                const actions = isCustomTab
+                    ? `<div class="template-icon-group" role="group" aria-label="${escapeHtml(t('template_row_actions'))}">
+                        <button type="button" class="template-icon-btn" data-template-rename="${escapeHtml(key)}" title="${escapeHtml(t('template_rename'))}" aria-label="${escapeHtml(t('template_rename'))}">
+                            <i data-lucide="type" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="template-icon-btn" data-template-edit="${escapeHtml(key)}" title="${escapeHtml(t('template_edit_in_editor'))}" aria-label="${escapeHtml(t('template_edit_in_editor'))}">
+                            <i data-lucide="file-code" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="template-icon-btn" data-template-export="${escapeHtml(key)}" title="${escapeHtml(t('template_export'))}" aria-label="${escapeHtml(t('template_export'))}">
+                            <i data-lucide="download" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="template-icon-btn template-icon-btn-danger" data-template-delete="${escapeHtml(key)}" title="${escapeHtml(t('template_delete'))}" aria-label="${escapeHtml(t('template_delete'))}">
+                            <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
+                    </div>`
                     : '';
-                return `<button class="template-option${active}" data-template="${escapeHtml(key)}" role="option" aria-selected="${key === selectedTemplateName}"><span class="template-option-label">${escapeHtml(label)}</span>${badge}</button>`;
+                return `<div class="template-option-wrap${isActive ? ' active' : ''}">
+                    <button type="button" class="template-option${isActive ? ' active' : ''}" data-template="${escapeHtml(key)}" role="option" aria-selected="${isActive}">
+                        <span class="template-option-label">${escapeHtml(label)}</span>
+                    </button>
+                    ${actions}
+                </div>`;
             }).join('');
+            app.icons.refreshIcons(list);
+        }
+        if (showCustomFooter && customFooter) {
+            app.icons.refreshIcons(customFooter);
         }
 
-        if (!selectedTemplateFile || !Object.prototype.hasOwnProperty.call(snapshot.files, selectedTemplateFile)) {
-            selectedTemplateFile = getDefaultTemplateFile(snapshot.files);
+        updateTemplateChrome(hasSelection);
+
+        if (!hasSelection) {
+            clearTemplatePreview();
+            return;
         }
 
-        paintTemplateTree(snapshot);
-        renderTemplateFilePreview(snapshot, selectedTemplateFile);
+        renderTemplatePreview(template);
     }
 
     function renderTemplateFilePreview(snapshot, filePath) {
@@ -156,47 +437,284 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
             const template = getAllTemplates()[selectedTemplateName];
             snapshot = template ? resolveTemplateSnapshot(template) : null;
         }
-        const content = snapshot?.files[filePath] ?? '';
+
+        const filePanel = document.getElementById('templateFilePanel');
         const fileNameEl = document.getElementById('templateFileName');
-        const fileContentEl = document.getElementById('templateFileContent');
+        const fileModeEl = document.getElementById('templateFileMode');
+        const fileEditor = document.getElementById('templateFileEditor');
+        const hasFile = !!filePath && !!snapshot && Object.prototype.hasOwnProperty.call(snapshot.files, filePath);
+        const content = hasFile ? snapshot.files[filePath] : '';
+        const isEditable = isCustomEditMode() && hasFile;
+        const isTypingFile = document.activeElement === fileEditor;
+
+        filePanel?.classList.toggle('has-file', hasFile);
+
         if (fileNameEl) {
-            fileNameEl.textContent = filePath || app.i18n.t('file_preview_empty');
+            fileNameEl.textContent = hasFile ? filePath : '';
         }
-        if (fileContentEl) {
-            fileContentEl.textContent = content;
+        if (fileModeEl) {
+            fileModeEl.textContent = hasFile ? app.fileops.getFileTypeLabel(filePath) : '';
+        }
+        if (fileEditor) {
+            if (!isTypingFile || fileEditor.dataset.templateFile !== filePath) {
+                fileEditor.value = content;
+                fileEditor.dataset.templateFile = filePath || '';
+            }
+            fileEditor.readOnly = !isEditable;
+            fileEditor.setAttribute('aria-readonly', String(!isEditable));
+            fileEditor.tabIndex = hasFile ? (isEditable ? 0 : -1) : -1;
         }
         selectedTemplateFile = filePath || '';
-        if (snapshot) {paintTemplateTree(snapshot);}
+        if (isCustomEditMode()) {
+            updateLiveStructurePreview();
+        } else if (snapshot) {
+            paintTemplateTree(snapshot);
+        }
     }
 
     function handleTemplateTreeClick(e) {
         const preview = document.getElementById('templateTreePreview');
-        if (!preview) {return;}
+        if (!preview) { return; }
         const item = e.target.closest('.tree-item');
-        if (!item || item.dataset.type !== 'file') {return;}
-        if (item.dataset.preview === 'disabled' || item.classList.contains('no-preview')) {return;}
+        if (!item || item.dataset.type !== 'file') { return; }
+        if (item.dataset.preview === 'disabled' || item.classList.contains('no-preview')) { return; }
 
-        const template = getAllTemplates()[selectedTemplateName];
-        if (!template) {return;}
-        const snapshot = resolveTemplateSnapshot(template);
+        const draft = getCustomTemplateDraft() || getAllTemplates()[selectedTemplateName];
+        if (!draft) { return; }
+        const snapshot = resolveTemplateSnapshot(draft);
         const filePath = item.dataset.path;
-        if (!Object.prototype.hasOwnProperty.call(snapshot.files, filePath)) {return;}
+        if (!Object.prototype.hasOwnProperty.call(snapshot.files, filePath)) { return; }
         renderTemplateFilePreview(snapshot, filePath);
     }
 
     function bindTemplateTreePreview() {
         const preview = document.getElementById('templateTreePreview');
-        if (!preview || preview.dataset.boundClicks) {return;}
+        if (!preview || preview.dataset.boundClicks) { return; }
         preview.dataset.boundClicks = '1';
         preview.addEventListener('click', handleTemplateTreeClick);
     }
 
+    function bindTemplateEditors() {
+        const treeEditor = document.getElementById('templateTreeEditor');
+        if (treeEditor && !treeEditor.dataset.boundEditors) {
+            treeEditor.dataset.boundEditors = '1';
+            treeEditor.addEventListener('input', onStructureEditorInput);
+            treeEditor.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
+                if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+                if (app.editor.insertTabInTextarea(treeEditor, e)) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
+
+        const fileEditor = document.getElementById('templateFileEditor');
+        if (fileEditor && !fileEditor.dataset.boundEditors) {
+            fileEditor.dataset.boundEditors = '1';
+            fileEditor.addEventListener('input', onFileEditorInput);
+            fileEditor.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
+                if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+                if (fileEditor.readOnly) { return; }
+                if (app.editor.insertTabInTextarea(fileEditor, e)) {
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
+    }
+
+    function isTreeTemplateFileName(name) {
+        return isTreeTemplatePath(name);
+    }
+
+    function isTemplateFileDrag(e) {
+        const types = e.dataTransfer?.types;
+        if (!types) { return false; }
+        return Array.from(types).includes('Files');
+    }
+
+    function setTemplateDropActive(active) {
+        const dropZone = document.getElementById('templatesListBody');
+        const dropHint = document.getElementById('templatesDropHint');
+        dropZone?.classList.toggle('is-drop-target', active);
+        dropHint?.classList.toggle('hidden', !active);
+        if (dropHint) {
+            dropHint.setAttribute('aria-hidden', String(!active));
+        }
+        if (active) {
+            app.icons.refreshIcons(dropHint);
+        }
+    }
+
+    function bindTemplateFileDrop() {
+        const dropZone = document.getElementById('templatesListBody');
+        if (!dropZone || dropZone.dataset.boundTemplateDrop) { return; }
+        dropZone.dataset.boundTemplateDrop = '1';
+
+        dropZone.addEventListener('dragenter', (e) => {
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            templateDropCounter++;
+            setTemplateDropActive(true);
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            templateDropCounter = Math.max(0, templateDropCounter - 1);
+            if (templateDropCounter === 0) {
+                setTemplateDropActive(false);
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            templateDropCounter = 0;
+            setTemplateDropActive(false);
+
+            const file = e.dataTransfer?.files?.[0];
+            if (!file) { return; }
+            if (!isTreeTemplateFileName(file.name)) {
+                app.toast.showToast(app.i18n.t('template_import_invalid'), 3000);
+                return;
+            }
+            if (!app.electronAPI?.getFilePath || !app.electronAPI?.readTemplateFileAtPath) { return; }
+
+            const filePath = app.electronAPI.getFilePath(file);
+            void importTemplateFromPath(filePath);
+        });
+    }
+
+    function bindTemplateModal() {
+        bindTemplateTreePreview();
+        bindTemplateEditors();
+        bindTemplateFileDrop();
+
+        if (modalListenersBound) { return; }
+        modalListenersBound = true;
+
+        document.querySelectorAll('.templates-source-tab').forEach((tabBtn) => {
+            tabBtn.addEventListener('click', () => {
+                flushTemplateEdits();
+                setTemplateSource(tabBtn.dataset.source);
+            });
+        });
+
+        const listPanel = document.querySelector('.templates-panel-list');
+        listPanel?.addEventListener('click', (e) => {
+            const renameBtn = e.target.closest('[data-template-rename]');
+            if (renameBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                void renameCustomTemplate(renameBtn.dataset.templateRename);
+                return;
+            }
+            const editBtn = e.target.closest('[data-template-edit]');
+            if (editBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openCustomTemplateInEditor(editBtn.dataset.templateEdit);
+                return;
+            }
+            const exportBtn = e.target.closest('[data-template-export]');
+            if (exportBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                void exportCustomTemplate(exportBtn.dataset.templateExport);
+                return;
+            }
+            const deleteBtn = e.target.closest('[data-template-delete]');
+            if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                void deleteCustomTemplate(deleteBtn.dataset.templateDelete);
+                return;
+            }
+            const option = e.target.closest('.template-option');
+            if (!option) { return; }
+            flushTemplateEdits();
+            selectedTemplateName = option.dataset.template;
+            selectedTemplateFile = '';
+            renderTemplateModal();
+        });
+
+        document.getElementById('createCustomTemplateBtn')?.addEventListener('click', () => {
+            void createBlankCustomTemplate();
+        });
+        document.getElementById('createBlankTemplateBtn')?.addEventListener('click', () => {
+            void createBlankCustomTemplate();
+        });
+        document.getElementById('importProjectTemplateBtn')?.addEventListener('click', () => {
+            void importFromCurrentProject();
+        });
+        document.getElementById('importProjectTemplateFooterBtn')?.addEventListener('click', () => {
+            void importFromCurrentProject();
+        });
+        document.getElementById('importTemplateFileBtn')?.addEventListener('click', () => {
+            void importTemplateFile();
+        });
+        document.getElementById('importTemplateFileEmptyBtn')?.addEventListener('click', () => {
+            void importTemplateFile();
+        });
+    }
+
+    function setTemplateSource(source) {
+        if (source !== 'builtin' && source !== 'custom') { return; }
+        if (source === selectedTemplateSource) { return; }
+
+        selectedTemplateSource = source;
+        selectedTemplateFile = '';
+
+        const templates = getTemplatesForSource();
+        const keys = getSortedTemplateKeys(templates);
+        if (!keys.includes(selectedTemplateName)) {
+            selectedTemplateName = keys[0] || '';
+        }
+
+        renderTemplateModal();
+    }
+
+    function setTemplatesScreenActive(active) {
+        document.body.classList.toggle('templates-active', active);
+    }
+
+    function closeTemplatesModal() {
+        flushTemplateEdits();
+        templateDropCounter = 0;
+        setTemplateDropActive(false);
+        const modal = document.getElementById('templatesModal');
+        setTemplatesScreenActive(false);
+        app.modals.closeModalAnimated(modal);
+    }
+
     function openTemplatesModal() {
         const modal = document.getElementById('templatesModal');
-        bindTemplateTreePreview();
+        bindTemplateModal();
+
+        selectedTemplateSource = isCustomTemplate(selectedTemplateName) ? 'custom' : 'builtin';
+
+        setTemplatesScreenActive(true);
         modal.style.display = 'flex';
         app.modals.trapFocus(modal);
         renderTemplateModal();
+    }
+
+    function openCustomTemplateInEditor(key) {
+        if (!isCustomTemplate(key)) { return; }
+        applyTemplate(key);
+        closeTemplatesModal();
+        app.toast.showToast(app.i18n.t('template_edit_in_editor_hint'), 4000);
     }
 
     function slugifyTemplateName(name) {
@@ -204,7 +722,115 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         return slug ? `custom-${slug}` : `custom-${Date.now()}`;
     }
 
-    async function saveCurrentAsTemplate() {
+    async function promptTemplateName(defaultName, titleKey) {
+        const name = await app.modals.showPromptAsync(
+            app.i18n.t('template_name_prompt'),
+            defaultName,
+            app.i18n.t(titleKey)
+        );
+        return name?.trim() || '';
+    }
+
+    async function saveCustomTemplateEntry(label, payload) {
+        const key = slugifyTemplateName(label);
+        const custom = loadCustomTemplates();
+        const builtIn = getBuiltInTemplates();
+
+        if (custom[key] || builtIn[key]) {
+            const overwrite = await app.modals.showConfirmAsync(
+                app.i18n.t('template_overwrite_msg'),
+                app.i18n.t('confirm_title')
+            );
+            if (!overwrite) { return null; }
+        }
+
+        custom[key] = { label, ...payload };
+        saveCustomTemplates(custom);
+        selectedTemplateSource = 'custom';
+        selectedTemplateName = key;
+        selectedTemplateFile = '';
+        renderTemplateModal();
+        return key;
+    }
+
+    async function createBlankCustomTemplate() {
+        const label = await promptTemplateName(app.i18n.t('untitled'), 'template_create_new');
+        if (!label) { return; }
+
+        const key = await saveCustomTemplateEntry(label, buildBlankTemplate(label));
+        if (key) {
+            app.toast.showToast(app.i18n.t('template_saved'));
+        }
+    }
+
+    async function exportCustomTemplate(key = selectedTemplateName) {
+        if (!isCustomTemplate(key)) { return; }
+        if (!app.electronAPI?.saveTemplateAs) { return; }
+
+        if (key === selectedTemplateName) {
+            flushTemplateEdits();
+        }
+
+        const entry = loadCustomTemplates()[key];
+        if (!entry) { return; }
+
+        const result = await app.electronAPI.saveTemplateAs(
+            serializeTemplateFile(entry),
+            entry.label,
+            app.i18n.getCurrentLang()
+        );
+        if (result.canceled) { return; }
+        if (result.error) {
+            app.toast.showToast(result.error, 3000);
+            return;
+        }
+        app.toast.showToast(app.i18n.t('template_export_saved'));
+    }
+
+    async function importTemplateFromContent(content) {
+        let parsed;
+        try {
+            parsed = parseTemplateFile(content);
+        } catch {
+            app.toast.showToast(app.i18n.t('template_import_invalid'), 3000);
+            return false;
+        }
+
+        const savedKey = await saveCustomTemplateEntry(parsed.label, {
+            tree: parsed.tree,
+            files: parsed.files
+        });
+        if (savedKey) {
+            app.toast.showToast(app.i18n.t('template_import_success'));
+            return true;
+        }
+        return false;
+    }
+
+    async function importTemplateFromPath(filePath) {
+        if (!app.electronAPI?.readTemplateFileAtPath) { return false; }
+
+        const result = await app.electronAPI.readTemplateFileAtPath(filePath, app.i18n.getCurrentLang());
+        if (result.error) {
+            app.toast.showToast(result.error, 3000);
+            return false;
+        }
+        return importTemplateFromContent(result.content);
+    }
+
+    async function importTemplateFile() {
+        if (!app.electronAPI?.loadTemplateFile) { return false; }
+
+        const result = await app.electronAPI.loadTemplateFile(app.i18n.getCurrentLang());
+        if (result.canceled) { return false; }
+        if (result.error) {
+            app.toast.showToast(result.error, 3000);
+            return false;
+        }
+        return importTemplateFromContent(result.content);
+    }
+
+    async function importFromCurrentProject() {
         const S = app.state;
         if (!S?.editor || !S.editor.value.trim()) {
             app.toast.showToast(app.i18n.t('template_save_empty'), 3000);
@@ -214,38 +840,74 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         const tree = app.tree.parseEditorContent(S.editor.value);
         app.fileops.syncFileContentsWithTree(tree);
 
-        const defaultName = app.i18n.t('untitled');
-        const name = await app.modals.showPromptAsync(
-            app.i18n.t('template_name_prompt'),
-            defaultName,
-            app.i18n.t('save_as_template')
-        );
-        if (!name || !name.trim()) {return;}
+        const label = await promptTemplateName(app.i18n.t('untitled'), 'template_import_project');
+        if (!label) { return; }
 
-        const label = name.trim();
-        const key = slugifyTemplateName(label);
+        const key = await saveCustomTemplateEntry(label, {
+            tree: S.editor.value,
+            files: { ...S.fileContents }
+        });
+        if (key) {
+            app.toast.showToast(app.i18n.t('template_saved'));
+        }
+    }
+
+    async function renameCustomTemplate(key = selectedTemplateName) {
+        if (!isCustomTemplate(key)) { return; }
+
         const custom = loadCustomTemplates();
-        const builtIn = app.templatesData;
+        const existing = custom[key];
+        if (!existing) { return; }
 
-        if (custom[key] || builtIn[key]) {
+        const label = await promptTemplateName(existing.label, 'template_rename_title');
+        if (!label) { return; }
+
+        const newKey = slugifyTemplateName(label);
+        if (newKey !== key && (custom[newKey] || getBuiltInTemplates()[newKey])) {
             const overwrite = await app.modals.showConfirmAsync(
                 app.i18n.t('template_overwrite_msg'),
                 app.i18n.t('confirm_title')
             );
-            if (!overwrite) {return;}
+            if (!overwrite) { return; }
         }
 
-        custom[key] = {
-            label,
-            tree: S.editor.value,
-            files: { ...S.fileContents }
-        };
+        const entry = { ...existing, label };
+        delete custom[key];
+        custom[newKey] = entry;
         saveCustomTemplates(custom);
-        selectedTemplateName = key;
-        const snapshot = resolveTemplateSnapshot(custom[key]);
-        selectedTemplateFile = getDefaultTemplateFile(snapshot.files);
+        selectedTemplateSource = 'custom';
+        selectedTemplateName = newKey;
         renderTemplateModal();
-        app.toast.showToast(app.i18n.t('template_saved'));
+        app.toast.showToast(app.i18n.t('template_updated'));
+    }
+
+    async function deleteCustomTemplate(key = selectedTemplateName) {
+        if (!isCustomTemplate(key)) { return; }
+
+        const custom = loadCustomTemplates();
+        const existing = custom[key];
+        if (!existing) { return; }
+
+        const confirmed = await app.modals.showConfirmAsync(
+            app.helpers.formatMessage(app.i18n.t('template_delete_confirm'), { name: existing.label }),
+            app.i18n.t('template_delete_confirm_title')
+        );
+        if (!confirmed) { return; }
+
+        delete custom[key];
+        saveCustomTemplates(custom);
+
+        const remainingKeys = getSortedTemplateKeys(custom);
+        if (remainingKeys.length) {
+            selectedTemplateName = remainingKeys[0];
+            selectedTemplateSource = 'custom';
+        } else {
+            selectedTemplateSource = 'builtin';
+            selectedTemplateName = getSortedTemplateKeys(getBuiltInTemplates())[0] || 'node';
+        }
+        selectedTemplateFile = '';
+        renderTemplateModal();
+        app.toast.showToast(app.i18n.t('template_deleted'));
     }
 
     return {
@@ -254,14 +916,30 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
             selectedTemplateName = val;
             selectedTemplateFile = '';
         },
+        get selectedTemplateSource() { return selectedTemplateSource; },
+        getBuiltInTemplates,
+        getTemplatesForSource,
         getAllTemplates,
+        isCustomTemplate,
         resolveTemplateSnapshot,
         applyTemplate,
         renderTemplateModal,
         renderTemplateFilePreview,
         openTemplatesModal,
-        saveCurrentAsTemplate,
-        bindTemplateTreePreview
+        closeTemplatesModal,
+        setTemplateSource,
+        createBlankCustomTemplate,
+        importFromCurrentProject,
+        importTemplateFile,
+        importTemplateFromContent,
+        importTemplateFromPath,
+        isTreeTemplateFileName,
+        exportCustomTemplate,
+        openCustomTemplateInEditor,
+        renameCustomTemplate,
+        deleteCustomTemplate,
+        bindTemplateTreePreview,
+        bindTemplateModal
     };
 
 }

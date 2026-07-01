@@ -1,19 +1,35 @@
-/* Toast Notification */
-#toast {
+/* Toast stack — older messages stay above, newest at the bottom */
+.toast-stack {
     position: fixed;
     bottom: 24px;
     right: 24px;
+    z-index: 2500;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: min(420px, calc(100vw - 48px));
+    pointer-events: none;
+}
+
+.toast-item {
+    pointer-events: auto;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     padding: 12px 20px;
     border-radius: 10px;
-    z-index: 2500;
     border: 1px solid var(--border-color);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
     font-size: 13px;
     font-weight: 500;
-    display: none;
+    line-height: 1.45;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-item-leaving {
+    opacity: 0;
+    transform: translateY(8px);
 }
 
 /* Shared Modal Styling */
@@ -35,6 +51,13 @@
 .modal.closing {
     animation: fadeOutModal 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     pointer-events: none;
+}
+
+/* Prompts/confirms opened from fullscreen layers (templates, build studio). */
+#promptModal,
+#confirmModal,
+#decryptPasswordModal {
+    z-index: 4000;
 }
 
 .modal-content {
@@ -124,32 +147,6 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-}
-
-.build-tab-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background 0.15s;
-}
-
-.build-tab-option:hover {
-    background: var(--bg-accent);
-}
-
-.build-tab-option input.build-tab-checkbox {
-    accent-color: var(--accent-color);
-    width: 16px;
-    height: 16px;
-}
-
-.build-tab-option-label {
-    font-size: 13px;
-    color: var(--text-primary);
-    flex: 1;
 }
 
 .decrypt-password-modal {

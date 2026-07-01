@@ -11,6 +11,10 @@ import log from 'electron-log';
 import { createExtractorFromData } from 'node-unrar-js';
 import zip7 from '../project/zip7Client.js';
 import { mainT } from '../../shared/i18n.js';
+import {
+    isTreeTemplatePath,
+    sanitizeTemplateFileName
+} from '../../shared/templateFile.js';
 import { parseTreeContent } from '../project/treeParser.js';
 import { createStructure, inspectBuildOutput } from '../project/treeCreator.js';
 import { exportTreeZip } from '../project/zipCreator.js';
@@ -151,6 +155,10 @@ async function processLoadPath(selectedPath, lang, lastSaveDirectoryRef, options
 
     const ext = path.extname(selectedPath).toLowerCase();
     const baseName = path.basename(selectedPath, ext);
+
+    if (isTreeTemplatePath(selectedPath)) {
+        return { canceled: false, error: mainT(lang, 'error_template_use_templates') };
+    }
 
     if (ext === '.tree') {
         const rawContent = fs.readFileSync(selectedPath, 'utf-8');
@@ -336,6 +344,10 @@ function registerLoadHandlers(lastSaveDirectoryRef) {
     });
 
     ipcMain.handle('load-dropped-file', async (event, filePath, lang = 'en', options = {}) => {
+        if (isTreeTemplatePath(filePath)) {
+            return { error: mainT(lang, 'error_template_use_templates') };
+        }
+
         const archiveExtensions = ['.zip', '.tar', '.gz', '.tgz', '.rar', '.7z', '.bz2', '.xz', '.tbz2', '.txz', '.zst', '.cab', '.iso', '.dmg', '.lz', '.lzma', '.z'];
         const ext = path.extname(filePath).toLowerCase();
         if (ext === '.tree' || !archiveExtensions.includes(ext)) {
@@ -513,10 +525,79 @@ function registerStructureHandlers() {
     });
 }
 
+function registerTemplateFileHandlers(lastSaveDirectoryRef) {
+    ipcMain.handle('save-template-as', async (event, content, defaultName = 'template', lang = 'en') => {
+        if (typeof content !== 'string') {
+            return { canceled: false, error: mainT(lang, 'error_invalid_content') };
+        }
+        if (Buffer.byteLength(content, 'utf8') > MAX_ENTRY_SIZE) {
+            return { canceled: false, error: mainT(lang, 'error_file_content_too_large') };
+        }
+
+        const safeName = sanitizeTemplateFileName(defaultName);
+        const dialogResult = await dialog.showSaveDialog({
+            title: mainT(lang, 'save_template_title'),
+            defaultPath: `${safeName}.tree-template`,
+            filters: [{ name: mainT(lang, 'save_template_filter'), extensions: ['tree-template'] }]
+        });
+        if (dialogResult.canceled || !dialogResult.filePath) { return { canceled: true }; }
+
+        try {
+            fs.writeFileSync(dialogResult.filePath, content, 'utf-8');
+        } catch (err) {
+            return { canceled: false, error: err.message };
+        }
+        lastSaveDirectoryRef.value = path.dirname(dialogResult.filePath);
+        return { canceled: false, filePath: dialogResult.filePath };
+    });
+
+    ipcMain.handle('load-template-file', async (event, lang = 'en') => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: mainT(lang, 'load_template_title'),
+            filters: [{ name: mainT(lang, 'load_template_filter'), extensions: ['tree-template'] }],
+            properties: ['openFile']
+        });
+        if (canceled || !filePaths[0]) { return { canceled: true }; }
+
+        try {
+            const content = fs.readFileSync(filePaths[0], 'utf-8');
+            if (Buffer.byteLength(content, 'utf8') > MAX_ENTRY_SIZE) {
+                return { canceled: false, error: mainT(lang, 'error_file_content_too_large') };
+            }
+            lastSaveDirectoryRef.value = path.dirname(filePaths[0]);
+            return { canceled: false, content, filePath: filePaths[0] };
+        } catch (err) {
+            return { canceled: false, error: err.message };
+        }
+    });
+
+    ipcMain.handle('read-template-file-at-path', async (event, filePath, lang = 'en') => {
+        if (typeof filePath !== 'string' || !filePath.trim()) {
+            return { error: mainT(lang, 'error_invalid_file_path') };
+        }
+        if (!filePath.toLowerCase().endsWith('.tree-template')) {
+            const ext = path.extname(filePath) || path.basename(filePath);
+            return { error: mainT(lang, 'error_unsupported_file_type').replace('{ext}', ext) };
+        }
+
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            if (Buffer.byteLength(content, 'utf8') > MAX_ENTRY_SIZE) {
+                return { error: mainT(lang, 'error_file_content_too_large') };
+            }
+            lastSaveDirectoryRef.value = path.dirname(filePath);
+            return { content, filePath };
+        } catch (err) {
+            return { error: err.message };
+        }
+    });
+}
+
 export function registerProjectIpc(lastSaveDirectoryRef) {
     registerLoadHandlers(lastSaveDirectoryRef);
     registerSaveHandlers(lastSaveDirectoryRef);
     registerStructureHandlers();
+    registerTemplateFileHandlers(lastSaveDirectoryRef);
 }
 
 export { processLoadPath };

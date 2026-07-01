@@ -41,13 +41,6 @@ select:focus-visible {
     margin-top: 0;
 }
 
-/* Red Hover for "No" Button */
-#cancelConfirmBtn:hover {
-    background-color: var(--dropdown-hover);
-    border-color: #e81123;
-    color: #e81123;
-}
-
 .primary-btn {
     background-color: var(--accent-color);
     color: var(--bg-primary);

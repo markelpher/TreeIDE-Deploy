@@ -121,6 +121,8 @@ export function createModals(app) {
         }
 
         section.hidden = false;
+        section.setAttribute('aria-expanded', 'true');
+        if (toggle) {toggle.setAttribute('aria-expanded', 'true');}
         const renderNotes = app.markdown?.renderReleaseNotes || renderMarkdown;
         const rendered = (typeof renderNotes === 'function')
             ? renderNotes(notes)
@@ -753,7 +755,9 @@ export function createModals(app) {
             const id = trappedModal.id;
             const modal = trappedModal;
 
-            if (id === 'settingsModal' || id === 'aboutModal' || id === 'templatesModal' || id === 'unsavedModal') {
+            if (id === 'templatesModal') {
+                app.templates?.closeTemplatesModal?.();
+            } else if (id === 'settingsModal' || id === 'aboutModal' || id === 'unsavedModal') {
                 closeModalAnimated(modal);
             } else if (id === 'confirmModal') {
                 settleConfirm(false);
@@ -771,6 +775,17 @@ export function createModals(app) {
             return;
         }
         if (e.key === 'Tab') {
+            if (e.defaultPrevented) { return; }
+            const active = document.activeElement;
+            const indentEditorIds = new Set(['editor', 'templateTreeEditor', 'templateFileEditor', 'filePreviewEditor']);
+            if (
+                indentEditorIds.has(active?.id)
+                && !e.ctrlKey
+                && !e.metaKey
+                && !e.altKey
+            ) {
+                return;
+            }
             if (e.shiftKey) {
                 if (document.activeElement === first) {
                     e.preventDefault();
@@ -795,7 +810,7 @@ export function createModals(app) {
         }
         if (e.target.id === 'settingsModal') { closeModalAnimated(e.target); }
         if (e.target.id === 'aboutModal') { closeModalAnimated(e.target); }
-        if (e.target.id === 'templatesModal') { closeModalAnimated(e.target); }
+        if (e.target.id === 'templatesModal') { app.templates?.closeTemplatesModal?.(); }
         if (e.target.id === 'releaseUpdateModal') { closeReleaseUpdateModal(); }
         if (e.target.id === 'unsavedModal') { closeModalAnimated(e.target); }
         if (e.target.id === 'welcomeModal') { return; }

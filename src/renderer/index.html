@@ -105,14 +105,16 @@
         <button class="tab-scroll-btn tab-scroll-left" id="projectTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
             <i data-lucide="chevron-left" aria-hidden="true"></i>
         </button>
-        <div class="project-tab-list" id="projectTabList" role="tablist" aria-label="Open projects"></div>
+        <div class="tab-scroll-viewport">
+            <div class="project-tab-list" id="projectTabList" role="tablist" aria-label="Open projects"></div>
+        </div>
         <button class="tab-scroll-btn tab-scroll-right" id="projectTabScrollRight" type="button" aria-label="Scroll tabs right" tabindex="-1">
             <i data-lucide="chevron-right" aria-hidden="true"></i>
         </button>
     </div>
 
     <div class="container" id="editorLayout">
-        <div id="toast" role="status" aria-live="polite">Saved!</div>
+        <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
         <div id="validationPanel" class="validation-panel" role="alert" aria-live="assertive"></div>
 
         <div class="editor-shell">
@@ -145,7 +147,9 @@
                     <button class="tab-scroll-btn tab-scroll-left" id="codeTabScrollLeft" type="button" aria-label="Scroll files left" tabindex="-1">
                         <i data-lucide="chevron-left" aria-hidden="true"></i>
                     </button>
-                    <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                    <div class="tab-scroll-viewport">
+                        <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                    </div>
                     <button class="tab-scroll-btn tab-scroll-right" id="codeTabScrollRight" type="button" aria-label="Scroll files right" tabindex="-1">
                         <i data-lucide="chevron-right" aria-hidden="true"></i>
                     </button>
@@ -316,13 +320,13 @@
 
     <div id="welcomeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <div class="modal-content welcome-modal-content">
-            <div class="modal-header modal-header-centered">
+            <div class="modal-header">
                 <h2 id="welcomeTitle" data-i18n="welcome_title">Welcome to Tree IDE</h2>
             </div>
             <div class="modal-body welcome-modal-body">
-                <p class="welcome-description" data-i18n="welcome_desc">To get started, please select your preferred language, theme, and build folder.</p>
+                <p class="welcome-intro" data-i18n="welcome_desc">To get started, please select your preferred language, theme, and build folder.</p>
 
-                <div class="settings-section">
+                <div class="settings-section welcome-settings-section">
                     <h3 data-i18n="general">General</h3>
                     <div class="settings-row">
                         <label data-i18n="language" for="welcomeLangSelect">Language</label>
@@ -332,17 +336,17 @@
                             <option value="es" data-i18n="spanish">Español</option>
                         </select>
                     </div>
-                    <div class="settings-row folder-setting-row welcome-folder-row">
-                        <label data-i18n="build_folder" for="welcomeChooseBuildFolderBtn">Save files in</label>
+                    <div class="settings-row folder-setting-row">
+                        <label data-i18n="build_folder">Save files in</label>
                         <div class="folder-picker">
-                            <span id="welcomeBuildFolderPath" class="folder-path" aria-live="polite">No folder selected</span>
+                            <span id="welcomeBuildFolderPath" class="folder-path" aria-live="polite" hidden>No folder selected</span>
                             <button id="welcomeChooseBuildFolderBtn" class="secondary-btn compact-btn" type="button" data-i18n="choose_folder">Choose Folder</button>
                         </div>
-                        <div id="welcomeBuildFolderList" class="folder-path-list"></div>
                     </div>
+                    <div id="welcomeBuildFolderList" class="folder-path-list"></div>
                 </div>
 
-                <div class="settings-section">
+                <div class="settings-section welcome-settings-section">
                     <h3 data-i18n="appearance">Appearance</h3>
                     <div class="settings-row">
                         <label data-i18n="theme" for="welcomeThemeSelect">Theme</label>
@@ -354,7 +358,8 @@
                     </div>
                 </div>
 
-                <div class="settings-section">
+                <div class="settings-section welcome-settings-section">
+                    <h3 data-i18n="session">Session</h3>
                     <div class="settings-row">
                         <label data-i18n="session" for="welcomeSessionSelect">Session</label>
                         <select id="welcomeSessionSelect" class="styled-select">
@@ -364,7 +369,8 @@
                     </div>
                     <p class="settings-hint" data-i18n="session_desc">Choose whether to restore your last project on startup or start with a clean workspace.</p>
                 </div>
-
+            </div>
+            <div class="modal-actions welcome-modal-actions">
                 <button id="startBtn" class="primary-btn" data-i18n="start">Get Started</button>
             </div>
         </div>
@@ -377,18 +383,61 @@
                 <button class="modal-close" id="closeTemplatesModal" aria-label="Close templates"><i data-lucide="x" aria-hidden="true"></i></button>
             </div>
             <div class="templates-browser">
-                <div id="templatesList" class="templates-list" role="listbox" aria-label="Available templates"></div>
-                <div class="template-preview">
-                    <div id="templateTreePreview" class="template-tree-preview"></div>
-                    <div class="template-file-preview">
-                        <div id="templateFileName" class="template-file-name" data-i18n="file_preview_empty">Select a file</div>
-                        <div id="templateFileContent" class="template-file-content"></div>
+                <section class="templates-panel templates-panel-list" aria-label="Template list">
+                    <div class="templates-source-tabs" role="tablist" aria-label="Template categories">
+                        <button type="button" id="templatesTabBuiltIn" class="templates-source-tab active" data-source="builtin" role="tab" aria-selected="true" aria-controls="templatesList" data-i18n="template_tab_builtin">Built-in</button>
+                        <button type="button" id="templatesTabCustom" class="templates-source-tab" data-source="custom" role="tab" aria-selected="false" aria-controls="templatesList" data-i18n="template_tab_custom">Custom</button>
                     </div>
-                </div>
+                    <div id="templatesListBody" class="templates-list-body">
+                        <div id="templatesDropHint" class="templates-drop-hint hidden" aria-hidden="true">
+                            <i data-lucide="file-up" aria-hidden="true"></i>
+                            <span data-i18n="template_drop_file">Drop a .tree-template file here</span>
+                        </div>
+                        <div id="templatesList" class="templates-list" role="list" aria-label="Available templates"></div>
+                        <div id="templatesEmptyState" class="templates-empty hidden">
+                            <p data-i18n="template_custom_empty_desc">Create a template here — no need to leave this screen.</p>
+                            <div class="templates-empty-actions">
+                                <button type="button" id="createBlankTemplateBtn" class="secondary-btn" data-i18n="template_create_blank">Start blank</button>
+                                <button type="button" id="importProjectTemplateBtn" class="secondary-btn" data-i18n="template_import_project">From current project</button>
+                                <button type="button" id="importTemplateFileEmptyBtn" class="secondary-btn" data-i18n="template_import_file">Import .tree-template</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="templatesCustomFooter" class="templates-list-footer hidden">
+                        <button type="button" id="createCustomTemplateBtn" class="template-create-footer-btn">
+                            <i data-lucide="plus" aria-hidden="true"></i>
+                            <span data-i18n="template_create_new">New template</span>
+                        </button>
+                        <div class="templates-footer-actions">
+                            <button type="button" id="importProjectTemplateFooterBtn" class="template-footer-secondary-btn" data-i18n="template_import_project">From current project</button>
+                            <button type="button" id="importTemplateFileBtn" class="template-footer-secondary-btn" data-i18n="template_import_file">Import .tree-template</button>
+                        </div>
+                    </div>
+                </section>
+                <section class="templates-panel templates-panel-structure" aria-label="Template structure">
+                    <p id="templateStructureLabel" class="templates-panel-label" data-i18n="template_panel_structure">Structure</p>
+                    <div id="templateStructureBody" class="template-structure-body">
+                        <textarea id="templateTreeEditor" class="template-tree-editor hidden" spellcheck="false" aria-labelledby="templateStructureLabel"></textarea>
+                        <p id="templateStructurePreviewLabel" class="template-structure-preview-label hidden" data-i18n="template_structure_preview">Preview</p>
+                        <div id="templateTreePreview" class="template-tree-preview" tabindex="-1"></div>
+                    </div>
+                </section>
+                <section class="templates-panel templates-panel-file" aria-label="Template file">
+                    <div id="templateFilePanel" class="template-file-panel">
+                        <div class="template-file-header">
+                            <span id="templateFileName" class="template-file-path"></span>
+                            <span id="templateFileMode" class="template-file-mode"></span>
+                        </div>
+                        <div class="template-file-body">
+                            <p id="templateFileEmpty" class="template-file-empty" data-i18n="file_preview_empty">Select a file</p>
+                            <label for="templateFileEditor" class="sr-only" data-i18n="file_preview_editor_label">File content</label>
+                            <textarea id="templateFileEditor" class="template-file-editor" spellcheck="false" readonly tabindex="-1" aria-labelledby="templateFileName"></textarea>
+                        </div>
+                    </div>
+                </section>
             </div>
             <div class="modal-actions templates-modal-actions">
-                <button id="saveCustomTemplateBtn" class="secondary-btn" data-i18n="save_as_template">Save current as template</button>
-                <button id="useTemplateBtn" class="primary-btn" data-i18n="use_template">Use Template</button>
+                <button id="useTemplateBtn" class="primary-btn templates-use-btn" data-i18n="use_template">Use Template</button>
             </div>
         </div>
     </div>
@@ -400,19 +449,21 @@
                 <button class="modal-close" id="closeReleaseUpdateModal" aria-label="Close update notification"><i data-lucide="x" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body release-update-body">
-                <div class="release-update-icon" aria-hidden="true">
-                    <i data-lucide="arrow-down-to-line"></i>
-                </div>
-                <div class="release-update-copy">
-                    <p data-i18n="update_available_msg">A new Tree IDE version is available and ready to download.</p>
-                    <div class="release-update-version">
-                        <span id="releaseUpdateCurrent">v---</span>
-                        <i data-lucide="arrow-right" aria-hidden="true"></i>
-                        <strong id="releaseUpdateLatest">v---</strong>
+                <div class="release-update-summary">
+                    <div class="release-update-icon" aria-hidden="true">
+                        <i data-lucide="arrow-down-to-line"></i>
+                    </div>
+                    <div class="release-update-copy">
+                        <p data-i18n="update_available_msg">A new Tree IDE version is available and ready to download.</p>
+                        <div class="release-update-version">
+                            <span id="releaseUpdateCurrent">v---</span>
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                            <strong id="releaseUpdateLatest">v---</strong>
+                        </div>
                     </div>
                 </div>
-                <section class="release-update-changelog" id="releaseUpdateChangelog" aria-expanded="false" hidden>
-                    <button class="release-update-changelog-toggle" id="releaseUpdateChangelogToggle" type="button" aria-expanded="false" aria-controls="releaseUpdateChangelogBody">
+                <section class="release-update-changelog" id="releaseUpdateChangelog" aria-expanded="true" hidden>
+                    <button class="release-update-changelog-toggle" id="releaseUpdateChangelogToggle" type="button" aria-expanded="true" aria-controls="releaseUpdateChangelogBody">
                         <span class="release-update-changelog-toggle-label" data-i18n="update_changelog_title">What's new</span>
                         <i data-lucide="chevron-down" class="release-update-changelog-chevron" aria-hidden="true"></i>
                     </button>
@@ -426,6 +477,8 @@
                     </div>
                     <span class="release-update-progress-text" id="releaseUpdateProgressText">0%</span>
                 </div>
+            </div>
+            <div class="release-update-footer">
                 <div class="modal-actions release-update-actions">
                     <button id="declineReleaseUpdateBtn" class="secondary-btn" data-i18n="update_decline">Not now</button>
                     <button id="downloadReleaseUpdateBtn" class="primary-btn update-download-btn">
@@ -520,7 +573,17 @@
             <hr class="build-studio-header-divider" aria-hidden="true">
             <div class="build-studio-header-meta">
                 <div id="buildStudioStats" class="build-studio-header-stats" aria-live="polite"></div>
-                <div id="buildStudioProjectList" class="build-project-tabs-bar" hidden></div>
+                <div id="buildStudioProjectList" class="build-project-tabs-bar" hidden>
+                    <button class="tab-scroll-btn tab-scroll-left" id="buildStudioTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
+                        <i data-lucide="chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <div class="tab-scroll-viewport">
+                        <div class="project-tab-list" id="buildStudioTabList" role="tablist" aria-label="Projects to create"></div>
+                    </div>
+                    <button class="tab-scroll-btn tab-scroll-right" id="buildStudioTabScrollRight" type="button" aria-label="Scroll tabs right" tabindex="-1">
+                        <i data-lucide="chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
         </header>
         <div class="build-studio-body">
@@ -594,11 +657,13 @@
                     </div>
                     <div id="buildStudioStructureSection" class="build-studio-options-group">
                         <div class="build-studio-destination">
-                            <div class="build-studio-destination-header">
-                                <span class="build-studio-destination-label" data-i18n="build_wizard_destination">Destination folder</span>
-                                <button type="button" id="buildStudioChooseFolder" class="secondary-btn" data-i18n="build_wizard_choose_folder">Choose folder</button>
+                            <div class="settings-row folder-setting-row build-studio-folder-row">
+                                <label data-i18n="build_wizard_destination">Destination folder</label>
+                                <div class="folder-picker">
+                                    <button type="button" id="buildStudioChooseFolder" class="secondary-btn compact-btn" data-i18n="build_wizard_choose_folder">Choose folder</button>
+                                </div>
                             </div>
-                            <div id="buildStudioFolderPath"></div>
+                            <div id="buildStudioFolderPath" class="folder-path-list"></div>
                         </div>
                         <div class="build-studio-options-list">
                             <label class="build-studio-option" id="buildStudioAlsoExportZipLabel">
@@ -623,18 +688,18 @@
                         </div>
                         <div class="build-password-fields">
                             <label class="build-password-label" for="buildStudioZipPassword" data-i18n="build_zip_password">ZIP password (optional)</label>
-                            <input type="password" id="buildStudioZipPassword" class="build-password-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
+                            <input type="password" id="buildStudioZipPassword" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
                             <label class="build-password-label" for="buildStudioZipPasswordConfirm" data-i18n="build_password_confirm">Confirm password</label>
-                            <input type="password" id="buildStudioZipPasswordConfirm" class="build-password-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
+                            <input type="password" id="buildStudioZipPasswordConfirm" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
                         </div>
                     </div>
                     <div id="buildStudioTreeExtras" class="build-studio-options-group is-disabled">
                         <p class="build-studio-option-group-label" data-i18n="build_tree_options_label">.tree options</p>
                         <div class="build-password-fields">
                             <label class="build-password-label" for="buildStudioTreePassword" data-i18n="build_tree_password">Encrypt .tree with password (optional)</label>
-                            <input type="password" id="buildStudioTreePassword" class="build-password-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
+                            <input type="password" id="buildStudioTreePassword" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
                             <label class="build-password-label" for="buildStudioTreePasswordConfirm" data-i18n="build_password_confirm">Confirm password</label>
-                            <input type="password" id="buildStudioTreePasswordConfirm" class="build-password-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
+                            <input type="password" id="buildStudioTreePasswordConfirm" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
                         </div>
                     </div>
                 </div>

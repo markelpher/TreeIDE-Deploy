@@ -17,8 +17,12 @@ function dispatchKey(textarea, key, opts = {}) {
     return event;
 }
 
-function makeApp() {
-    document.body.innerHTML = '<textarea id="editor"></textarea><div id="treeView"></div>';
+function makeApp({ withTemplateEditor = false } = {}) {
+    document.body.innerHTML = [
+        '<textarea id="editor"></textarea>',
+        '<div id="treeView"></div>',
+        withTemplateEditor ? '<textarea id="templateTreeEditor"></textarea><div id="templateTreePreview"></div>' : ''
+    ].join('');
     const editor = document.getElementById('editor');
 
     const state = {
@@ -111,5 +115,21 @@ describe('editor Tab', () => {
         dispatchKey(editor, 'Backspace');
         expect(editor.value).toBe('src/\nindex.js');
         expect(editor.selectionStart).toBe(5);
+    });
+
+    it('Tab indents in the template structure editor without moving focus', () => {
+        const { app } = makeApp({ withTemplateEditor: true });
+        const mod = createEditor(app);
+        mod.bindEditorInput();
+
+        const templateEditor = document.getElementById('templateTreeEditor');
+        templateEditor.value = 'src/\n';
+        templateEditor.selectionStart = templateEditor.selectionEnd = 5;
+        templateEditor.focus();
+
+        const event = dispatchKey(templateEditor, 'Tab');
+        expect(event.defaultPrevented).toBe(true);
+        expect(templateEditor.value).toBe('src/\n    ');
+        expect(document.activeElement).toBe(templateEditor);
     });
 });

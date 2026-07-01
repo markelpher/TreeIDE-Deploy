@@ -31,6 +31,7 @@ export function installLucide() {
         'square': '<rect width="18" height="18" x="3" y="3" rx="2" />',
         'table': '<path d="M12 3v18" /> <rect width="18" height="18" x="3" y="3" rx="2" /> <path d="M3 9h18" /> <path d="M3 15h18" />',
         'terminal': '<path d="M12 19h8" /> <path d="m4 17 6-6-6-6" />',
+        'trash-2': '<path d="M10 11v6" /> <path d="M14 11v6" /> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /> <path d="M3 6h18" /> <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />',
         'type': '<path d="M12 4v16" /> <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /> <path d="M9 20h6" />',
         'whale': '<path d="M3 18c0-7 5-13 11-13 4 0 7 3 7 7 0 5-4 9-8 9-5 0-10-1-10-3z"/><path d="M3 18l-2.5-5"/><path d="M3 18l-2.5 5"/><circle cx="17.5" cy="11" r="1.5" fill="currentColor"/>',
         'x': '<path d="M18 6 6 18" /> <path d="m6 6 12 12" />',

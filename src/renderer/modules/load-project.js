@@ -2,6 +2,8 @@
  * Shared load flow with encrypted .tree / ZIP password support.
  */
 
+import { isProjectTreePath } from '../../shared/templateFile.js';
+
 function getDisplayName(filePath, result) {
     if (result?.name) { return result.name; }
     const fileName = filePath.split(/[\\/]/).pop() || 'project';
@@ -28,7 +30,7 @@ function applyLoadResult(app, result, filePath) {
     app.tabs.loadContentIntoTab({
         content: result.content,
         tabName,
-        filePath: result.filePath || (filePath?.endsWith('.tree') ? filePath : null),
+        filePath: result.filePath || (isProjectTreePath(filePath) ? filePath : null),
         treeData: result.treeData || null,
         fileContents: importedFileContents,
         isModified: !isFromFile,

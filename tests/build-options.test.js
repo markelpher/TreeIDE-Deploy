@@ -2,6 +2,7 @@ import {
     BUILD_OUTPUT_MODES,
     getBuildInspectionFlags,
     readBuildOptions,
+    syncBuildOptionsUi,
     validateBuildPasswords
 } from '../src/renderer/modules/build-options.js';
 
@@ -96,5 +97,20 @@ describe('build options', () => {
         }));
         const error = validateBuildPasswords(options, (key) => key);
         expect(error).toBe('build_password_mismatch');
+    });
+
+    it('disables also-export-zip when structure mode is locked', () => {
+        const els = makeEls({
+            outputMode: BUILD_OUTPUT_MODES.STRUCTURE,
+            alsoExportZip: true
+        });
+        els.alsoExportZipLabel = { classList: { toggle: vi.fn() } };
+        els.alsoExportZip.disabled = false;
+
+        syncBuildOptionsUi(els, { t: (key) => key, optionsLocked: true });
+
+        expect(els.alsoExportZip.checked).toBe(false);
+        expect(els.alsoExportZip.disabled).toBe(true);
+        expect(els.alsoExportZipLabel.classList.toggle).toHaveBeenCalledWith('is-disabled', true);
     });
 });

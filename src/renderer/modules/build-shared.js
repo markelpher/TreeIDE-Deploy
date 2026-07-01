@@ -24,7 +24,7 @@ export function createBuildShared(app) {
     function resolveTabTreeData(tab, editorContent) {
         const parsed = app.tree.parseEditorContent(editorContent || '');
         const stored = tab.treeData;
-        const hasStored = stored != null && typeof stored === 'object' && Object.keys(stored).length > 0;
+        const hasStored = stored !== null && typeof stored === 'object' && Object.keys(stored).length > 0;
         if (hasStored) { return stored; }
         return parsed;
     }
@@ -110,18 +110,16 @@ export function createBuildShared(app) {
             return '';
         }
         const showClose = tabs.length > 1;
-        const listLabel = escapeHtml(t('build_projects_tablist'));
-        const buttons = tabs.map((tab) => renderBuildProjectTabHtml(tab, {
+        return tabs.map((tab) => renderBuildProjectTabHtml(tab, {
             isActive: tab.id === activeTabId,
             showClose,
             escapeHtml
         })).join('');
-        return `<div class="project-tab-list" role="tablist" aria-label="${listLabel}">${buttons}</div>`;
     }
 
     function getPayloadDisplayMeta(payload) {
         const stats = getPayloadStats(payload);
-        const structuralErrors = stats.validation.errors.filter((error) => error.line != null);
+        const structuralErrors = stats.validation.errors.filter((error) => error.line !== null);
         return {
             ...stats,
             isEmpty: !stats.validation.hasItems,
@@ -149,6 +147,12 @@ export function createBuildShared(app) {
             }
         }
         return true;
+    }
+
+    function canOpenBuildStudio() {
+        const tabs = getProjectTabsForBuildUi();
+        const payloads = tabs.map((tab) => getTabBuildPayload(tab));
+        return validatePayloads(payloads);
     }
 
     const MAX_LISTED_STRUCTURE_FILES = 8;
@@ -462,6 +466,7 @@ export function createBuildShared(app) {
         renderBuildProjectTabHtml,
         renderBuildProjectTabBar,
         validatePayloads,
+        canOpenBuildStudio,
         inspectPayloads,
         formatBuildExistingWarning,
         runBuild,

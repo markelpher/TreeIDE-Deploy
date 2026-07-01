@@ -53,13 +53,21 @@ function bindEditorKeys() {
     document.addEventListener('keydown', (e) => {
         const treeEditor = getEditor();
         const previewEditor = app.state.filePreviewEditor;
+        const templateStructureEditor = document.getElementById('templateTreeEditor');
+        const templateFileEditor = document.getElementById('templateFileEditor');
         const target = e.target;
         const isTreeEditor = target === treeEditor;
         const isPreviewEditor = target === previewEditor;
-        if (!isTreeEditor && !isPreviewEditor) { return; }
+        const isTemplateStructureEditor = target === templateStructureEditor;
+        const isTemplateFileEditor = target === templateFileEditor && !templateFileEditor?.readOnly;
+        if (!isTreeEditor && !isPreviewEditor && !isTemplateStructureEditor && !isTemplateFileEditor) { return; }
         if (e.ctrlKey || e.altKey || e.metaKey) { return; }
 
-        const afterChange = isTreeEditor ? syncMainEditorAfterTabChange : null;
+        const afterChange = isTreeEditor
+            ? syncMainEditorAfterTabChange
+            : (isTemplateStructureEditor || isTemplateFileEditor)
+                ? (textarea) => { textarea.dispatchEvent(new Event('input', { bubbles: true })); }
+                : null;
 
         if (e.key === 'Tab') {
             if (applyTabKeyToTextarea(target, e, afterChange)) {
@@ -76,8 +84,21 @@ function bindEditorKeys() {
     }, true);
 }
 
+function applyEditorKeyToTextarea(textarea, e, afterChange) {
+    if (e.key === 'Tab') {
+        return applyTabKeyToTextarea(textarea, e, afterChange);
+    }
+    if (e.key === 'Backspace') {
+        return applyBackspaceKeyToTextarea(textarea, e, afterChange);
+    }
+    return false;
+}
+
 function insertTabInTextarea(textarea, e) {
-    applyTabKeyToTextarea(textarea, e);
+    const afterChange = (textarea.id === 'templateTreeEditor' || textarea.id === 'templateFileEditor')
+        ? (el) => { el.dispatchEvent(new Event('input', { bubbles: true })); }
+        : null;
+    return applyEditorKeyToTextarea(textarea, e, afterChange);
 }
 
 function syncMainEditorAfterTabChange(editor) {

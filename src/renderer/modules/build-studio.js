@@ -22,9 +22,14 @@ export function createBuildStudio(app) {
     let previewFilePath = null;
     let excludedTabIds = new Set();
 
+    let buildTabScrollBound = false;
+
     const els = () => ({
         root: document.getElementById('buildStudio'),
         projectList: document.getElementById('buildStudioProjectList'),
+        projectTabList: document.getElementById('buildStudioTabList'),
+        projectTabScrollLeft: document.getElementById('buildStudioTabScrollLeft'),
+        projectTabScrollRight: document.getElementById('buildStudioTabScrollRight'),
         treeView: document.getElementById('buildStudioTreeView'),
         filePanel: document.getElementById('buildStudioFilePanel'),
         filePath: document.getElementById('buildStudioFilePath'),
@@ -47,7 +52,6 @@ export function createBuildStudio(app) {
     });
 
     const t = (key) => shared().t(key);
-    const format = (template, values) => shared().format(template, values);
     const escapeHtml = (v) => app.helpers.escapeHtml(v);
 
     function isOpen() {
@@ -139,8 +143,19 @@ export function createBuildStudio(app) {
         syncBuildOptionsUi(optionEls, { t, optionsLocked });
     }
 
+    function ensureBuildTabScrollControls() {
+        const { projectTabList, projectTabScrollLeft, projectTabScrollRight } = els();
+        if (!projectTabList || buildTabScrollBound) { return; }
+        app.tabs.bindTabListScrollControls(
+            projectTabList,
+            projectTabScrollLeft,
+            projectTabScrollRight
+        );
+        buildTabScrollBound = true;
+    }
+
     function renderProjectList() {
-        const { projectList } = els();
+        const { projectList, projectTabList } = els();
         const availableTabs = shared().getProjectTabsForBuildUi();
         const tabs = getIncludedTabs();
         const headerMeta = document.querySelector('.build-studio-header-meta');
@@ -151,7 +166,7 @@ export function createBuildStudio(app) {
 
         if (!showTabBar) {
             projectList.hidden = true;
-            projectList.innerHTML = '';
+            if (projectTabList) { projectTabList.innerHTML = ''; }
             headerMeta?.classList.remove('has-project-tabs');
             previewTabId = tabs[0]?.id || availableTabs[0]?.id || null;
             return;
@@ -163,8 +178,13 @@ export function createBuildStudio(app) {
 
         projectList.hidden = false;
         headerMeta?.classList.add('has-project-tabs');
-        projectList.innerHTML = shared().renderBuildProjectTabBar(tabs, previewTabId, { escapeHtml });
-        app.icons.refreshIcons(projectList);
+        if (projectTabList) {
+            projectTabList.setAttribute('aria-label', t('build_projects_tablist'));
+            projectTabList.innerHTML = shared().renderBuildProjectTabBar(tabs, previewTabId, { escapeHtml });
+            ensureBuildTabScrollControls();
+            app.tabs.updateTabListScrollButtons(projectTabList);
+            app.icons.refreshIcons(projectTabList);
+        }
     }
 
     function getPreviewPayload() {
@@ -302,12 +322,15 @@ export function createBuildStudio(app) {
                 `<span class="build-studio-stat-detail">${escapeHtml(detailText)}</span>`;
         }
 
-        const { projectList } = els();
-        projectList?.querySelectorAll('.project-tab[data-tab-id]').forEach((row) => {
+        const { projectTabList } = els();
+        projectTabList?.querySelectorAll('.project-tab[data-tab-id]').forEach((row) => {
             const isActive = row.dataset.tabId === tab.id;
             row.classList.toggle('active', isActive);
             row.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
+        if (projectTabList && tab.id) {
+            app.tabs.scrollTabIntoView(projectTabList, tab.id);
+        }
 
         updateActionState();
     }
@@ -317,7 +340,7 @@ export function createBuildStudio(app) {
         const S = app.state;
         if (!folderPath) { return; }
         const label = S.buildFolderPath ? escapeHtml(S.buildFolderPath) : escapeHtml(t('no_folder_selected'));
-        const cssClass = S.buildFolderPath ? 'build-studio-folder-path' : 'build-studio-folder-path empty';
+        const cssClass = S.buildFolderPath ? 'folder-path-list-item' : 'folder-path-list-item empty';
         folderPath.innerHTML = `<div class="${cssClass}" title="${label}">${label}</div>`;
         updateActionState();
     }
@@ -469,6 +492,11 @@ export function createBuildStudio(app) {
             const ui = els();
             if (!ui.root) { resolve('cancel'); return; }
 
+            if (!shared().canOpenBuildStudio()) {
+                resolve('cancel');
+                return;
+            }
+
             if (isOpen()) {
                 completeStudio('cancel');
             }
@@ -499,7 +527,6 @@ export function createBuildStudio(app) {
             if (optionEls.includeTreeInZip) { optionEls.includeTreeInZip.checked = false; }
             [optionEls.zipPassword, optionEls.zipPasswordConfirm, optionEls.treePassword, optionEls.treePasswordConfirm]
                 .forEach((input) => { if (input) { input.value = ''; } });
-            syncBuildOptionsUi(optionEls, { t });
 
             renderProjectList();
             renderPreview();
@@ -522,6 +549,7 @@ export function createBuildStudio(app) {
                     void refreshInspection();
                 }
             }).cleanup;
+            updateActionState();
 
             const onProjectListClick = (e) => {
                 const closeBtn = e.target.closest('[data-build-close-tab-id]');

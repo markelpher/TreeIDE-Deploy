@@ -167,7 +167,6 @@ export function syncBuildOptionsUi(els, ctx) {
 export function bindBuildOptionsUi(prefix, ctx) {
     const els = getBuildOptionsElements(prefix);
     const handler = () => {
-        syncBuildOptionsUi(els, ctx);
         ctx.onChange?.();
     };
     const inputs = [
@@ -179,6 +178,5 @@ export function bindBuildOptionsUi(prefix, ctx) {
     ].filter(Boolean);
 
     inputs.forEach((input) => input.addEventListener('change', handler));
-    syncBuildOptionsUi(els, ctx);
     return { els, handler, cleanup: () => inputs.forEach((input) => input.removeEventListener('change', handler)) };
 }

@@ -16,26 +16,55 @@ export function createCustomSelect(_app) {
         }
     }
 
+    function getOptionsContainer(customSelect) {
+        return customSelect._optionsContainer
+            || customSelect.querySelector('.custom-select-options');
+    }
+
+    function mountOptionsPortal(customSelect) {
+        const optionsContainer = getOptionsContainer(customSelect);
+        if (!optionsContainer || customSelect._optionsPortaled) { return; }
+        document.body.appendChild(optionsContainer);
+        customSelect._optionsPortaled = true;
+    }
+
+    function unmountOptionsPortal(customSelect) {
+        const optionsContainer = getOptionsContainer(customSelect);
+        if (!optionsContainer || !customSelect._optionsPortaled) { return; }
+        customSelect.appendChild(optionsContainer);
+        customSelect._optionsPortaled = false;
+    }
+
     function positionDropdown(customSelect) {
         const trigger = customSelect.querySelector('.custom-select-trigger');
-        const optionsContainer = customSelect.querySelector('.custom-select-options');
+        const optionsContainer = getOptionsContainer(customSelect);
         if (!trigger || !optionsContainer) { return; }
+
+        mountOptionsPortal(customSelect);
+
         const rect = trigger.getBoundingClientRect();
         optionsContainer.style.position = 'fixed';
         optionsContainer.style.top = `${rect.bottom + 6}px`;
         optionsContainer.style.left = `${rect.left}px`;
         optionsContainer.style.width = `${rect.width}px`;
+        optionsContainer.style.boxSizing = 'border-box';
         optionsContainer.style.zIndex = '10000';
+        optionsContainer.style.display = 'block';
+        optionsContainer.classList.add('is-open');
     }
 
     function resetDropdownPosition(customSelect) {
-        const optionsContainer = customSelect.querySelector('.custom-select-options');
+        const optionsContainer = getOptionsContainer(customSelect);
         if (!optionsContainer) { return; }
         optionsContainer.style.position = '';
         optionsContainer.style.top = '';
         optionsContainer.style.left = '';
         optionsContainer.style.width = '';
+        optionsContainer.style.boxSizing = '';
         optionsContainer.style.zIndex = '';
+        optionsContainer.style.display = '';
+        optionsContainer.classList.remove('is-open');
+        unmountOptionsPortal(customSelect);
     }
 
     function closeDropdown(customSelect) {
@@ -52,7 +81,8 @@ export function createCustomSelect(_app) {
     function ensureOutsideClickHandler() {
         if (isOutsideHandlerAttached) {return;}
         outsideClickHandler = (e) => {
-            if (!e.target.closest('.custom-select')) {
+            if (!e.target.closest('.custom-select')
+                && !e.target.closest('.custom-select-options')) {
                 document.querySelectorAll('.custom-select.open').forEach(closeDropdown);
             }
         };
@@ -202,6 +232,7 @@ export function createCustomSelect(_app) {
 
         customSelect.appendChild(trigger);
         customSelect.appendChild(optionsContainer);
+        customSelect._optionsContainer = optionsContainer;
 
         // Hide original select; place custom control after it so flex
         // layouts that align the last child to the right still work.
@@ -225,9 +256,11 @@ export function createCustomSelect(_app) {
             },
             refreshOptions: buildOptions,
             destroy: () => {
+                closeDropdown(customSelect);
                 customSelect.remove();
                 selectElement.style.display = '';
                 delete selectElement.dataset.customized;
+                delete customSelect._optionsContainer;
                 decrementCustomSelectCount();
             }
         };
@@ -255,8 +288,10 @@ export function createCustomSelect(_app) {
             const selectEl = document.getElementById(selectId);
             if (!selectEl) {return;}
             const trigger = cs.querySelector('.custom-select-trigger');
-            const optionsContainer = cs.querySelector('.custom-select-options');
-            if (!trigger || !optionsContainer) {return;}
+            const optionsContainer = getOptionsContainer(cs);
+            if (!optionsContainer) { return; }
+            cs._optionsContainer = optionsContainer;
+            if (!trigger) {return;}
 
             // Rebuild options from current select state
             const currentValue = selectEl.value;

@@ -17,6 +17,9 @@ export default defineConfig({
         environment: 'node',
         environmentMatchGlobs: [
             ['tests/customSelect.test.js', 'happy-dom'],
+            ['tests/editor-indent.test.js', 'happy-dom'],
+            ['tests/renderer-templates.test.js', 'happy-dom'],
+            ['tests/renderer-toast.test.js', 'happy-dom'],
             ['tests/renderer-tree-render.test.js', 'happy-dom'],
             ['tests/panel-resize.test.js', 'happy-dom'],
         ],

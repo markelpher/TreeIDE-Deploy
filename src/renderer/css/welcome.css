@@ -1,0 +1,103 @@
+#welcomeModal .welcome-modal-content {
+    width: min(92vw, 520px);
+    max-width: none;
+    max-height: min(92vh, 720px);
+}
+
+#welcomeModal .modal-header {
+    justify-content: center;
+}
+
+#welcomeModal .modal-header h2 {
+    width: 100%;
+    text-align: center;
+}
+
+#welcomeModal .welcome-modal-body {
+    padding: 24px;
+    text-align: left;
+}
+
+#welcomeModal .welcome-intro {
+    margin: 0 0 24px;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+#welcomeModal .welcome-settings-section {
+    margin-bottom: 28px;
+}
+
+#welcomeModal .welcome-settings-section:last-child {
+    margin-bottom: 0;
+}
+
+#welcomeModal .welcome-settings-section .folder-path-list {
+    margin-top: -4px;
+    margin-bottom: 0;
+}
+
+#welcomeModal .settings-row > .custom-select,
+#welcomeModal .settings-row > select.styled-select {
+    margin-left: auto;
+    width: 200px;
+    max-width: 100%;
+    flex-shrink: 0;
+}
+
+#welcomeModal .settings-row:has(.custom-select.open) {
+    z-index: 30;
+}
+
+#welcomeModal .welcome-modal-actions {
+    padding: 16px 24px;
+}
+
+#welcomeModal .welcome-modal-actions .primary-btn {
+    flex: 1;
+    margin-top: 0;
+}
+
+@media (max-width: 480px) {
+    #welcomeModal .welcome-modal-body {
+        padding: 20px;
+    }
+
+    #welcomeModal .welcome-modal-actions {
+        padding: 14px 20px;
+    }
+
+    #welcomeModal .welcome-settings-section {
+        margin-bottom: 24px;
+    }
+
+    #welcomeModal .settings-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    #welcomeModal .settings-row > label:not(.toggle-switch) {
+        min-width: 0;
+    }
+
+    #welcomeModal .settings-row > .custom-select,
+    #welcomeModal .settings-row > select.styled-select,
+    #welcomeModal .settings-row > .folder-picker {
+        margin-left: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    #welcomeModal .folder-picker {
+        justify-content: stretch;
+    }
+
+    #welcomeModal .folder-picker .secondary-btn {
+        width: 100%;
+    }
+}

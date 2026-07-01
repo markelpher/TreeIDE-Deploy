@@ -24,16 +24,23 @@ const i18n = {
     }
 };
 
+const toastMessages = [];
+
+const defaultProjectTabs = [
+    { id: 'tab-1', name: 'Empty', editorContent: '', fileContents: {} },
+    { id: 'tab-2', name: 'Filled', editorContent: 'src/\n    index.js', fileContents: {} }
+];
+
 const app = {
     i18n,
+    toast: {
+        showToast: (message) => { toastMessages.push(message); }
+    },
     helpers: { escapeHtml, formatMessage, getLineIndent, pathLooksUnsafe },
     state: { editor: { value: '' }, fileContents: {} },
     tabs: {
         activeProjectTabId: 'tab-1',
-        projectTabs: [
-            { id: 'tab-1', name: 'Empty', editorContent: '', fileContents: {} },
-            { id: 'tab-2', name: 'Filled', editorContent: 'src/\n    index.js', fileContents: {} }
-        ]
+        projectTabs: defaultProjectTabs.map((tab) => ({ ...tab, fileContents: { ...tab.fileContents } }))
     },
     tree: createTree({
         helpers: { joinTreePath, parseEditorContent, getFilePathsFromTree },
@@ -78,6 +85,33 @@ describe('build existing warning', () => {
         });
         expect(message).toContain('alpha.tree, beta.tree');
         expect(message).toContain('alpha.zip, beta.zip');
+    });
+});
+
+describe('canOpenBuildStudio', () => {
+    beforeEach(() => {
+        toastMessages.length = 0;
+    });
+
+    afterEach(() => {
+        app.tabs.projectTabs = defaultProjectTabs.map((tab) => ({ ...tab, fileContents: { ...tab.fileContents } }));
+    });
+
+    it('blocks opening when every tab is empty', () => {
+        app.tabs.projectTabs = [
+            { id: 'tab-1', name: 'Empty', editorContent: '', fileContents: {} }
+        ];
+        expect(shared.canOpenBuildStudio()).toBe(false);
+        expect(toastMessages.length).toBeGreaterThan(0);
+    });
+
+    it('allows opening when at least one tab has structure', () => {
+        app.tabs.projectTabs = [
+            { id: 'tab-1', name: 'Empty', editorContent: '', fileContents: {} },
+            { id: 'tab-2', name: 'Filled', editorContent: 'src/\n    index.js', fileContents: {} }
+        ];
+        expect(shared.canOpenBuildStudio()).toBe(true);
+        expect(toastMessages).toHaveLength(0);
     });
 });
 

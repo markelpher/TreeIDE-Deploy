@@ -3,33 +3,58 @@
 
 LangString languagePageTitle 1033 "Installer Language"
 LangString languagePageTitle 1046 "Idioma do instalador"
-LangString languagePageTitle 3082 "Idioma del instalador"
+LangString languagePageTitle 1034 "Idioma del instalador"
 LangString languagePageIntro 1033 "Please select a language."
 LangString languagePageIntro 1046 "Selecione um idioma."
-LangString languagePageIntro 3082 "Seleccione un idioma."
+LangString languagePageIntro 1034 "Seleccione un idioma."
 LangString languagePageNext 1033 "Next"
 LangString languagePageNext 1046 "Avançar"
-LangString languagePageNext 3082 "Siguiente"
+LangString languagePageNext 1034 "Siguiente"
 LangString languagePageCancel 1033 "Cancel"
 LangString languagePageCancel 1046 "Cancelar"
-LangString languagePageCancel 3082 "Cancelar"
+LangString languagePageCancel 1034 "Cancelar"
 LangString cleanInstallIntro 1033 "Choose whether Tree IDE should keep your current settings or start fresh."
 LangString cleanInstallIntro 1046 "Escolha se o Tree IDE deve manter suas configurações atuais ou começar do zero."
-LangString cleanInstallIntro 3082 "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
+LangString cleanInstallIntro 1034 "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
 LangString cleanInstallOption 1033 "Clean installation: remove Tree IDE settings, cache, logs, and update data for this Windows user."
 LangString cleanInstallOption 1046 "Instalação limpa: remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-LangString cleanInstallOption 3082 "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
+LangString cleanInstallOption 1034 "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
 LangString cleanInstallDetails 1033 "Running clean installation. Removing Tree IDE user data."
 LangString cleanInstallDetails 1046 "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
-LangString cleanInstallDetails 3082 "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
+LangString cleanInstallDetails 1034 "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
+
+; Uninstaller UI strings for Spanish and Portuguese (required by MUI_LANGUAGE).
+LangString MUI_UNTEXT_WELCOME_INFO_TITLE 1034 "Desinstalación de Tree IDE"
+LangString MUI_UNTEXT_WELCOME_INFO_TEXT 1034 "Este asistente le guiará en la desinstalación de Tree IDE.$\r$\n$\r$\nCierre Tree IDE si está en ejecución antes de continuar."
+LangString MUI_UNTEXT_CONFIRM_TITLE 1034 "Confirmar desinstalación"
+LangString MUI_UNTEXT_CONFIRM_TEXT 1034 "Tree IDE se eliminará de su equipo.$\r$\n$\r$\n¿Desea continuar?"
+LangString MUI_UNTEXT_FINISH_TITLE 1034 "Desinstalación completada"
+LangString MUI_UNTEXT_FINISH_TEXT 1034 "Tree IDE se ha eliminado de su equipo."
+LangString MUI_UNTEXT_ABORT_TITLE 1034 "Desinstalación cancelada"
+LangString MUI_UNTEXT_ABORT_TEXT 1034 "La desinstalación no se ha completado."
+
+LangString MUI_UNTEXT_WELCOME_INFO_TITLE 1046 "Desinstalação do Tree IDE"
+LangString MUI_UNTEXT_WELCOME_INFO_TEXT 1046 "Este assistente irá guiá-lo pela desinstalação do Tree IDE.$\r$\n$\r$\nFeche o Tree IDE se estiver em execução antes de continuar."
+LangString MUI_UNTEXT_CONFIRM_TITLE 1046 "Confirmar desinstalação"
+LangString MUI_UNTEXT_CONFIRM_TEXT 1046 "O Tree IDE será removido do seu computador.$\r$\n$\r$\nDeseja continuar?"
+LangString MUI_UNTEXT_FINISH_TITLE 1046 "Desinstalação concluída"
+LangString MUI_UNTEXT_FINISH_TEXT 1046 "O Tree IDE foi removido do seu computador."
+LangString MUI_UNTEXT_ABORT_TITLE 1046 "Desinstalação cancelada"
+LangString MUI_UNTEXT_ABORT_TEXT 1046 "A desinstalação não foi concluída."
 
 !ifndef BUILD_UNINSTALLER
 Var CleanInstallCheckbox
 Var CleanInstallRequested
 
+!macro customAddLangs
+  !insertmacro MUI_LANGUAGE "English"
+  !insertmacro MUI_LANGUAGE "PortugueseBR"
+  !insertmacro MUI_LANGUAGE "Spanish"
+!macroend
+
 !macro customHeader
-  !define MUI_LANGDLL_WINDOWTITLE "Installer language / Idioma del instalador / Idioma do instalador"
-  !define MUI_LANGDLL_INFO "Select a language. / Seleccione un idioma. / Selecione um idioma."
+  !define MUI_LANGDLL_WINDOWTITLE "$(languagePageTitle)"
+  !define MUI_LANGDLL_INFO "$(languagePageIntro)"
 !macroend
 
 !macro customPageAfterChangeDir
@@ -40,7 +65,7 @@ Function UpdateCleanInstallPageText
   ${If} $LANGUAGE == 1046
     ${NSD_SetText} $0 "Escolha se o Tree IDE deve manter suas configurações atuais ou começar do zero."
     ${NSD_SetText} $CleanInstallCheckbox "Instalação limpa: remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-  ${ElseIf} $LANGUAGE == 3082
+  ${ElseIf} $LANGUAGE == 1034
     ${NSD_SetText} $0 "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
     ${NSD_SetText} $CleanInstallCheckbox "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
   ${Else}
@@ -85,7 +110,7 @@ FunctionEnd
 Function RemoveTreeIdeUserData
   ${If} $LANGUAGE == 1046
     DetailPrint "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
-  ${ElseIf} $LANGUAGE == 3082
+  ${ElseIf} $LANGUAGE == 1034
     DetailPrint "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
   ${Else}
     DetailPrint "Running clean installation. Removing Tree IDE user data."

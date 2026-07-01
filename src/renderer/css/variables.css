@@ -98,7 +98,7 @@ body.light-theme ::selection {
     background-color: rgba(0, 0, 0, 0.10);
 }
 
-body.light-theme #toast {
+body.light-theme .toast-item {
     background-color: #323232;
     color: #ffffff;
     border: none;

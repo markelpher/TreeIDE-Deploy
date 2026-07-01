@@ -1,6 +1,17 @@
 /* Project Tabs Bar */
+:root {
+    --tab-bar-height: 36px;
+    --tab-bar-height-overflow: 44px;
+    --tab-bar-row-pad: 4px;
+    --tab-bar-scroll-gap: 4px;
+    --tab-bar-scroll-size: 4px;
+    --tab-bar-border-compensation: 0px;
+    --tab-bar-motion: 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .project-tabs-bar {
-    height: 36px;
+    --tab-bar-border-compensation: 1px;
+    height: var(--tab-bar-height);
     background-color: rgba(var(--bg-secondary-rgb, 18, 18, 18), 0.8);
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -10,22 +21,123 @@
     overflow: hidden;
     flex-shrink: 0;
     position: relative;
+    transition: height var(--tab-bar-motion);
+}
+
+.project-tabs-bar.has-tab-overflow:hover,
+.project-tabs-bar.has-tab-overflow:focus-within,
+.code-tabs-bar.has-tab-overflow:hover,
+.code-tabs-bar.has-tab-overflow:focus-within {
+    height: calc(var(--tab-bar-height-overflow) + var(--tab-bar-border-compensation));
+    align-items: stretch;
+}
+
+.tab-scroll-viewport {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    transition: align-items var(--tab-bar-motion);
+}
+
+.tab-scroll-viewport.has-tab-overflow {
+    overflow-x: auto;
+}
+
+.tab-scroll-viewport::-webkit-scrollbar {
+    display: none;
+    height: 0;
+}
+
+.project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+.project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
+.build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+.build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow {
+    align-items: flex-start;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(127, 127, 127, 0.22) transparent;
+}
+
+.project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar {
+    display: block;
+    height: var(--tab-bar-scroll-size);
+}
+
+.project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
+.project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
+.build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
+.build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+.project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+.build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+.build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb {
+    background: rgba(127, 127, 127, 0.22);
+    border-radius: 999px;
+}
+
+body.light-theme .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+body.light-theme .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
+body.light-theme .code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+body.light-theme .code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
+body.light-theme .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow {
+    scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
+}
+
+body.light-theme .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+body.light-theme .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+body.light-theme .code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+body.light-theme .code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+body.light-theme .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
+body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.16);
 }
 
 .project-tab-list {
     display: flex;
     align-items: center;
     gap: 4px;
-    flex: 1;
-    min-width: 0;
-    overflow-x: auto;
-    scroll-behavior: smooth;
+    width: max-content;
+    min-width: 100%;
     padding: 0 24px;
-    scrollbar-width: none;
+    box-sizing: border-box;
+    transition:
+        min-height var(--tab-bar-motion),
+        padding var(--tab-bar-motion);
 }
 
-.project-tab-list::-webkit-scrollbar {
-    display: none;
+.project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .project-tab-list,
+.project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .project-tab-list,
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .code-tab-list,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .code-tab-list,
+.build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .project-tab-list,
+.build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .project-tab-list {
+    min-height: calc(
+        var(--tab-bar-height-overflow)
+        - var(--tab-bar-scroll-size)
+        - var(--tab-bar-scroll-gap)
+    );
+    padding-top: var(--tab-bar-row-pad);
+    padding-bottom: var(--tab-bar-scroll-gap);
 }
 
 .project-tab {
@@ -71,9 +183,25 @@
     border-color: var(--accent-color);
 }
 
+.project-tab-list.is-reordering .project-tab.active {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.project-tab.active.reorder-beside-active {
+    color: var(--text-primary);
+    background-color: color-mix(in srgb, var(--bg-accent) 72%, transparent);
+    border-color: color-mix(in srgb, var(--accent-color) 60%, var(--border-strong));
+}
+
+.project-tab-list.is-reordering,
+.project-tab-list.is-reordering .project-tab {
+    cursor: grabbing;
+}
+
 .project-tab.dragging {
     opacity: 0.4;
     transform: scale(0.98);
+    cursor: grabbing;
 }
 
 .project-tab.drag-over-left {
@@ -203,7 +331,8 @@
 
 /* Code Editor Tabs */
 .code-tabs-bar {
-    height: 36px;
+    --tab-bar-border-compensation: 1px;
+    height: var(--tab-bar-height);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -212,22 +341,20 @@
     overflow: hidden;
     flex-shrink: 0;
     position: relative;
+    transition: height var(--tab-bar-motion);
 }
 
 .code-tab-list {
     display: flex;
     align-items: center;
     gap: 4px;
-    flex: 1;
-    min-width: 0;
-    overflow-x: auto;
-    scroll-behavior: smooth;
+    width: max-content;
+    min-width: 100%;
     padding: 0 4px;
-    scrollbar-width: none;
-}
-
-.code-tab-list::-webkit-scrollbar {
-    display: none;
+    box-sizing: border-box;
+    transition:
+        min-height var(--tab-bar-motion),
+        padding var(--tab-bar-motion);
 }
 
 /* Tab scroll buttons */
@@ -236,13 +363,13 @@
     align-items: center;
     justify-content: center;
     width: 32px;
-    height: 100%;
+    height: 28px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
     position: absolute;
-    top: 0;
+    top: var(--tab-bar-row-pad);
     z-index: 5;
     opacity: 0;
     transition: opacity 0.18s ease, color 0.15s ease, transform 0.12s ease;

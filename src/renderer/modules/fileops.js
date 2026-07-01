@@ -356,6 +356,7 @@ const defaultFileLangs = {};
         if (!createBtn || !app.buildStudio) { return; }
 
         createBtn.addEventListener('click', () => {
+            if (!app.buildShared.canOpenBuildStudio()) { return; }
             void app.buildStudio.open();
         });
     }

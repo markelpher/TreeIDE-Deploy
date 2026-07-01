@@ -11,7 +11,6 @@ import {
     applyBlockIndent,
     applyTabKey,
     applyBackspaceKey,
-    getBackspaceIndentDeleteLength,
     transformLineIndent,
     shouldUseBlockIndent,
     INDENT_UNIT

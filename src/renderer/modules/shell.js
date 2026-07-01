@@ -1,4 +1,5 @@
 import { toHtmlLang } from '../../shared/i18n.js';
+import { isProjectTreePath, isTreeTemplatePath } from '../../shared/templateFile.js';
 
 export function createShell(app) {
 
@@ -197,7 +198,10 @@ function bindExternalFileDrop() {
     const dropOverlay = document.getElementById('dropOverlay');
     let dragCounter = 0;
 
-    const isFileDropDisabled = () => document.body.classList.contains('build-studio-active');
+    const isFileDropDisabled = () => (
+        document.body.classList.contains('build-studio-active')
+        || document.body.classList.contains('templates-active')
+    );
 
     const isExternalFileDrag = (e) => {
         const types = e.dataTransfer?.types;
@@ -252,7 +256,11 @@ function bindExternalFileDrop() {
 
         try {
             const filePath = app.electronAPI.getFilePath(file);
-            if (isArchive || file.name.toLowerCase().endsWith('.tree')) {
+            if (isTreeTemplatePath(file.name)) {
+                showToast(app.i18n.t('error_template_use_templates'), 5000);
+                return;
+            }
+            if (isArchive || isProjectTreePath(file.name)) {
                 await app.loadProject.loadProjectFromPath(app, filePath);
             } else {
                 showToast(app.i18n.t('invalid_file_type') || 'Unsupported file type');
@@ -481,7 +489,10 @@ function bindKeyboardShortcuts(menuRefs) {
     const { applyEditorIndent, switchAdjacentTab } = app.editor;
 
     document.addEventListener('keydown', (e) => {
-        if (document.body.classList.contains('build-studio-active')) {
+        if (
+            document.body.classList.contains('build-studio-active')
+            || document.body.classList.contains('templates-active')
+        ) {
             return;
         }
         if (app.shortcuts?.isCapturing) {
@@ -631,32 +642,19 @@ function bindModals() {
     const closeTemplatesModal = document.getElementById('closeTemplatesModal');
     if (closeTemplatesModal) {
         closeTemplatesModal.addEventListener('click', () => {
-            app.modals.closeModalAnimated(document.getElementById('templatesModal'));
+            app.templates.closeTemplatesModal();
         });
     }
     const useTemplateBtn = document.getElementById('useTemplateBtn');
     if (useTemplateBtn) {
         useTemplateBtn.addEventListener('click', () => {
             app.templates.applyTemplate(app.templates.selectedTemplateName);
-            app.modals.closeModalAnimated(document.getElementById('templatesModal'));
+            app.templates.closeTemplatesModal();
         });
     }
-    const templatesList = document.getElementById('templatesList');
-    if (templatesList) {
-        templatesList.addEventListener('click', (e) => {
-            const btn = e.target.closest('.template-option');
-            if (!btn) { return; }
-            app.templates.selectedTemplateName = btn.dataset.template;
-            app.templates.renderTemplateModal();
-        });
-    }
-    app.templates.bindTemplateTreePreview();
+    app.templates.bindTemplateModal();
 
     const startBtn = document.getElementById('startBtn');
-    const saveCustomTemplateBtn = document.getElementById('saveCustomTemplateBtn');
-    if (saveCustomTemplateBtn) {
-        saveCustomTemplateBtn.addEventListener('click', () => { void app.templates.saveCurrentAsTemplate(); });
-    }
     if (startBtn) {
         startBtn.addEventListener('click', () => {
             app.modals.closeModalAnimated(document.getElementById('welcomeModal'), {
