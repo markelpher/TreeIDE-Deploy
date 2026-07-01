@@ -87,11 +87,59 @@ Execute os testes:
 npm test
 ```
 
-Compile para Windows:
+### Windows (x64 + arm64)
 
 ```bash
 npm run build
 ```
+
+Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && electron-builder --win nsis msi portable --arm64`.
+
+| Identificador Windows | Valor |
+| --- | --- |
+| ID de aplicativo | `com.treeide.treeide` |
+| Nome do executavel | `Tree IDE` |
+| Idiomas do instalador | Ingles (`en_US`), Portugues (`pt_BR`) |
+| Metadados do atualizador | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
+| Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
+| Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
+| Arquivos de release (x64 / arm64) | `Tree-IDE-Setup-{version}-{arch}.exe` (NSIS), `Tree-IDE-{version}-{arch}.msi`, `Tree-IDE-Portable-{version}-{arch}.exe` |
+
+### Linux (x64 + arm64)
+
+```bash
+vite build && electron-builder --linux AppImage deb snap
+```
+
+Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64. Bundles Flatpak sao construidos separadamente na CI.
+
+| Identificador Linux | Valor |
+| --- | --- |
+| ID de aplicativo | `com.treeide.treeide` |
+| Entrada desktop | `com.treeide.treeide.desktop` |
+| Categoria do app | `Development` |
+| Metadados do atualizador | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
+| Workflow de CI | `Build Linux` — `.github/workflows/linux-build.yml` |
+| Nomes dos artefatos na CI | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
+| Arquivos de release (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
+| Arquivos de release (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `Tree-IDE-{version}-aarch64.flatpak` |
+
+### macOS (Apple Silicon / arm64)
+
+```bash
+npm run build:mac
+```
+
+Macs Intel nao sao suportados.
+
+| Identificador macOS | Valor |
+| --- | --- |
+| Bundle ID | `com.treeide.treeide` |
+| Categoria do app | `public.app-category.developer-tools` |
+| Metadados do atualizador | `latest-mac.yml` |
+| Workflow de CI | `Build macOS` — `.github/workflows/macos-build.yml` |
+| Nome do artefato na CI | `tree-ide-macos-arm64` |
+| Arquivos de release | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
 
 ## Estrutura do Projeto
 
@@ -112,7 +160,11 @@ tests/                          # Testes Vitest
 build/                          # Configuracao do instalador NSIS
 build-flatpak/                  # Empacotamento Flatpak
 scripts/                        # Scripts de build e CI
-.github/workflows/              # CI multiplataforma e release finalize
+.github/workflows/
+|   windows-build.yml           # Build Windows (x64 + arm64)
+|   linux-build.yml             # Build Linux (x64 + arm64 + Flatpak)
+|   macos-build.yml             # Build macOS (arm64 DMG + ZIP)
+|   release-finalize.yml        # Localizar changelogs e publicar release
 ```
 
 ## Licenca

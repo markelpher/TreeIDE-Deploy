@@ -87,11 +87,59 @@ Run tests:
 npm test
 ```
 
-Build for Windows:
+### Windows (x64 + arm64)
 
 ```bash
 npm run build
 ```
+
+On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-builder --win nsis msi portable --arm64`.
+
+| Windows identifier | Value |
+| --- | --- |
+| Application ID | `com.treeide.treeide` |
+| Executable name | `Tree IDE` |
+| Installer languages | English (`en_US`), Portuguese (`pt_BR`) |
+| Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
+| CI workflow | `Build Windows` — `.github/workflows/windows-build.yml` |
+| CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
+| Release files (x64 / arm64) | `Tree-IDE-Setup-{version}-{arch}.exe` (NSIS), `Tree-IDE-{version}-{arch}.msi`, `Tree-IDE-Portable-{version}-{arch}.exe` |
+
+### Linux (x64 + arm64)
+
+```bash
+vite build && electron-builder --linux AppImage deb snap
+```
+
+On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built separately in CI.
+
+| Linux identifier | Value |
+| --- | --- |
+| Application ID | `com.treeide.treeide` |
+| Desktop entry | `com.treeide.treeide.desktop` |
+| App category | `Development` |
+| Updater metadata | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
+| CI workflow | `Build Linux` — `.github/workflows/linux-build.yml` |
+| CI artifact names | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
+| Release files (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
+| Release files (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `Tree-IDE-{version}-aarch64.flatpak` |
+
+### macOS (Apple Silicon / arm64)
+
+```bash
+npm run build:mac
+```
+
+Intel Macs are not supported.
+
+| macOS identifier | Value |
+| --- | --- |
+| Bundle ID | `com.treeide.treeide` |
+| App category | `public.app-category.developer-tools` |
+| Updater metadata | `latest-mac.yml` |
+| CI workflow | `Build macOS` — `.github/workflows/macos-build.yml` |
+| CI artifact name | `tree-ide-macos-arm64` |
+| Release files | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
 
 ## Project Structure
 
@@ -112,7 +160,11 @@ tests/                          # Vitest test files
 build/                          # NSIS installer configuration
 build-flatpak/                  # Flatpak packaging
 scripts/                        # Build and CI helper scripts
-.github/workflows/              # Multi-platform CI and release finalize
+.github/workflows/
+|   windows-build.yml           # Build Windows (x64 + arm64)
+|   linux-build.yml             # Build Linux (x64 + arm64 + Flatpak)
+|   macos-build.yml             # Build macOS (arm64 DMG + ZIP)
+|   release-finalize.yml        # Localize changelogs and publish release
 ```
 
 ## License

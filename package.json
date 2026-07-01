@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.68",
+  "version": "2.0.69",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -117,7 +117,7 @@
       ],
       "icon": "assets/icon-no-bg.png",
       "category": "public.app-category.developer-tools",
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "artifactName": "Tree-IDE-${version}-macOS-${arch}.${ext}",
       "publish": [
         {
           "provider": "github",
@@ -128,7 +128,7 @@
       ]
     },
     "dmg": {
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "artifactName": "Tree-IDE-${version}-macOS-${arch}.${ext}",
       "title": "Tree IDE ${version}"
     },
     "deb": {
