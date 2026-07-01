@@ -1,4 +1,4 @@
-## What's new in v2.0.55
+## What's new in v2.0.57
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([TreeIDE/TreeIDE](https://github.com/TreeIDE/TreeIDE) v1.0.0). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -96,7 +96,6 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([TreeIDE/TreeID
 - **ESLint and Prettier** integrated into npm scripts
 - **electron-reloader** for main-process hot reload during development
 - **Error log export** on crash for easier debugging
-- **New home repository** — [markelpher/TreeIDE-Deploy](https://github.com/markelpher/TreeIDE-Deploy) (v2 by Mark Elpher; original concept by Mare)
 
 ### Changed
 

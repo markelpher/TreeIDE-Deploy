@@ -75,7 +75,9 @@ jobs:
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
-            npx electron-builder --linux AppImage deb snap --x64 --publish "$PUBLISH_MODE" && break
+            npx electron-builder --linux AppImage deb --x64 --publish "$PUBLISH_MODE" \
+              && npx electron-builder --linux snap --x64 --publish never \
+              && break
 
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
               DELAY=$((20 * attempt))
@@ -285,8 +287,7 @@ jobs:
 
       - name: Build Electron app for Flatpak
         run: |
-          npm run build:renderer
-          npx electron-builder --linux dir --x64
+          npx electron-builder --linux dir --x64 --publish never
           rm -rf build-flatpak/staging/linux-unpacked
           cp -a dist/linux-unpacked build-flatpak/staging/linux-unpacked
           test -f build-flatpak/staging/linux-unpacked/tree-ide
@@ -297,7 +298,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           test -d build-flatpak/staging/linux-unpacked
-          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
+          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub --default-branch=stable .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
 
       - name: Upload Flatpak x86_64 artifact
@@ -348,10 +349,9 @@ jobs:
 
       - name: Build Electron app for Flatpak
         run: |
-          npm run build:renderer
-          npx electron-builder --linux dir --arm64
+          npx electron-builder --linux dir --arm64 --publish never
           rm -rf build-flatpak/staging/linux-unpacked
-          cp -a dist/linux-unpacked build-flatpak/staging/linux-unpacked
+          cp -a dist/linux-arm64-unpacked build-flatpak/staging/linux-unpacked
           test -f build-flatpak/staging/linux-unpacked/tree-ide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -360,7 +360,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           test -d build-flatpak/staging/linux-unpacked
-          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
+          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub --default-branch=stable .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
 
       - name: Upload Flatpak aarch64 artifact
