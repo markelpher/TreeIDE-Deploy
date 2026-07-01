@@ -23,34 +23,9 @@ LangString cleanInstallDetails 1033 "Running clean installation. Removing Tree I
 LangString cleanInstallDetails 1046 "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
 LangString cleanInstallDetails 1034 "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
 
-; Uninstaller UI strings for Spanish and Portuguese (required by MUI_LANGUAGE).
-LangString MUI_UNTEXT_WELCOME_INFO_TITLE 1034 "Desinstalación de Tree IDE"
-LangString MUI_UNTEXT_WELCOME_INFO_TEXT 1034 "Este asistente le guiará en la desinstalación de Tree IDE.$\r$\n$\r$\nCierre Tree IDE si está en ejecución antes de continuar."
-LangString MUI_UNTEXT_CONFIRM_TITLE 1034 "Confirmar desinstalación"
-LangString MUI_UNTEXT_CONFIRM_TEXT 1034 "Tree IDE se eliminará de su equipo.$\r$\n$\r$\n¿Desea continuar?"
-LangString MUI_UNTEXT_FINISH_TITLE 1034 "Desinstalación completada"
-LangString MUI_UNTEXT_FINISH_TEXT 1034 "Tree IDE se ha eliminado de su equipo."
-LangString MUI_UNTEXT_ABORT_TITLE 1034 "Desinstalación cancelada"
-LangString MUI_UNTEXT_ABORT_TEXT 1034 "La desinstalación no se ha completado."
-
-LangString MUI_UNTEXT_WELCOME_INFO_TITLE 1046 "Desinstalação do Tree IDE"
-LangString MUI_UNTEXT_WELCOME_INFO_TEXT 1046 "Este assistente irá guiá-lo pela desinstalação do Tree IDE.$\r$\n$\r$\nFeche o Tree IDE se estiver em execução antes de continuar."
-LangString MUI_UNTEXT_CONFIRM_TITLE 1046 "Confirmar desinstalação"
-LangString MUI_UNTEXT_CONFIRM_TEXT 1046 "O Tree IDE será removido do seu computador.$\r$\n$\r$\nDeseja continuar?"
-LangString MUI_UNTEXT_FINISH_TITLE 1046 "Desinstalação concluída"
-LangString MUI_UNTEXT_FINISH_TEXT 1046 "O Tree IDE foi removido do seu computador."
-LangString MUI_UNTEXT_ABORT_TITLE 1046 "Desinstalação cancelada"
-LangString MUI_UNTEXT_ABORT_TEXT 1046 "A desinstalação não foi concluída."
-
 !ifndef BUILD_UNINSTALLER
 Var CleanInstallCheckbox
 Var CleanInstallRequested
-
-!macro customAddLangs
-  !insertmacro MUI_LANGUAGE "English"
-  !insertmacro MUI_LANGUAGE "PortugueseBR"
-  !insertmacro MUI_LANGUAGE "Spanish"
-!macroend
 
 !macro customHeader
   !define MUI_LANGDLL_WINDOWTITLE "$(languagePageTitle)"
