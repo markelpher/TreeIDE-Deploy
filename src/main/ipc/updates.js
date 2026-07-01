@@ -3,17 +3,38 @@
  */
 
 import { createRequire } from 'node:module';
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, shell } from 'electron';
 import log from 'electron-log';
 import {
     getUpdateErrorMessage,
     normalizeReleaseName,
 } from '../../shared/updateErrors.js';
+import { getUpdateInstallMode, isInAppUpdateInstallSupported } from '../../shared/updateInstall.js';
+import { normalizeDownloadPercent } from '../../shared/updateProgress.js';
 
 const require = createRequire(import.meta.url);
 const semver = require('semver');
 
 let autoUpdater = null;
+let lastDownloadPercent = 0;
+
+function resolveUpdateInstallMode() {
+    return getUpdateInstallMode({
+        isPackaged: app.isPackaged,
+        platform: process.platform,
+        env: process.env,
+        resourcesPath: process.resourcesPath,
+    });
+}
+
+function buildUpdatePayload(base) {
+    const installMode = resolveUpdateInstallMode();
+    return {
+        ...base,
+        installMode,
+        inAppInstallSupported: isInAppUpdateInstallSupported(installMode),
+    };
+}
 
 /** @returns {boolean} True only when latest is strictly newer than current. */
 export function isUpdateNewer(latestVersion, currentVersion) {
@@ -30,6 +51,9 @@ try {
     autoUpdater.autoDownload = false;
     autoUpdater.allowPrerelease = false;
     autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.autoRunAppAfterInstall = true;
+    autoUpdater.disableDifferentialDownload = true;
+    autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = log;
     autoUpdater.logger.transports.file.level = 'info';
 } catch (err) {
@@ -88,15 +112,15 @@ async function checkReleaseUpdate() {
         log.info(`No newer update: current=${currentVersion}, latest=${latestVersion}`);
     }
 
-    return {
+    return buildUpdatePayload({
         ok: true,
         updateAvailable,
         currentVersion,
         latestVersion: updateAvailable ? latestVersion : currentVersion,
         releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
         releaseNotes: serializeReleaseNotes(info?.releaseNotes),
-        assetName: info?.files?.[0]?.url || ''
-    };
+        assetName: info?.files?.[0]?.url || '',
+    });
 }
 
 export function registerUpdaterEvents(getMainWindow) {
@@ -109,15 +133,15 @@ export function registerUpdaterEvents(getMainWindow) {
             return;
         }
         log.info(`Update available: ${info.version}`);
-        getMainWindow()?.webContents.send('release-update-available', {
+        getMainWindow()?.webContents.send('release-update-available', buildUpdatePayload({
             ok: true,
             updateAvailable: true,
             currentVersion: app.getVersion(),
             latestVersion: info.version,
             releaseName: normalizeReleaseName(info.releaseName, info.version),
             releaseNotes: serializeReleaseNotes(info.releaseNotes),
-            assetName: info?.files?.[0]?.url || ''
-        });
+            assetName: info?.files?.[0]?.url || '',
+        }));
     });
 
     autoUpdater.on('checking-for-update', () => {
@@ -129,9 +153,10 @@ export function registerUpdaterEvents(getMainWindow) {
     });
 
     autoUpdater.on('download-progress', (progress) => {
-        log.info(`Download progress: ${Math.round(progress.percent)}%`);
+        lastDownloadPercent = normalizeDownloadPercent(lastDownloadPercent, progress);
+        log.info(`Download progress: ${lastDownloadPercent}%`);
         getMainWindow()?.webContents.send('update-download-progress', {
-            percent: Math.round(progress.percent),
+            percent: lastDownloadPercent,
             bytesPerSecond: progress.bytesPerSecond,
             transferred: progress.transferred,
             total: progress.total
@@ -173,9 +198,10 @@ export function registerUpdateIpc(isReadyToCloseRef) {
             return { ok: false, error: 'update_failed' };
         }
         try {
+            lastDownloadPercent = 0;
             log.info('Starting update download...');
             await autoUpdater.downloadUpdate();
-            return { ok: true };
+            return { ok: true, installMode: resolveUpdateInstallMode() };
         } catch (err) {
             log.warn(`Download error: ${err?.message || String(err)}`);
             return { ok: false, error: getUpdateErrorMessage(err) };
@@ -186,10 +212,29 @@ export function registerUpdateIpc(isReadyToCloseRef) {
         if (!autoUpdater) {
             return { ok: false, error: 'update_failed' };
         }
+
+        const installMode = resolveUpdateInstallMode();
+        if (!isInAppUpdateInstallSupported(installMode)) {
+            const installerPath = autoUpdater.downloadedUpdateHelper?.file;
+            if (installerPath) {
+                shell.showItemInFolder(installerPath);
+                return { ok: true, manual: true };
+            }
+            return { ok: false, error: 'update_manual_install' };
+        }
+
         log.info('Installing update and restarting...');
         isReadyToCloseRef.value = true;
-        autoUpdater.quitAndInstall(true, true);
+        autoUpdater.quitAndInstall(false, true);
         return { ok: true };
+    });
+
+    ipcMain.handle('get-update-capabilities', () => {
+        const installMode = resolveUpdateInstallMode();
+        return {
+            installMode,
+            inAppInstallSupported: isInAppUpdateInstallSupported(installMode),
+        };
     });
 }
 

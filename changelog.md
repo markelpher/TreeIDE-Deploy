@@ -1,4 +1,4 @@
-## What's new in v2.0.61
+## What's new in v2.0.62
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -75,6 +75,8 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Localized release notes** in the update modal (English and Portuguese)
 - **Collapsible “What’s new”** section in the update dialog
 - **Manual `changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
+- **Split release notes** — app update modal shows changelog text only; the GitHub compare link (`Full Changelog`) appears on the GitHub release page, not inside the app
+- **GitHub Models translation** — Portuguese release notes are generated in CI via the `models.github.ai` API
 
 #### Keyboard shortcuts
 - **Fully configurable shortcuts** with capture UI and restore-defaults action
@@ -82,9 +84,10 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 
 #### Platforms & distribution
 - **Windows** — NSIS installer, MSI, and portable builds for x64 and ARM64; multi-language installer (English and Portuguese)
-- **Linux** — AppImage, deb, and snap for x64 and ARM64; Flatpak builds (x86_64 and aarch64, runtime 25.08)
+- **Linux** — AppImage, deb, and snap for x64 and ARM64; Flatpak builds (x86_64 and aarch64, runtime 25.08) with `zypak-wrapper` launcher
 - **macOS** — DMG and ZIP for Apple Silicon (arm64)
 - **GitHub Releases** published automatically on version tags from CI
+- **Renderer build before pack** — `beforePack` runs `vite build` and validates `dist/renderer/` so every installer ships the UI bundle
 
 #### Architecture, dev tooling & quality
 - **Vite** renderer build with hot module replacement in development
@@ -92,10 +95,11 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **ES modules**, Node.js 24+, Electron 42
 - **Split IPC handlers** for project, updates, and app lifecycle
 - **`contextBridge` preload API** for a hardened renderer boundary
-- **Vitest** test suite with Electron mocks for CI-friendly runs
+- **Vitest** test suite with Electron mocks for CI-friendly runs; changelog and updater error helpers covered by dedicated tests
 - **ESLint and Prettier** integrated into npm scripts
 - **electron-reloader** for main-process hot reload during development
 - **Error log export** on crash for easier debugging
+- **`semver`** as a direct dependency for reliable in-app version comparison
 
 ### Changed
 
@@ -109,9 +113,17 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Distribution** expanded from Windows MSI-only (v1) to multi-OS CI with ARM64 support, Flatpak, and macOS packages
 - **Electron** upgraded from v26 (v1) to v42 (v2)
 - **Release versioning** moved to semantic v2.x releases with automated multilingual changelog generation
+- **Release notes routing** — `en.md` / `pt.md` feed the in-app updater; `github-release.md` feeds the GitHub release body with the compare link
 
 ### Fixed
 
+- **Blank / black screen after install** — packaged builds could ship without `dist/renderer/` because the UI output is gitignored; `electron-before-pack` now builds and verifies the renderer before every `electron-builder` pack
+- **Update check failures** — clearer localized errors for network issues, missing `latest*.yml`, and inaccessible releases; duplicate error toasts removed; unknown updater errors fall back to a translated message instead of raw English
+- **Update dialog release name** — `Tree IDE v${version}` template from electron-builder is normalized to the real version string in the app
+- **Release CI (translation job)** — migrated from the deprecated Azure GitHub Models endpoint to `models.github.ai`; workflows request `models: read`; `latest*.yml` injection no longer depends on `npm install` in the release-notes job
+- **Flatpak packaging** — corrected Electron staging path, manifest sources, ARM64 unpacked directory, `zypak-wrapper` entrypoint, and desktop filename patching
+- **GitHub Actions cache cleanup** — fixed `jq` comparing numeric cache IDs to strings, which could delete the cache entry meant to be kept
+- **Linux snap CI** — snap artifacts build with `--publish never` so CI does not require Snap Store credentials
 - **Path safety** — tree parser and creator reject traversal and other unsafe paths before writing to disk
 - **Indentation validation** — mixed tabs and spaces are detected and reported in the validation panel
 - **Duplicate names** — sibling files and folders with the same name are flagged before build

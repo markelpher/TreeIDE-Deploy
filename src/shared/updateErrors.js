@@ -5,6 +5,7 @@ export const UPDATE_ERROR_KEYS = new Set([
     'update_metadata_missing',
     'update_network_error',
     'update_unavailable',
+    'update_manual_install',
 ]);
 
 /**

@@ -3,6 +3,7 @@ import {
     shouldTranslateChangelogSections,
 } from '../../shared/releaseNotes.js';
 import { translateUpdateError } from '../../shared/updateErrors.js';
+import { normalizeDownloadPercent } from '../../shared/updateProgress.js';
 
 export function createModals(app) {
 
@@ -35,6 +36,20 @@ export function createModals(app) {
 
     let isDownloadingUpdate = false;
     let isUpdateDownloaded = false;
+    let maxDownloadPercent = 0;
+    let currentUpdateInstallMode = 'in-app';
+
+    function applyUpdateDownloadLabel() {
+        const downloadLabel = document.getElementById('updateDownloadLabel');
+        if (!downloadLabel) { return; }
+        if (isUpdateDownloaded) {
+            downloadLabel.textContent = currentUpdateInstallMode === 'in-app'
+                ? app.i18n.t('update_install_restart')
+                : app.i18n.t('update_show_installer');
+            return;
+        }
+        downloadLabel.textContent = app.i18n.t('update_download_release');
+    }
 
     function resetReleaseUpdateButton() {
         const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
@@ -58,13 +73,15 @@ export function createModals(app) {
             progressEl.setAttribute('aria-valuenow', '0');
             progressEl.setAttribute('aria-valuetext', '0%');
         }
-        if (downloadLabel) {downloadLabel.textContent = app.i18n.t('update_download_release');}
+        applyUpdateDownloadLabel();
         isDownloadingUpdate = false;
         isUpdateDownloaded = false;
+        maxDownloadPercent = 0;
     }
 
     function showReleaseUpdateModal(info) {
         latestReleaseUpdate = info;
+        currentUpdateInstallMode = info?.installMode === 'manual' ? 'manual' : 'in-app';
         const currentVer = document.getElementById('releaseUpdateCurrent');
         const latestVer = document.getElementById('releaseUpdateLatest');
         if (currentVer) {currentVer.textContent = `v${info.currentVersion || '---'}`;}
@@ -175,13 +192,14 @@ export function createModals(app) {
                 const progressFill = document.getElementById('releaseUpdateProgressFill');
                 const progressText = document.getElementById('releaseUpdateProgressText');
 
-                const percent = Math.round(progress.percent);
+                maxDownloadPercent = normalizeDownloadPercent(maxDownloadPercent, progress);
+                const percent = maxDownloadPercent;
                 if (progressEl) {
                     progressEl.classList.add('show', 'downloading');
                     progressEl.setAttribute('aria-valuenow', String(percent));
                     progressEl.setAttribute('aria-valuetext', `${percent}%`);
                 }
-                if (progressFill) {progressFill.style.width = `${progress.percent}%`;}
+                if (progressFill) {progressFill.style.width = `${percent}%`;}
                 if (progressText) {progressText.textContent = `${percent}%`;}
             });
         }
@@ -209,7 +227,11 @@ export function createModals(app) {
                 }
                 if (progressFill) {progressFill.style.width = '100%';}
                 if (progressText) {progressText.textContent = '100%';}
-                if (downloadLabel) {downloadLabel.textContent = app.i18n.t('update_install_restart');}
+                maxDownloadPercent = 100;
+                applyUpdateDownloadLabel();
+                if (currentUpdateInstallMode === 'manual') {
+                    __showToast(app.i18n.t('update_manual_install_hint'), 5000);
+                }
             });
         }
     }
@@ -540,11 +562,17 @@ export function createModals(app) {
     if (downloadReleaseUpdateBtn) {
         downloadReleaseUpdateBtn.addEventListener('click', async () => {
             if (isUpdateDownloaded) {
-                app.electronAPI.installUpdate();
+                const result = await app.electronAPI.installUpdate();
+                if (result?.manual) {
+                    __showToast(app.i18n.t('update_manual_install_hint'), 5000);
+                } else if (result && !result.ok) {
+                    __showToast(translateUpdateError(app.i18n, result.error), 4000);
+                }
                 return;
             }
             if (isDownloadingUpdate) {return;}
 
+            maxDownloadPercent = 0;
             isDownloadingUpdate = true;
             const progressEl = document.getElementById('releaseUpdateProgress');
             const declineBtn = document.getElementById('declineReleaseUpdateBtn');
