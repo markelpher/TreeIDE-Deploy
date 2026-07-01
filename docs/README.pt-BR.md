@@ -99,7 +99,7 @@ Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && elec
 | --- | --- |
 | ID de aplicativo | `com.treeide.treeide` |
 | Nome do executavel | `Tree IDE` |
-| Idiomas do instalador | Ingles (`en_US`), Portugues (`pt_BR`) |
+| Idiomas do instalador | Ingles (`en_US`), Portugues (`pt_BR`), Espanhol (`es_ES`) |
 | Metadados do atualizador | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
 | Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
 | Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |

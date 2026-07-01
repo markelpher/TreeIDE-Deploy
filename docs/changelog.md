@@ -1,4 +1,4 @@
-## What's new in v2.0.70
+## What's new in v2.0.71
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -83,7 +83,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - New defaults include `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (build), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (save all), and editor zoom shortcuts
 
 #### Platforms & distribution
-- **Windows** — NSIS installer, MSI, and portable builds for x64 and ARM64; multi-language installer (English and Portuguese)
+- **Windows** — NSIS installer, MSI, and portable builds for x64 and ARM64; multi-language installer (English, Portuguese, and Spanish)
 - **Linux** — AppImage, deb, and snap for x64 and ARM64; Flatpak builds (x86_64 and aarch64, runtime 25.08) with `zypak-wrapper` launcher
 - **macOS** — DMG and ZIP for Apple Silicon (arm64)
 - **GitHub Releases** published automatically on version tags from CI

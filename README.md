@@ -99,7 +99,7 @@ On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-b
 | --- | --- |
 | Application ID | `com.treeide.treeide` |
 | Executable name | `Tree IDE` |
-| Installer languages | English (`en_US`), Portuguese (`pt_BR`) |
+| Installer languages | English (`en_US`), Portuguese (`pt_BR`), Spanish (`es_ES`) |
 | Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
 | CI workflow | `Build Windows` — `.github/workflows/windows-build.yml` |
 | CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
