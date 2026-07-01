@@ -6,61 +6,46 @@ permissions:
   models: read
 
 on:
-  workflow_run:
-    workflows:
-      - Build Windows
-      - Build Linux
-      - Build macOS
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit SHA for the release tag
+        required: true
+        type: string
+      tag:
+        description: Release tag (for example v2.0.64)
+        required: true
+        type: string
 
 concurrency:
-  group: release-finalize-${{ github.event.workflow_run.head_sha }}
+  group: release-finalize-${{ inputs.sha }}
   cancel-in-progress: false
 
 jobs:
-  finalize:
-    name: Translate, localize, and publish release
-    if: github.event.workflow_run.conclusion == 'success'
+  wait-for-builds:
+    name: Wait for all platform builds
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      sha: ${{ steps.meta.outputs.sha }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Resolve release tag and verify all builds finished
+      - name: Wait until Windows, Linux, and macOS CI finish
         id: meta
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          sha="${{ github.event.workflow_run.head_sha }}"
-          tag=$(git tag --points-at "$sha" | grep '^v' | head -1 || true)
+          sha="${{ inputs.sha }}"
+          tag="${{ inputs.tag }}"
 
-          if [ -z "$tag" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Not a tag release — skipping finalize."
-            exit 0
+          if ! echo "$tag" | grep -qE '^v'; then
+            echo "::error::Invalid release tag: $tag"
+            exit 1
           fi
 
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-
-          prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
-          echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
-
-          is_prerelease='false'
-          if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
-            is_prerelease='true'
-          fi
-          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
           required_workflows=(
             "Build Windows"
@@ -68,45 +53,95 @@ jobs:
             "Build macOS"
           )
 
-          for workflow in "${required_workflows[@]}"; do
-            status=$(gh run list \
-              --workflow "$workflow" \
-              --commit "$sha" \
-              --json status,conclusion \
-              -q '.[0].status' || true)
-            conclusion=$(gh run list \
-              --workflow "$workflow" \
-              --commit "$sha" \
-              --json status,conclusion \
-              -q '.[0].conclusion' || true)
+          max_attempts=180
+          poll_seconds=30
 
-            if [ -z "$status" ] || [ "$status" = "null" ]; then
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "No run found for $workflow — skipping."
-              exit 0
-            fi
+          for attempt in $(seq 1 "$max_attempts"); do
+            pending=0
+            failed_workflow=""
 
-            if [ "$status" != "completed" ]; then
-              echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "$workflow is still $status — waiting for all platform builds."
-              exit 0
-            fi
+            for workflow in "${required_workflows[@]}"; do
+              status=$(gh run list \
+                --workflow "$workflow" \
+                --commit "$sha" \
+                --json status,conclusion \
+                -q '.[0].status' || true)
+              conclusion=$(gh run list \
+                --workflow "$workflow" \
+                --commit "$sha" \
+                --json status,conclusion \
+                -q '.[0].conclusion' || true)
 
-            if [ "$conclusion" != "success" ]; then
-              echo "::error::$workflow finished with $conclusion; release will not be published."
+              if [ -z "$status" ] || [ "$status" = "null" ]; then
+                pending=1
+                echo "[$attempt/$max_attempts] $workflow: run not found yet"
+                continue
+              fi
+
+              if [ "$status" != "completed" ]; then
+                pending=1
+                echo "[$attempt/$max_attempts] $workflow: $status"
+                continue
+              fi
+
+              if [ "$conclusion" != "success" ]; then
+                failed_workflow="$workflow ($conclusion)"
+                break
+              fi
+
+              echo "[$attempt/$max_attempts] $workflow: success"
+            done
+
+            if [ -n "$failed_workflow" ]; then
+              echo "::error::$failed_workflow — release will not be published."
               exit 1
             fi
+
+            if [ "$pending" -eq 0 ]; then
+              echo "All platform workflows succeeded for $tag."
+              break
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "::error::Timed out waiting for all platform builds for $tag."
+              exit 1
+            fi
+
+            sleep "$poll_seconds"
           done
 
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-          echo "All platform workflows succeeded for $tag."
+  finalize:
+    name: Translate, localize, and publish release
+    needs: wait-for-builds
+    runs-on: ubuntu-latest
 
-      - name: Skip when not a finalized release candidate
-        if: steps.meta.outputs.skip == 'true'
-        run: echo "Finalize prerequisites not met — exiting."
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.wait-for-builds.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          tag="${{ needs.wait-for-builds.outputs.tag }}"
+          prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=${{ needs.wait-for-builds.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
+          is_prerelease='false'
+          if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
+            is_prerelease='true'
+          fi
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
 
       - name: Skip when release is already published
-        if: steps.meta.outputs.skip != 'true'
         id: published
         env:
           GH_TOKEN: ${{ github.token }}
@@ -121,7 +156,7 @@ jobs:
           fi
 
       - name: Wait for draft release to be created
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -139,7 +174,7 @@ jobs:
           done
 
       - name: Build multilingual changelog
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -149,7 +184,7 @@ jobs:
             "$RUNNER_TEMP/changelogs"
 
       - name: Download all platform build artifacts
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -168,7 +203,7 @@ jobs:
           done
 
       - name: Inject localized releaseNotes into all latest*.yml
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         run: |
           set -euo pipefail
           shopt -s globstar nullglob
@@ -190,7 +225,7 @@ jobs:
             --note "pt=$RUNNER_TEMP/changelogs/pt.md"
 
       - name: Re-upload localized latest*.yml to release
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -205,7 +240,7 @@ jobs:
           done
 
       - name: Upload Flatpak bundles to release
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -225,7 +260,7 @@ jobs:
           done
 
       - name: Upload changelog files to release
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -236,7 +271,7 @@ jobs:
             "$RUNNER_TEMP/changelogs/pt.md"
 
       - name: Write release-ready marker
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         run: |
           version="${{ steps.meta.outputs.tag }}"
           version="${version#v}"
@@ -244,7 +279,7 @@ jobs:
             > "$RUNNER_TEMP/release-ready.json"
 
       - name: Upload release-ready marker
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -252,7 +287,7 @@ jobs:
           gh release upload --clobber "$tag" "$RUNNER_TEMP/release-ready.json"
 
       - name: Publish GitHub release
-        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        if: steps.published.outputs.already != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
