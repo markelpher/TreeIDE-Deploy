@@ -77,7 +77,7 @@ jobs:
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
             npx electron-builder --linux AppImage deb --x64 --publish "$PUBLISH_MODE" \
-              && npx electron-builder --linux snap --x64 --publish never \
+              && npx electron-builder --linux snap --x64 --publish never --prepackaged dist/linux-unpacked \
               && break
 
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
@@ -402,7 +402,7 @@ jobs:
       - name: Dispatch release finalize when all platforms are ready
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-dispatch-release-finalize.sh "${{ github.sha }}" "${{ github.ref_name }}"
+        run: bash scripts/ci-dispatch-release-finalize.sh "${{ github.sha }}" "${{ github.ref_name }}" "Build Linux"
 
 
 

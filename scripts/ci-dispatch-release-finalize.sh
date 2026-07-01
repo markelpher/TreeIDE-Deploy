@@ -7,6 +7,7 @@ set -euo pipefail
 
 sha="${1:?commit SHA required}"
 tag="${2:?release tag required}"
+current_workflow="${3:-}"
 
 if ! echo "$tag" | grep -qE '^v'; then
   echo "::error::Invalid release tag: $tag"
@@ -21,6 +22,11 @@ required_workflows=(
 
 pending=0
 for workflow in "${required_workflows[@]}"; do
+  if [ -n "$current_workflow" ] && [ "$workflow" = "$current_workflow" ]; then
+    echo "$workflow: success (current workflow — build jobs finished)"
+    continue
+  fi
+
   status=$(gh run list \
     --workflow "$workflow" \
     --commit "$sha" \
@@ -58,14 +64,13 @@ if [ "$pending" -ne 0 ]; then
 fi
 
 active_finalize=$(gh run list \
-  --workflow "Release Finalize" \
-  --commit "$sha" \
+  --workflow "release-finalize.yml" \
   --json status \
   -q '.[] | select(.status == "queued" or .status == "in_progress" or .status == "pending" or .status == "waiting") | .status' \
   | head -1 || true)
 
 if [ -n "$active_finalize" ]; then
-  echo "Release Finalize is already queued or running for $tag — skipping duplicate dispatch."
+  echo "Release Finalize is already queued or running — skipping duplicate dispatch."
   exit 0
 fi
 

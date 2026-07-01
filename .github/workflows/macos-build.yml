@@ -147,5 +147,5 @@ jobs:
       - name: Dispatch release finalize when all platforms are ready
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-dispatch-release-finalize.sh "${{ github.sha }}" "${{ github.ref_name }}"
+        run: bash scripts/ci-dispatch-release-finalize.sh "${{ github.sha }}" "${{ github.ref_name }}" "Build macOS"
 
