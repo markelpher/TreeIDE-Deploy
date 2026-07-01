@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-linux-x64:
-    name: Build AppImage, DEB and Snap (x64)
+    name: Build AppImage and DEB (x64)
     runs-on: ubuntu-latest
 
     steps:
@@ -40,17 +40,8 @@ jobs:
           restore-keys: |
             electron-build-${{ runner.os }}-x64-
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron binary
-        run: node scripts/ensure-electron.mjs
-
-      - name: Install Snapcraft
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: snapcore/action-setup@v1
-        with:
-          snapcraft-channel: latest/stable
+      - name: Setup Node app
+        uses: ./.github/actions/setup-node-app
 
       - name: Validate release version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -66,7 +57,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Linux x64 artifacts (AppImage + DEB + Snap)
+      - name: Build Linux x64 artifacts (AppImage + DEB)
         run: |
           MAX_ATTEMPTS=3
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -77,7 +68,7 @@ jobs:
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
-            npx electron-builder --linux AppImage deb snap --x64 --publish "$PUBLISH_MODE" && break
+            npx electron-builder --linux AppImage deb --x64 --publish "$PUBLISH_MODE" && break
 
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
               DELAY=$((20 * attempt))
@@ -130,7 +121,6 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
-            dist/*.snap
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error
@@ -161,11 +151,8 @@ jobs:
           restore-keys: |
             electron-build-${{ runner.os }}-arm64-
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron binary
-        run: node scripts/ensure-electron.mjs
+      - name: Setup Node app
+        uses: ./.github/actions/setup-node-app
 
       - name: Validate release version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -275,11 +262,8 @@ jobs:
           restore-keys: |
             electron-build-${{ runner.os }}-x64-
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron binary
-        run: node scripts/ensure-electron.mjs
+      - name: Setup Node app
+        uses: ./.github/actions/setup-node-app
 
       - name: Install Flatpak tooling
         run: |
@@ -336,11 +320,8 @@ jobs:
           restore-keys: |
             electron-build-${{ runner.os }}-arm64-
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron binary
-        run: node scripts/ensure-electron.mjs
+      - name: Setup Node app
+        uses: ./.github/actions/setup-node-app
 
       - name: Install Flatpak tooling
         run: |

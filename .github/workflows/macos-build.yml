@@ -40,11 +40,8 @@ jobs:
           restore-keys: |
             electron-build-${{ runner.os }}-arm64-
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron binary
-        run: node scripts/ensure-electron.mjs
+      - name: Setup Node app
+        uses: ./.github/actions/setup-node-app
 
       - name: Validate release version
         if: startsWith(github.ref, 'refs/tags/v')

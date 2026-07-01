@@ -19,6 +19,7 @@
     "build:renderer": "vite build",
     "build": "vite build && electron-builder",
     "build:mac": "vite build && electron-builder --mac dmg zip --arm64",
+    "postinstall": "node scripts/ensure-electron.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "icons:generate": "node scripts/generate-lucide-local.mjs",
@@ -90,8 +91,7 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb",
-        "snap"
+        "deb"
       ],
       "icon": "assets/icon-no-bg.png",
       "category": "Development",

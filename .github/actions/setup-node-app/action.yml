@@ -1,0 +1,13 @@
+name: Setup Node app
+description: Install npm dependencies and ensure the Electron binary is ready
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Install Electron binary
+      shell: bash
+      run: node scripts/ensure-electron.mjs
