@@ -6,7 +6,7 @@ runs:
   steps:
     - name: Install dependencies
       shell: bash
-      run: npm ci
+      run: npm ci --ignore-scripts
 
     - name: Install Electron binary
       shell: bash

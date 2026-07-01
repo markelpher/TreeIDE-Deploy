@@ -158,9 +158,7 @@ async function installElectron() {
     console.log('Electron binary ready');
 }
 
-try {
-    await installElectron();
-} catch (err) {
+installElectron().catch((err) => {
     console.error(err?.stack || err);
     try {
         console.error('electron dir:', fs.readdirSync(electronDir));
@@ -171,4 +169,4 @@ try {
         console.error(listErr?.message || listErr);
     }
     process.exit(1);
-}
+});
