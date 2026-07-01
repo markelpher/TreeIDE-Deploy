@@ -13,7 +13,17 @@ on:
         required: true
         type: string
       tag:
-        description: Release tag (for example v2.0.64)
+        description: Release tag
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      sha:
+        description: Commit SHA for the release tag
+        required: true
+        type: string
+      tag:
+        description: Release tag
         required: true
         type: string
 
@@ -200,7 +210,8 @@ jobs:
           gh release upload --clobber "$tag" \
             "$RUNNER_TEMP/changelogs/changelog.md" \
             "$RUNNER_TEMP/changelogs/en.md" \
-            "$RUNNER_TEMP/changelogs/pt.md"
+            "$RUNNER_TEMP/changelogs/pt.md" \
+            "$RUNNER_TEMP/changelogs/es.md"
 
       - name: Publish GitHub release
         if: steps.published.outputs.already != 'true'

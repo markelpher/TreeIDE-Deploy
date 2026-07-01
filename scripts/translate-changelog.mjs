@@ -39,7 +39,7 @@ const GITHUB_API_VERSION = '2022-11-28';
 const LANG_NAMES = {
     pt: 'Brazilian Portuguese (pt-BR)',
     en: 'English (en-US)',
-    es: 'Spanish (es-ES)',
+    es: 'neutral Spanish understandable across all regions (es)',
     fr: 'French (fr-FR)',
     de: 'German (de-DE)',
     ja: 'Japanese (ja-JP)',

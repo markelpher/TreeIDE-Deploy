@@ -22,10 +22,12 @@ describe('combineChangelogs', () => {
         const locales = [
             { code: 'en', label: 'English' },
             { code: 'pt', label: 'Portuguese (Brazil)' },
+            { code: 'es', label: 'Español' },
         ];
         const notes = new Map([
             ['en', '## What\'s new in v2.0.54\n\n### Added\n\n- feat: item (abc1234)'],
             ['pt', '## Novidades em v2.0.54\n\n### Adicionado\n\n- feat: item (abc1234)'],
+            ['es', '## Novedades en v2.0.54\n\n### Agregado\n\n- feat: item (abc1234)'],
         ]);
 
         const combined = combineChangelogs('v2.0.54', locales, notes);
@@ -36,6 +38,8 @@ describe('combineChangelogs', () => {
         expect(combined).toContain('---');
         expect(combined).toContain('### Added');
         expect(combined).toContain('### Adicionado');
+        expect(combined).toContain('## Español');
+        expect(combined).toContain('### Agregado');
     });
 });
 

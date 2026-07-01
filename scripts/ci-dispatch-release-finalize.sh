@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
-# Dispatches release-finalize.yml only when every platform CI workflow has
-# succeeded for the tag commit. Earlier platform jobs exit quietly; the last
-# platform to finish triggers a single Release Finalize run.
+# Signals the caller workflow to run Release Finalize inline once every platform
+# CI workflow has succeeded for the tag commit. Earlier platform jobs exit quietly;
+# the last platform to finish sets run_finalize=true (with dedup for races).
 
 set -euo pipefail
 
 sha="${1:?commit SHA required}"
 tag="${2:?release tag required}"
 current_workflow="${3:-}"
+
+github_output="${GITHUB_OUTPUT:-}"
+
+write_output() {
+  local key="$1"
+  local value="$2"
+  if [ -n "$github_output" ]; then
+    echo "$key=$value" >> "$github_output"
+  fi
+}
+
+write_output run_finalize false
 
 if ! echo "$tag" | grep -qE '^v'; then
   echo "::error::Invalid release tag: $tag"
@@ -59,23 +71,32 @@ for workflow in "${required_workflows[@]}"; do
 done
 
 if [ "$pending" -ne 0 ]; then
-  echo "Other platform builds still running — not dispatching Release Finalize yet."
+  echo "Other platform builds still running — not running Release Finalize yet."
   exit 0
 fi
 
-active_finalize=$(gh run list \
-  --workflow "release-finalize.yml" \
-  --json status \
-  -q '.[] | select(.status == "queued" or .status == "in_progress" or .status == "pending" or .status == "waiting") | .status' \
-  | head -1 || true)
+finalize_job="Release finalize"
+for workflow in "${required_workflows[@]}"; do
+  run_id=$(gh run list \
+    --workflow "$workflow" \
+    --commit "$sha" \
+    --json databaseId \
+    -q '.[0].databaseId' || true)
 
-if [ -n "$active_finalize" ]; then
-  echo "Release Finalize is already queued or running — skipping duplicate dispatch."
-  exit 0
-fi
+  if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+    continue
+  fi
 
-echo "All platform builds finished — dispatching Release Finalize for $tag."
-gh workflow run release-finalize.yml \
-  --ref "$tag" \
-  -f "sha=$sha" \
-  -f "tag=$tag"
+  job_status=$(gh run view "$run_id" \
+    --json jobs \
+    -q ".jobs[] | select(.name == \"$finalize_job\") | .status" \
+    | head -1 || true)
+
+  if [ -n "$job_status" ] && [ "$job_status" != "skipped" ]; then
+    echo "Release Finalize already $job_status in $workflow — skipping duplicate run."
+    exit 0
+  fi
+done
+
+echo "All platform builds finished — running Release Finalize inline for $tag."
+write_output run_finalize true

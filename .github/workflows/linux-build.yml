@@ -393,15 +393,32 @@ jobs:
       - build-flatpak-arm
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    outputs:
+      run_finalize: ${{ steps.dispatch.outputs.run_finalize }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Dispatch release finalize when all platforms are ready
+        id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci-dispatch-release-finalize.sh "${{ github.sha }}" "${{ github.ref_name }}" "Build Linux"
+
+  release-finalize:
+    name: Release finalize
+    needs: dispatch-release-finalize
+    if: needs.dispatch-release-finalize.outputs.run_finalize == 'true'
+    permissions:
+      actions: read
+      contents: write
+      models: read
+    uses: ./.github/workflows/release-finalize.yml
+    with:
+      sha: ${{ github.sha }}
+      tag: ${{ github.ref_name }}
+    secrets: inherit
 
 
 

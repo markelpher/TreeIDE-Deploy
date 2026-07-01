@@ -1,4 +1,4 @@
-## What's new in v2.0.71
+## What's new in v2.0.72
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -59,7 +59,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Bundled fonts** — Inter and JetBrains Mono
 
 #### Internationalization
-- **English and Portuguese (pt-BR)** interface translations
+- **English, Portuguese (pt-BR), and Spanish** interface translations
 - **First-run language selection** in the welcome flow and settings
 - **Main-process translations** for native dialogs and error messages
 - **`npm run i18n:validate`** script to keep locale files in sync
@@ -72,11 +72,11 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 #### Auto-updater & release notes
 - **In-app auto-updater** — check GitHub Releases, download with progress, and restart to install
 - **Stable and beta update channels**
-- **Localized release notes** in the update modal (English and Portuguese)
+- **Localized release notes** in the update modal (English, Portuguese, and Spanish)
 - **Collapsible “What’s new”** section in the update dialog
 - **Manual `docs/changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
 - **Split release notes** — app update modal shows changelog text only; the GitHub compare link (`Full Changelog`) appears on the GitHub release page, not inside the app
-- **GitHub Models translation** — Portuguese release notes are generated in CI via the `models.github.ai` API
+- **GitHub Models translation** — Portuguese and Spanish release notes are generated in CI via the `models.github.ai` API
 
 #### Keyboard shortcuts
 - **Fully configurable shortcuts** with capture UI and restore-defaults action
@@ -113,7 +113,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Distribution** expanded from Windows MSI-only (v1) to multi-OS CI with ARM64 support, Flatpak, and macOS packages
 - **Electron** upgraded from v26 (v1) to v42 (v2)
 - **Release versioning** moved to semantic v2.x releases with automated multilingual changelog generation
-- **Release notes routing** — `en.md` / `pt.md` feed the in-app updater; `github-release.md` feeds the GitHub release body with the compare link
+- **Release notes routing** — `en.md`, `pt.md`, and `es.md` feed the in-app updater; `github-release.md` feeds the GitHub release body with the compare link
 
 ### Fixed
 
@@ -121,7 +121,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Update check failures** — clearer localized errors for network issues, missing `latest*.yml`, and inaccessible releases; duplicate error toasts removed; unknown updater errors fall back to a translated message instead of raw English
 - **Update dialog release name** — `Tree IDE v${version}` template from electron-builder is normalized to the real version string in the app
 - **Release CI (translation job)** — migrated to `models.github.ai`; `latest*.yml` injection runs in the single `Release Finalize` workflow without `npm install`
-- **Release finalize gate** — platform builds publish draft releases; each platform CI job checks whether Windows, Linux, and macOS have all succeeded and only then dispatches `Release Finalize` once (the dispatch job treats its own workflow as done even while GitHub still marks it `in_progress`); finalize publishes localized `latest*.yml`, Snap, and Flatpak assets; the app ignores updates until English and Portuguese release notes are present
+- **Release finalize gate** — platform builds publish draft releases; each platform CI job checks whether Windows, Linux, and macOS have all succeeded and only then dispatches `Release Finalize` once (the dispatch job treats its own workflow as done even while GitHub still marks it `in_progress`); finalize publishes localized `latest*.yml`, Snap, and Flatpak assets; the app ignores updates until English, Portuguese, and Spanish release notes are present
 - **Flatpak packaging** — corrected Electron staging path, manifest sources, ARM64 unpacked directory, `zypak-wrapper` entrypoint, and desktop filename patching
 - **GitHub Actions cache cleanup** — fixed `jq` comparing numeric cache IDs to strings, which could delete the cache entry meant to be kept
 - **Linux snap CI** — snap artifacts build with `--publish never` so CI does not require Snap Store credentials; the `.snap` file is attached to the GitHub release during `Release Finalize` (x64 only)
