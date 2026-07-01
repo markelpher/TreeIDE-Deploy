@@ -1,4 +1,4 @@
-## What's new in v2.0.64
+## What's new in v2.0.65
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -121,7 +121,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Update check failures** — clearer localized errors for network issues, missing `latest*.yml`, and inaccessible releases; duplicate error toasts removed; unknown updater errors fall back to a translated message instead of raw English
 - **Update dialog release name** — `Tree IDE v${version}` template from electron-builder is normalized to the real version string in the app
 - **Release CI (translation job)** — migrated from the deprecated Azure GitHub Models endpoint to `models.github.ai`; workflows request `models: read`; `latest*.yml` injection no longer depends on `npm install` in the release-notes job
-- **Release finalize gate** — platform builds now publish draft releases; a single `Release Finalize` workflow waits for Windows, Linux, and macOS CI to finish, injects localized notes into every `latest*.yml`, uploads Flatpak bundles, and only then publishes the release as `latest`; the app ignores updates until English and Portuguese release notes are present
+- **Release finalize gate** — platform builds now publish draft releases; when the Windows CI workflow finishes (typically last), it dispatches a single `Release Finalize` job that waits for Linux and macOS to complete, injects localized notes into every `latest*.yml`, uploads Flatpak bundles, and only then publishes the release as `latest`; the app ignores updates until English and Portuguese release notes are present
 - **Flatpak packaging** — corrected Electron staging path, manifest sources, ARM64 unpacked directory, `zypak-wrapper` entrypoint, and desktop filename patching
 - **GitHub Actions cache cleanup** — fixed `jq` comparing numeric cache IDs to strings, which could delete the cache entry meant to be kept
 - **Linux snap CI** — snap artifacts build with `--publish never` so CI does not require Snap Store credentials

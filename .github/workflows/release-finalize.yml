@@ -30,6 +30,8 @@ jobs:
       sha: ${{ steps.meta.outputs.sha }}
 
     steps:
+      # Dispatched when Windows CI finishes (typically last). Linux and macOS
+      # are usually already done; this step confirms all three succeeded.
       - name: Wait until Windows, Linux, and macOS CI finish
         id: meta
         env:

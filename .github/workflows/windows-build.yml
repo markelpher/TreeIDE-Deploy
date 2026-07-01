@@ -241,4 +241,25 @@ jobs:
             dist/latest*.yml
           if-no-files-found: error
 
+  # Linux and macOS usually finish before Windows (x64 + arm64). This job
+  # runs last and dispatches release-finalize once per tag — no extra runs
+  # while the other platforms are still building.
+  dispatch-release-finalize:
+    name: Dispatch release finalize
+    needs:
+      - build-windows-x64
+      - build-windows-arm
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger release finalize workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run release-finalize.yml \
+            --ref "${{ github.ref_name }}" \
+            -f sha="${{ github.sha }}" \
+            -f tag="${{ github.ref_name }}"
+
 
