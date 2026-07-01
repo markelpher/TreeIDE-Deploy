@@ -15,14 +15,17 @@ write_output() {
   local key="$1"
   local value="$2"
   if [ -n "$github_output" ]; then
-    echo "$key=$value" >> "$github_output"
+    {
+      echo "$key<<EOF"
+      echo "$value"
+      echo "EOF"
+    } >> "$github_output"
   fi
 }
 
-write_output run_finalize false
-
 if ! echo "$tag" | grep -qE '^v'; then
   echo "::error::Invalid release tag: $tag"
+  write_output run_finalize false
   exit 1
 fi
 
@@ -64,6 +67,7 @@ for workflow in "${required_workflows[@]}"; do
 
   if [ "$conclusion" != "success" ]; then
     echo "::error::$workflow finished with $conclusion — release will not be published."
+    write_output run_finalize false
     exit 1
   fi
 
@@ -72,11 +76,18 @@ done
 
 if [ "$pending" -ne 0 ]; then
   echo "Other platform builds still running — not running Release Finalize yet."
+  write_output run_finalize false
   exit 0
 fi
 
 finalize_job="Release finalize"
 for workflow in "${required_workflows[@]}"; do
+  # The current run already lists Release finalize as queued/waiting before dispatch
+  # finishes — ignore our own workflow when checking for an active duplicate.
+  if [ -n "$current_workflow" ] && [ "$workflow" = "$current_workflow" ]; then
+    continue
+  fi
+
   run_id=$(gh run list \
     --workflow "$workflow" \
     --commit "$sha" \
@@ -87,15 +98,21 @@ for workflow in "${required_workflows[@]}"; do
     continue
   fi
 
-  job_status=$(gh run view "$run_id" \
-    --json jobs \
-    -q ".jobs[] | select(.name == \"$finalize_job\") | .status" \
-    | head -1 || true)
+  while IFS=$'\t' read -r job_status job_conclusion; do
+    if [ "$job_status" = "in_progress" ]; then
+      echo "Release Finalize already in progress in $workflow — skipping duplicate run."
+      write_output run_finalize false
+      exit 0
+    fi
 
-  if [ -n "$job_status" ] && [ "$job_status" != "skipped" ]; then
-    echo "Release Finalize already $job_status in $workflow — skipping duplicate run."
-    exit 0
-  fi
+    if [ "$job_status" = "completed" ] && [ "$job_conclusion" = "success" ]; then
+      echo "Release Finalize already succeeded in $workflow — skipping duplicate run."
+      write_output run_finalize false
+      exit 0
+    fi
+  done < <(gh run view "$run_id" \
+    --json jobs \
+    -q ".jobs[] | select(.name == \"$finalize_job\") | [.status, .conclusion] | @tsv" || true)
 done
 
 echo "All platform builds finished — running Release Finalize inline for $tag."
