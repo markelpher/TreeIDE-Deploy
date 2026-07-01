@@ -22,99 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  wait-for-builds:
-    name: Wait for all platform builds
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.meta.outputs.tag }}
-      sha: ${{ steps.meta.outputs.sha }}
-
-    steps:
-      # Dispatched when Windows CI finishes (typically last). Linux and macOS
-      # are usually already done; this step confirms all three succeeded.
-      - name: Wait until Windows, Linux, and macOS CI finish
-        id: meta
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          sha="${{ inputs.sha }}"
-          tag="${{ inputs.tag }}"
-
-          if ! echo "$tag" | grep -qE '^v'; then
-            echo "::error::Invalid release tag: $tag"
-            exit 1
-          fi
-
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-          required_workflows=(
-            "Build Windows"
-            "Build Linux"
-            "Build macOS"
-          )
-
-          max_attempts=180
-          poll_seconds=30
-
-          for attempt in $(seq 1 "$max_attempts"); do
-            pending=0
-            failed_workflow=""
-
-            for workflow in "${required_workflows[@]}"; do
-              status=$(gh run list \
-                --workflow "$workflow" \
-                --commit "$sha" \
-                --json status,conclusion \
-                -q '.[0].status' || true)
-              conclusion=$(gh run list \
-                --workflow "$workflow" \
-                --commit "$sha" \
-                --json status,conclusion \
-                -q '.[0].conclusion' || true)
-
-              if [ -z "$status" ] || [ "$status" = "null" ]; then
-                pending=1
-                echo "[$attempt/$max_attempts] $workflow: run not found yet"
-                continue
-              fi
-
-              if [ "$status" != "completed" ]; then
-                pending=1
-                echo "[$attempt/$max_attempts] $workflow: $status"
-                continue
-              fi
-
-              if [ "$conclusion" != "success" ]; then
-                failed_workflow="$workflow ($conclusion)"
-                break
-              fi
-
-              echo "[$attempt/$max_attempts] $workflow: success"
-            done
-
-            if [ -n "$failed_workflow" ]; then
-              echo "::error::$failed_workflow — release will not be published."
-              exit 1
-            fi
-
-            if [ "$pending" -eq 0 ]; then
-              echo "All platform workflows succeeded for $tag."
-              break
-            fi
-
-            if [ "$attempt" -eq "$max_attempts" ]; then
-              echo "::error::Timed out waiting for all platform builds for $tag."
-              exit 1
-            fi
-
-            sleep "$poll_seconds"
-          done
-
   finalize:
     name: Translate, localize, and publish release
-    needs: wait-for-builds
     runs-on: ubuntu-latest
 
     steps:
@@ -122,7 +31,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ needs.wait-for-builds.outputs.sha }}
+          ref: ${{ inputs.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -132,10 +41,10 @@ jobs:
       - name: Resolve release metadata
         id: meta
         run: |
-          tag="${{ needs.wait-for-builds.outputs.tag }}"
+          tag="${{ inputs.tag }}"
           prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "sha=${{ needs.wait-for-builds.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          echo "sha=${{ inputs.sha }}" >> "$GITHUB_OUTPUT"
           echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
           is_prerelease='false'
           if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
@@ -238,6 +147,26 @@ jobs:
 
           for f in "${yml_files[@]}"; do
             echo "[finalize] Uploading $(basename "$f") (clobber)"
+            gh release upload --clobber "$tag" "$f"
+          done
+
+      - name: Upload Snap packages to release
+        if: steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          shopt -s globstar nullglob
+          snaps=(dist/**/*.snap)
+
+          if [ "${#snaps[@]}" -eq 0 ]; then
+            echo "::warning::No Snap packages found in artifacts."
+            exit 0
+          fi
+
+          for f in "${snaps[@]}"; do
+            echo "[finalize] Uploading $(basename "$f")"
             gh release upload --clobber "$tag" "$f"
           done
 
