@@ -31,13 +31,9 @@
  * protects releases that were tagged before this pipeline existed.
  */
 
-import { createRequire } from 'node:module';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { argv, exit } from 'node:process';
 import { resolve, basename } from 'node:path';
-
-const require = createRequire(import.meta.url);
-const yaml = require('js-yaml');
 
 function parseArgs(args) {
     const out = { latest: [], notes: new Map(), notesJson: null };
@@ -206,25 +202,22 @@ function fixReleaseName(yamlText) {
     });
 }
 
+/** Lightweight structural checks — no YAML parser (CI release-notes jobs skip npm install). */
 function validateLatestYaml(yamlText, label) {
-    let parsed;
-    try {
-        parsed = yaml.load(yamlText);
-    } catch (err) {
-        console.error(`[inject] ${label}: invalid YAML after injection: ${err.message}`);
-        exit(1);
-    }
-    if (!parsed || typeof parsed !== 'object') {
-        console.error(`[inject] ${label}: YAML root must be an object`);
-        exit(1);
-    }
-    if (!parsed.version) {
+    if (!/^version:\s*\S+/m.test(yamlText)) {
         console.error(`[inject] ${label}: missing version field`);
         exit(1);
     }
-    const files = parsed.files;
-    if (!Array.isArray(files) || files.length === 0) {
-        console.error(`[inject] ${label}: files array is empty`);
+
+    const hasFileUrl = /^\s+-\s+url:\s+\S+/m.test(yamlText);
+    const hasLegacyPath = /^path:\s+\S+/m.test(yamlText);
+    if (!hasFileUrl && !hasLegacyPath) {
+        console.error(`[inject] ${label}: no installer file entries found`);
+        exit(1);
+    }
+
+    if (/^releaseNotes:\s*$/m.test(yamlText) && !/^\s+-\s+locale:/m.test(yamlText)) {
+        console.error(`[inject] ${label}: releaseNotes block is malformed`);
         exit(1);
     }
 }

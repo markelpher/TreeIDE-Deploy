@@ -32,8 +32,9 @@ import { readFile, writeFile, access } from 'node:fs/promises';
 import { constants as FS } from 'node:fs';
 import { argv, env, exit } from 'node:process';
 
-const MODELS_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
-const DEFAULT_MODEL = 'gpt-4o-mini';
+const MODELS_ENDPOINT = 'https://models.github.ai/inference/chat/completions';
+const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+const GITHUB_API_VERSION = '2022-11-28';
 
 const LANG_NAMES = {
     pt: 'Brazilian Portuguese (pt-BR)',
@@ -47,7 +48,7 @@ const LANG_NAMES = {
 };
 
 function parseArgs(args) {
-    const out = { model: DEFAULT_MODEL, maxRetries: 3, timeoutMs: 60000 };
+    const out = { model: DEFAULT_MODEL, maxRetries: 3, timeoutMs: 120000 };
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
         if (a === '--input' || a === '-i') {out.input = args[++i];}
@@ -131,7 +132,8 @@ async function translateOnce({ text, source, target, model, token, timeoutMs, si
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': GITHUB_API_VERSION,
             },
             body: JSON.stringify({
                 model,

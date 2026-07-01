@@ -1,4 +1,4 @@
-## What's new in v2.0.59
+## What's new in v2.0.60
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([TreeIDE/TreeIDE](https://github.com/TreeIDE/TreeIDE) v1.0.0). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
