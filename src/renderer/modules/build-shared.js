@@ -8,17 +8,20 @@ import {
     isZipExtrasEnabled,
     validateBuildPasswords
 } from './build-options.js';
+import { resolveProjectName, sanitizeProjectFileName } from '../../shared/helpers.js';
 
 export function createBuildShared(app) {
 
     const t = (key) => app.i18n.t(key);
     const format = (template, values) => app.fileops.formatMessage(template, values);
 
-    function sanitizeProjectName(name) {
-        return String(name || '')
-            .replace(/[\\/:*?"<>|\x00-\x1f]/g, '_') // eslint-disable-line no-control-regex
-            .replace(/^\.+/, '')
-            .slice(0, 200) || 'project';
+    function resolveTabProjectName(tab) {
+        return sanitizeProjectFileName(resolveProjectName({
+            tabName: tab?.name,
+            lastSavedName: tab?.lastSavedProjectName,
+            filePath: tab?.filePath,
+            untitledLabel: t('untitled')
+        }));
     }
 
     function resolveTabTreeData(tab, editorContent) {
@@ -208,7 +211,7 @@ export function createBuildShared(app) {
         let structureExisting = 0;
 
         for (const payload of payloads) {
-            const projectName = sanitizeProjectName(payload.tab.name || t('untitled'));
+            const projectName = resolveTabProjectName(payload.tab);
             const inspection = await app.electronAPI.inspectStructure(payload.treeData, targetPath, {
                 ...flags,
                 projectName
@@ -269,7 +272,7 @@ export function createBuildShared(app) {
         app.fileops.syncFileContentsWithTree(fresh.treeData);
         return {
             ...fresh,
-            projectName: sanitizeProjectName(tab.name || t('untitled'))
+            projectName: resolveTabProjectName(tab)
         };
     }
 

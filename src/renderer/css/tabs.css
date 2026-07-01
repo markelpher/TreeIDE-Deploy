@@ -25,9 +25,7 @@
 }
 
 .project-tabs-bar.has-tab-overflow:hover,
-.project-tabs-bar.has-tab-overflow:focus-within,
-.code-tabs-bar.has-tab-overflow:hover,
-.code-tabs-bar.has-tab-overflow:focus-within {
+.project-tabs-bar.has-tab-overflow:focus-within {
     height: calc(var(--tab-bar-height-overflow) + var(--tab-bar-border-compensation));
     align-items: stretch;
 }
@@ -56,8 +54,6 @@
 
 .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
 .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
-.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
-.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
 .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
 .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow {
     align-items: flex-start;
@@ -67,8 +63,6 @@
 
 .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
 .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
-.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
-.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
 .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
 .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar {
     display: block;
@@ -77,8 +71,6 @@
 
 .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
 .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
-.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
-.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
 .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track,
 .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-track {
     background: transparent;
@@ -86,8 +78,6 @@
 
 .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
-.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
-.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb {
     background: rgba(127, 127, 127, 0.22);
@@ -96,8 +86,6 @@
 
 body.light-theme .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
 body.light-theme .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
-body.light-theme .code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
-body.light-theme .code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow,
 body.light-theme .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
 body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow {
     scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
@@ -105,8 +93,6 @@ body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scro
 
 body.light-theme .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 body.light-theme .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
-body.light-theme .code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
-body.light-theme .code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 body.light-theme .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb,
 body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.16);
@@ -127,8 +113,6 @@ body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scro
 
 .project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .project-tab-list,
 .project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .project-tab-list,
-.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .code-tab-list,
-.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .code-tab-list,
 .build-project-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow .project-tab-list,
 .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow .project-tab-list {
     min-height: calc(
@@ -331,17 +315,55 @@ body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scro
 
 /* Code Editor Tabs */
 .code-tabs-bar {
+    --code-tabs-trail-gap: 4px;
     --tab-bar-border-compensation: 1px;
-    height: var(--tab-bar-height);
+    height: calc(var(--tab-bar-height) + var(--tab-bar-border-compensation));
     border-bottom: 1px solid var(--border-color);
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     padding: 0;
     gap: 0;
     overflow: hidden;
     flex-shrink: 0;
     position: relative;
-    transition: height var(--tab-bar-motion);
+    background-color: var(--bg-primary);
+}
+
+.code-tabs-scroll-region {
+    grid-column: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding-right: var(--code-tabs-trail-gap);
+    box-sizing: border-box;
+}
+
+.code-tabs-scroll-region .tab-scroll-viewport {
+    flex: 1;
+    min-width: 0;
+    scroll-padding-inline: 28px 40px;
+}
+
+.code-tabs-trail {
+    grid-column: 2;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    min-width: max-content;
+    padding: 0 10px 0 4px;
+    background-color: var(--bg-primary);
+    position: relative;
+    z-index: 2;
+}
+
+.code-tabs-close {
+    flex-shrink: 0;
 }
 
 .code-tab-list {
@@ -349,12 +371,35 @@ body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scro
     align-items: center;
     gap: 4px;
     width: max-content;
-    min-width: 100%;
-    padding: 0 4px;
+    padding: 0 8px;
     box-sizing: border-box;
-    transition:
-        min-height var(--tab-bar-motion),
-        padding var(--tab-bar-motion);
+}
+
+.code-tabs-bar.has-scroll-left .code-tab-list {
+    padding-left: 28px;
+}
+
+.code-tabs-bar.has-scroll-right .code-tab-list {
+    padding-right: 36px;
+}
+
+/* Keep file-preview tab bar height stable; scroll via arrow buttons only */
+.code-tabs-bar.has-tab-overflow:hover,
+.code-tabs-bar.has-tab-overflow:focus-within {
+    height: calc(var(--tab-bar-height) + var(--tab-bar-border-compensation));
+    align-items: center;
+}
+
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow {
+    align-items: center;
+    scrollbar-width: none;
+}
+
+.code-tabs-bar.has-tab-overflow:hover .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar,
+.code-tabs-bar.has-tab-overflow:focus-within .tab-scroll-viewport.has-tab-overflow::-webkit-scrollbar {
+    display: none;
+    height: 0;
 }
 
 /* Tab scroll buttons */
@@ -411,8 +456,8 @@ body.light-theme .tab-scroll-btn .lucide {
 /* Fade gradients for scroll buttons */
 .project-tabs-bar::before,
 .project-tabs-bar::after,
-.code-tabs-bar::before,
-.code-tabs-bar::after {
+.code-tabs-scroll-region::before,
+.code-tabs-scroll-region::after {
     content: '';
     position: absolute;
     top: 0;
@@ -425,8 +470,16 @@ body.light-theme .tab-scroll-btn .lucide {
 }
 
 .project-tabs-bar::before,
-.code-tabs-bar::before {
+.code-tabs-scroll-region::before {
     left: 0;
+}
+
+.project-tabs-bar::after,
+.code-tabs-scroll-region::after {
+    right: 0;
+}
+
+.project-tabs-bar::before {
     background: linear-gradient(
         to right,
         var(--bg-secondary) 0%,
@@ -435,9 +488,7 @@ body.light-theme .tab-scroll-btn .lucide {
     );
 }
 
-.project-tabs-bar::after,
-.code-tabs-bar::after {
-    right: 0;
+.project-tabs-bar::after {
     background: linear-gradient(
         to left,
         var(--bg-secondary) 0%,
@@ -446,14 +497,32 @@ body.light-theme .tab-scroll-btn .lucide {
     );
 }
 
+.code-tabs-scroll-region::before {
+    background: linear-gradient(
+        to right,
+        var(--bg-primary) 0%,
+        var(--bg-primary) 30%,
+        transparent 100%
+    );
+}
+
+.code-tabs-scroll-region::after {
+    background: linear-gradient(
+        to left,
+        var(--bg-primary) 0%,
+        var(--bg-primary) 30%,
+        transparent 100%
+    );
+}
+
 /* Show the fade only when its corresponding button is visible */
 .project-tabs-bar.has-scroll-left::before,
-.code-tabs-bar.has-scroll-left::before {
+.code-tabs-bar.has-scroll-left .code-tabs-scroll-region::before {
     opacity: 1;
 }
 
 .project-tabs-bar.has-scroll-right::after,
-.code-tabs-bar.has-scroll-right::after {
+.code-tabs-bar.has-scroll-right .code-tabs-scroll-region::after {
     opacity: 1;
 }
 
@@ -463,6 +532,14 @@ body.light-theme .tab-scroll-btn .lucide {
 
 .tab-scroll-right {
     right: 0;
+}
+
+.code-tabs-scroll-region .tab-scroll-right {
+    right: -2px;
+}
+
+.code-tabs-scroll-region::after {
+    right: -2px;
 }
 
 .code-tab {
@@ -482,6 +559,13 @@ body.light-theme .tab-scroll-btn .lucide {
     min-width: 50px;
     flex-shrink: 0;
     transition: all 0.15s ease;
+    height: 28px;
+}
+
+.code-tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .code-tab:hover {

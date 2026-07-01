@@ -18,6 +18,58 @@ export function formatMessage(template, values) {
     }, template);
 }
 
+/** Localized default tab titles — not valid save/export names on their own. */
+export const DEFAULT_PROJECT_NAME_KEYS = ['Untitled', 'Sem Título', 'Sin título'];
+
+export function isPlaceholderProjectName(name, extraNames = []) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) { return true; }
+    const placeholders = new Set([
+        ...DEFAULT_PROJECT_NAME_KEYS,
+        ...extraNames.map((entry) => String(entry).trim()).filter(Boolean)
+    ]);
+    return placeholders.has(trimmed);
+}
+
+/**
+ * Resolves the project name used for save dialogs, placeholders, and exports.
+ * Prefers the active tab title, then the last saved name, then the .tree path.
+ */
+export function resolveProjectName({
+    tabName = '',
+    lastSavedName = '',
+    filePath = '',
+    untitledLabel = 'Untitled'
+} = {}) {
+    const placeholders = [untitledLabel];
+
+    const trimmedTab = String(tabName || '').trim();
+    if (trimmedTab && !isPlaceholderProjectName(trimmedTab, placeholders)) {
+        return trimmedTab;
+    }
+
+    const trimmedSaved = String(lastSavedName || '').trim();
+    if (trimmedSaved && !isPlaceholderProjectName(trimmedSaved, placeholders)) {
+        return trimmedSaved;
+    }
+
+    if (filePath) {
+        const fromPath = String(filePath).split(/[\\/]/).pop().replace(/\.tree$/i, '').trim();
+        if (fromPath && !isPlaceholderProjectName(fromPath, placeholders)) {
+            return fromPath;
+        }
+    }
+
+    return untitledLabel;
+}
+
+export function sanitizeProjectFileName(name) {
+    return String(name || '')
+        .replace(/[\\/:*?"<>|\x00-\x1f]/g, '_') // eslint-disable-line no-control-regex
+        .replace(/^\.+/, '')
+        .slice(0, 200) || 'project';
+}
+
 export function resolveUserMessage(input, fallback = '') {
     if (input === null || input === undefined || input === '') { return fallback; }
     if (typeof input === 'string') { return input.trim() || fallback; }

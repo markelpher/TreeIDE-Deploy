@@ -1,5 +1,21 @@
 export function createTabs(app) {
 
+function getDefaultTabName() {
+    return app.i18n ? app.i18n.t('untitled') : 'Untitled';
+}
+
+function syncTabNameFromDom(tab) {
+    if (!tab) { return; }
+    const list = document.getElementById('projectTabList');
+    if (!list) { return; }
+    const nameEl = list.querySelector(`.project-tab[data-tab-id="${tab.id}"] .project-tab-name`);
+    if (!nameEl || nameEl.contentEditable !== 'true') { return; }
+    const domName = nameEl.textContent.trim();
+    if (domName) {
+        tab.name = domName;
+    }
+}
+
 function snapshotFileContents(fileContents) {
     return JSON.stringify(fileContents || {});
 }
@@ -55,7 +71,7 @@ function resolveTabTreeData(tab) {
 function createProjectTab(options = {}) {
     const tab = {
         id: options.id || ('proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
-        name: options.name || '',
+        name: options.name || getDefaultTabName(),
         editorContent: options.editorContent || '',
         filePath: options.filePath || '',
         treeData: options.treeData ?? null,
@@ -91,13 +107,15 @@ function _scrollElementIntoListView(list, el, duration = 320) {
     const scrollRect = scrollEl.getBoundingClientRect();
     const elLeft = elRect.left - scrollRect.left + scrollEl.scrollLeft;
     const elRight = elLeft + elRect.width;
-    const margin = 24;
+    const isCodeTabList = list.classList.contains('code-tab-list');
+    const marginLeft = isCodeTabList ? 28 : 24;
+    const marginRight = isCodeTabList ? 40 : 24;
 
     let target = scrollEl.scrollLeft;
-    if (elLeft < scrollEl.scrollLeft + margin) {
-        target = elLeft - margin;
-    } else if (elRight > scrollEl.scrollLeft + scrollEl.clientWidth - margin) {
-        target = elRight - scrollEl.clientWidth + margin;
+    if (elLeft < scrollEl.scrollLeft + marginLeft) {
+        target = elLeft - marginLeft;
+    } else if (elRight > scrollEl.scrollLeft + scrollEl.clientWidth - marginRight) {
+        target = elRight - scrollEl.clientWidth + marginRight;
     } else {
         return;
     }
@@ -140,6 +158,8 @@ const tabManager = {
     saveCurrentTabState() {
         const tab = this.getActiveTab();
         if (!tab) { return; }
+
+        syncTabNameFromDom(tab);
 
         const editor = document.getElementById('editor');
         const filePreviewEditor = document.getElementById('filePreviewEditor');
@@ -671,7 +691,8 @@ const tabManager = {
         const leftBtn = this._resolveScrollButton(leftBtnOrId);
         const rightBtn = this._resolveScrollButton(rightBtnOrId);
         const scrollEl = getTabScrollViewport(list);
-        const bar = scrollEl.parentElement;
+        const bar = scrollEl.closest('.project-tabs-bar, .code-tabs-bar, .build-project-tabs-bar')
+            || scrollEl.parentElement;
 
         const SCROLL_STEP = 160;
 

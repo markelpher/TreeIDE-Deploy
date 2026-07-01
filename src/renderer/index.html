@@ -144,17 +144,21 @@
             ></div>
             <aside id="filePreviewPanel" class="file-preview-panel">
                 <div class="code-tabs-bar" id="codeTabsBar">
-                    <button class="tab-scroll-btn tab-scroll-left" id="codeTabScrollLeft" type="button" aria-label="Scroll files left" tabindex="-1">
-                        <i data-lucide="chevron-left" aria-hidden="true"></i>
-                    </button>
-                    <div class="tab-scroll-viewport">
-                        <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                    <div class="code-tabs-scroll-region">
+                        <button class="tab-scroll-btn tab-scroll-left" id="codeTabScrollLeft" type="button" aria-label="Scroll files left" tabindex="-1">
+                            <i data-lucide="chevron-left" aria-hidden="true"></i>
+                        </button>
+                        <div class="tab-scroll-viewport">
+                            <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                        </div>
+                        <button class="tab-scroll-btn tab-scroll-right" id="codeTabScrollRight" type="button" aria-label="Scroll files right" tabindex="-1">
+                            <i data-lucide="chevron-right" aria-hidden="true"></i>
+                        </button>
                     </div>
-                    <button class="tab-scroll-btn tab-scroll-right" id="codeTabScrollRight" type="button" aria-label="Scroll files right" tabindex="-1">
-                        <i data-lucide="chevron-right" aria-hidden="true"></i>
-                    </button>
-                    <div id="filePreviewMode" class="file-preview-mode"></div>
-                    <button id="closeFilePreviewBtn" class="modal-close" type="button" aria-label="Close file preview"><i data-lucide="x" aria-hidden="true"></i></button>
+                    <div class="code-tabs-trail">
+                        <div id="filePreviewMode" class="file-preview-mode"></div>
+                        <button id="closeFilePreviewBtn" class="modal-close code-tabs-close" type="button" aria-label="Close file preview"><i data-lucide="x" aria-hidden="true"></i></button>
+                    </div>
                 </div>
                 <div class="file-preview-body">
                     <label for="filePreviewEditor" class="sr-only">File content editor</label>

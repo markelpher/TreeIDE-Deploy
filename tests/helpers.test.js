@@ -1,6 +1,8 @@
 import {
     escapeHtml,
     formatMessage,
+    resolveProjectName,
+    sanitizeProjectFileName,
     resolveUserMessage,
     getLineIndent,
     joinTreePath,
@@ -93,6 +95,36 @@ describe('formatMessage', () => {
 
     it('replaces same placeholder multiple times', () => {
         expect(formatMessage('{x} and {x}', { x: 'dup' })).toBe('dup and dup');
+    });
+});
+
+describe('resolveProjectName', () => {
+    it('prefers the active tab name over placeholders', () => {
+        expect(resolveProjectName({
+            tabName: 'My App',
+            lastSavedName: 'old',
+            untitledLabel: 'Untitled'
+        })).toBe('My App');
+    });
+
+    it('ignores localized untitled tab titles', () => {
+        expect(resolveProjectName({
+            tabName: 'Sem Título',
+            lastSavedName: 'saved-app',
+            untitledLabel: 'Sem Título'
+        })).toBe('saved-app');
+    });
+
+    it('falls back to the .tree file name', () => {
+        expect(resolveProjectName({
+            tabName: '',
+            filePath: 'C:/work/demo-app.tree',
+            untitledLabel: 'Untitled'
+        })).toBe('demo-app');
+    });
+
+    it('sanitizes unsafe characters for disk names', () => {
+        expect(sanitizeProjectFileName('My:App*')).toBe('My_App_');
     });
 });
 

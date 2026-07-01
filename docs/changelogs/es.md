@@ -1,0 +1,1 @@
+<!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->

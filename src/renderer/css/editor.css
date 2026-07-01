@@ -1,3 +1,47 @@
+/* Shared code editor scrollbars and editing surface (structure + file preview) */
+#editor {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-accent) transparent;
+}
+
+#filePreviewEditor {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-accent) transparent;
+}
+
+#editor::-webkit-scrollbar,
+#filePreviewEditor::-webkit-scrollbar {
+    width: 8px;
+}
+
+#editor::-webkit-scrollbar-track,
+#filePreviewEditor::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#editor::-webkit-scrollbar-thumb,
+#filePreviewEditor::-webkit-scrollbar-thumb {
+    background: var(--bg-accent);
+    border-radius: 10px;
+    border: 2px solid var(--bg-primary);
+}
+
+#editor::-webkit-scrollbar-thumb:hover,
+#filePreviewEditor::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+#editor:focus-visible,
+#filePreviewEditor:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--accent-color);
+}
+
 .file-preview-panel {
     flex: 1;
     display: none;
@@ -11,27 +55,39 @@
     flex-direction: column;
 }
 
+.template-file-editor,
+#buildStudioFileEditor,
+#filePreviewEditor {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-synthesis: none;
+    line-height: var(--mono-file-content-line-height);
+    tab-size: 4;
+    color: var(--text-primary);
+    padding: var(--mono-file-content-pad);
+}
+
+.template-file-editor,
+#buildStudioFileEditor {
+    font-size: var(--mono-file-content-size);
+}
+
 #filePreviewEditor {
     flex: 1;
     width: 100%;
     height: 100%;
     background: transparent;
-    color: var(--text-primary);
     border: none;
     outline: none;
     resize: none;
-    padding: 32px 32px 32px 24px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.65;
-    tab-size: 4;
+    font-size: var(--mono-file-content-size-editable);
     min-height: 0;
     user-select: text;
     -webkit-user-select: text;
+    box-sizing: border-box;
 }
 
 .file-preview-mode {
-    margin-left: auto;
     font-size: 10px;
     color: var(--text-secondary);
     font-family: var(--font-mono);
@@ -50,6 +106,7 @@
     flex: 1;
     display: flex;
     min-height: 0;
+    overflow: hidden;
 }
 
 .file-preview-panel.markdown-file #filePreviewEditor,
@@ -63,11 +120,36 @@
 
 .markdown-preview {
     display: none;
-    padding: 32px 32px 32px 24px;
+    padding: 32px 28px 32px 24px;
+    overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-accent) transparent;
     color: var(--text-primary);
+    font-family: var(--font-sans);
     font-size: 13px;
+    font-weight: 400;
     line-height: 1.65;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
+.markdown-preview::-webkit-scrollbar {
+    width: 8px;
+}
+
+.markdown-preview::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.markdown-preview::-webkit-scrollbar-thumb {
+    background: var(--bg-accent);
+    border-radius: 10px;
+    border: 2px solid var(--bg-primary);
+}
+
+.markdown-preview::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 .file-preview-panel.markdown-file .markdown-preview {
@@ -79,13 +161,16 @@
 .markdown-preview h3 {
     margin: 0 0 12px;
     color: var(--text-primary);
+    font-weight: 600;
 }
 
 .markdown-preview p,
 .markdown-preview ul,
 .markdown-preview ol,
+.markdown-preview li,
 .markdown-preview pre {
     margin: 0 0 12px;
+    font-weight: 400;
 }
 
 .markdown-preview code,

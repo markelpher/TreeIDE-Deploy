@@ -28,6 +28,15 @@ describe('templateFile', () => {
         expect(payload.version).toBe(1);
     });
 
+    it('falls back to name when label is missing', () => {
+        const payload = buildTemplateFilePayload({
+            name: 'Legacy Starter',
+            tree: 'app/\n    README.md',
+            files: {}
+        });
+        expect(payload.label).toBe('Legacy Starter');
+    });
+
     it('distinguishes template paths from project .tree files', () => {
         expect(isTreeTemplatePath('starter.tree-template')).toBe(true);
         expect(isTreeTemplatePath('C:\\Models\\starter.tree-template')).toBe(true);

@@ -1,5 +1,7 @@
+import { DEFAULT_PROJECT_NAME_KEYS } from '../../shared/helpers.js';
+
 export function createEditor(app) {
-const DEFAULT_PROJECT_NAMES = ['Untitled', 'Sem Título'];
+const DEFAULT_PROJECT_NAMES = DEFAULT_PROJECT_NAME_KEYS;
 
 const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.5;
@@ -327,6 +329,17 @@ function bindPreviewEditor() {
     const S = app.state;
     const filePreviewEditor = S.filePreviewEditor;
     if (!filePreviewEditor) { return; }
+
+    if (!filePreviewEditor.dataset.boundEditorKeys) {
+        filePreviewEditor.dataset.boundEditorKeys = '1';
+        filePreviewEditor.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
+            if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+            if (applyEditorKeyToTextarea(filePreviewEditor, e)) {
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    }
 
     let filePreviewDebounceTimer = null;
     filePreviewEditor.addEventListener('input', () => {

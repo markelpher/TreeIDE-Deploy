@@ -76,7 +76,8 @@ const DB_NAME = 'TreeIDE';
 
         const keysToMigrate = [
             'autosave_file_contents',
-            'autosave_tabs'
+            'autosave_tabs',
+            'custom_templates'
         ];
 
         for (const key of keysToMigrate) {

@@ -3,20 +3,25 @@ import {
     parseTemplateFile,
     serializeTemplateFile
 } from '../../shared/templateFile.js';
+import { findRenameMatch } from '../../shared/helpers.js';
 
 export function createTemplatesUi(app) {
 
     let templateDropCounter = 0;
 
-const CUSTOM_TEMPLATES_KEY = 'custom_templates';
-    const STRUCTURE_SAVE_DEBOUNCE_MS = 400;
-    const FILE_SAVE_DEBOUNCE_MS = 400;
+    const CUSTOM_TEMPLATES_KEY = 'custom_templates';
+    const STRUCTURE_SAVE_DEBOUNCE_MS = 150;
+    const FILE_SAVE_DEBOUNCE_MS = 150;
+    const CUSTOM_TEMPLATES_AUTOSAVE_MS = 5000;
     let selectedTemplateName = 'node';
     let selectedTemplateFile = '';
     let selectedTemplateSource = 'builtin';
     let modalListenersBound = false;
     let structureSaveTimer = null;
     let fileSaveTimer = null;
+    let customTemplatesHydrated = false;
+    let customTemplatesAutosaveTimer = null;
+    let pendingCustomTemplatesDbWrite = null;
 
     function isCustomEditMode() {
         return selectedTemplateSource === 'custom'
@@ -32,8 +37,68 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         }
     }
 
+    function queueCustomTemplatesDbWrite(json) {
+        if (!app.dbStorage) { return; }
+        if (pendingCustomTemplatesDbWrite) { return; }
+        pendingCustomTemplatesDbWrite = app.dbStorage.set(CUSTOM_TEMPLATES_KEY, json)
+            .catch((err) => {
+                console.warn('IndexedDB custom templates write failed:', err);
+            })
+            .finally(() => {
+                pendingCustomTemplatesDbWrite = null;
+            });
+    }
+
+    async function flushCustomTemplatesPersisted() {
+        if (pendingCustomTemplatesDbWrite) {
+            try {
+                await pendingCustomTemplatesDbWrite;
+            } catch { /* already logged */ }
+        }
+    }
+
     function saveCustomTemplates(map) {
-        localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(map));
+        const json = JSON.stringify(map);
+        try {
+            localStorage.setItem(CUSTOM_TEMPLATES_KEY, json);
+        } catch (err) {
+            console.warn('Failed to persist custom templates:', err);
+            app.toast?.showToast(app.i18n.t('storage_error'), 3000);
+        }
+        queueCustomTemplatesDbWrite(json);
+    }
+
+    async function ensureCustomTemplatesHydrated() {
+        if (customTemplatesHydrated) { return; }
+        customTemplatesHydrated = true;
+
+        const local = loadCustomTemplates();
+        if (Object.keys(local).length > 0 || !app.dbStorage) { return; }
+
+        try {
+            const raw = await app.dbStorage.get(CUSTOM_TEMPLATES_KEY);
+            if (!raw) { return; }
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') { return; }
+            localStorage.setItem(CUSTOM_TEMPLATES_KEY, raw);
+        } catch (err) {
+            console.warn('Failed to hydrate custom templates from IndexedDB:', err);
+        }
+    }
+
+    function startCustomTemplatesAutosave() {
+        stopCustomTemplatesAutosave();
+        customTemplatesAutosaveTimer = setInterval(() => {
+            if (!document.body.classList.contains('templates-active')) { return; }
+            flushTemplateEdits();
+        }, CUSTOM_TEMPLATES_AUTOSAVE_MS);
+    }
+
+    function stopCustomTemplatesAutosave() {
+        if (customTemplatesAutosaveTimer) {
+            clearInterval(customTemplatesAutosaveTimer);
+            customTemplatesAutosaveTimer = null;
+        }
     }
 
     function getBuiltInTemplates() {
@@ -134,12 +199,87 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         app.icons.refreshIcons(previewEl);
     }
 
+    function resolveTemplateFileContent(entry, filePath, fileEditor) {
+        if (selectedTemplateFile === filePath && fileEditor && !fileEditor.readOnly) {
+            return fileEditor.value;
+        }
+        const key = findTemplateFileKey(entry, filePath);
+        if (Object.prototype.hasOwnProperty.call(entry.files || {}, key)) {
+            return entry.files[key];
+        }
+        return undefined;
+    }
+
+    function syncTemplateFilesWithTree(entry, treeText) {
+        const tree = app.helpers.parseEditorContent(treeText || '');
+        const filePaths = new Set(app.tree.getFilePathsFromTree(tree));
+        const fileEditor = document.getElementById('templateFileEditor');
+        const fileContents = { ...(entry.files || {}) };
+
+        if (isCustomEditMode() && selectedTemplateFile && fileEditor) {
+            const key = findTemplateFileKey(entry, selectedTemplateFile);
+            fileContents[key] = fileEditor.value;
+        }
+
+        const trackedPaths = new Set(Object.keys(fileContents));
+        if (selectedTemplateFile) { trackedPaths.add(selectedTemplateFile); }
+
+        const removedPaths = [...trackedPaths].filter((path) => !filePaths.has(path));
+        const addedPaths = [];
+        const nextContents = {};
+
+        filePaths.forEach((filePath) => {
+            if (Object.prototype.hasOwnProperty.call(fileContents, filePath)) {
+                nextContents[filePath] = fileContents[filePath];
+            } else {
+                addedPaths.push(filePath);
+                nextContents[filePath] = '';
+            }
+        });
+
+        const renames = [];
+        if (removedPaths.length > 0 && addedPaths.length > 0) {
+            const usedAdded = new Set();
+            removedPaths.forEach((oldPath) => {
+                const oldContent = resolveTemplateFileContent({ files: fileContents }, oldPath, fileEditor);
+                if (oldContent === undefined) { return; }
+                const match = findRenameMatch(oldPath, addedPaths, usedAdded);
+                if (match) {
+                    usedAdded.add(match);
+                    renames.push({ oldPath, newPath: match, oldContent });
+                }
+            });
+        }
+
+        renames.forEach(({ oldPath, newPath, oldContent }) => {
+            nextContents[newPath] = oldContent;
+            if (selectedTemplateFile === oldPath) {
+                selectedTemplateFile = newPath;
+            }
+        });
+
+        entry.files = nextContents;
+    }
+
     function getCustomTemplateDraft() {
         const template = loadCustomTemplates()[selectedTemplateName];
         const treeEditor = document.getElementById('templateTreeEditor');
+        const fileEditor = document.getElementById('templateFileEditor');
         if (!template) { return null; }
-        if (!isCustomEditMode() || !treeEditor) { return template; }
-        return { ...template, tree: treeEditor.value };
+        if (!isCustomEditMode()) { return template; }
+
+        const draft = {
+            ...template,
+            tree: treeEditor?.value ?? template.tree,
+            files: { ...(template.files || {}) }
+        };
+
+        if (selectedTemplateFile && fileEditor) {
+            const key = findTemplateFileKey(draft, selectedTemplateFile);
+            draft.files[key] = fileEditor.value;
+        }
+
+        return draft;
     }
 
     function updateLiveStructurePreview() {
@@ -238,6 +378,7 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         const entry = custom[selectedTemplateName];
         if (!entry || !treeEditor) { return; }
         entry.tree = treeEditor.value;
+        syncTemplateFilesWithTree(entry, treeEditor.value);
         saveCustomTemplates(custom);
     }
 
@@ -479,6 +620,8 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         if (!item || item.dataset.type !== 'file') { return; }
         if (item.dataset.preview === 'disabled' || item.classList.contains('no-preview')) { return; }
 
+        flushFileEdits();
+
         const draft = getCustomTemplateDraft() || getAllTemplates()[selectedTemplateName];
         if (!draft) { return; }
         const snapshot = resolveTemplateSnapshot(draft);
@@ -496,9 +639,13 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
 
     function bindTemplateEditors() {
         const treeEditor = document.getElementById('templateTreeEditor');
-        if (treeEditor && !treeEditor.dataset.boundEditors) {
+        if (treeEditor && treeEditor.dataset.boundEditors !== '1') {
             treeEditor.dataset.boundEditors = '1';
             treeEditor.addEventListener('input', onStructureEditorInput);
+            treeEditor.addEventListener('blur', () => {
+                clearTimeout(structureSaveTimer);
+                flushStructureEdits();
+            });
             treeEditor.addEventListener('keydown', (e) => {
                 if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
                 if (e.ctrlKey || e.metaKey || e.altKey) { return; }
@@ -509,9 +656,13 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         }
 
         const fileEditor = document.getElementById('templateFileEditor');
-        if (fileEditor && !fileEditor.dataset.boundEditors) {
+        if (fileEditor && fileEditor.dataset.boundEditors !== '1') {
             fileEditor.dataset.boundEditors = '1';
             fileEditor.addEventListener('input', onFileEditorInput);
+            fileEditor.addEventListener('blur', () => {
+                clearTimeout(fileSaveTimer);
+                flushFileEdits();
+            });
             fileEditor.addEventListener('keydown', (e) => {
                 if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
                 if (e.ctrlKey || e.metaKey || e.altKey) { return; }
@@ -691,6 +842,8 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
 
     function closeTemplatesModal() {
         flushTemplateEdits();
+        void flushCustomTemplatesPersisted();
+        stopCustomTemplatesAutosave();
         templateDropCounter = 0;
         setTemplateDropActive(false);
         const modal = document.getElementById('templatesModal');
@@ -698,7 +851,9 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         app.modals.closeModalAnimated(modal);
     }
 
-    function openTemplatesModal() {
+    async function openTemplatesModal() {
+        await ensureCustomTemplatesHydrated();
+
         const modal = document.getElementById('templatesModal');
         bindTemplateModal();
 
@@ -707,6 +862,7 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         setTemplatesScreenActive(true);
         modal.style.display = 'flex';
         app.modals.trapFocus(modal);
+        startCustomTemplatesAutosave();
         renderTemplateModal();
     }
 
@@ -774,9 +930,10 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         const entry = loadCustomTemplates()[key];
         if (!entry) { return; }
 
+        const exportLabel = String(entry.label || entry.name || key).trim() || key;
         const result = await app.electronAPI.saveTemplateAs(
-            serializeTemplateFile(entry),
-            entry.label,
+            serializeTemplateFile({ ...entry, label: exportLabel }),
+            exportLabel,
             app.i18n.getCurrentLang()
         );
         if (result.canceled) { return; }
@@ -840,7 +997,7 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         const tree = app.tree.parseEditorContent(S.editor.value);
         app.fileops.syncFileContentsWithTree(tree);
 
-        const label = await promptTemplateName(app.i18n.t('untitled'), 'template_import_project');
+        const label = await promptTemplateName(app.fileops.getProjectName(), 'template_import_project');
         if (!label) { return; }
 
         const key = await saveCustomTemplateEntry(label, {
@@ -854,6 +1011,8 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
 
     async function renameCustomTemplate(key = selectedTemplateName) {
         if (!isCustomTemplate(key)) { return; }
+
+        flushTemplateEdits();
 
         const custom = loadCustomTemplates();
         const existing = custom[key];
@@ -939,7 +1098,10 @@ const CUSTOM_TEMPLATES_KEY = 'custom_templates';
         renameCustomTemplate,
         deleteCustomTemplate,
         bindTemplateTreePreview,
-        bindTemplateModal
+        bindTemplateModal,
+        ensureCustomTemplatesHydrated,
+        flushCustomTemplatesPersisted,
+        flushTemplateEdits
     };
 
 }

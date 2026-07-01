@@ -443,7 +443,9 @@ function bindMenuActions() {
 
     const templatesBtn = document.getElementById('templatesBtn');
     if (templatesBtn) {
-        templatesBtn.addEventListener('click', () => app.templates.openTemplatesModal());
+        templatesBtn.addEventListener('click', () => {
+            void app.templates.openTemplatesModal();
+        });
     }
     const loadBtn = document.getElementById('loadBtn');
     if (loadBtn) {
@@ -558,7 +560,7 @@ function bindKeyboardShortcuts(menuRefs) {
             case 'zoom_in': e.preventDefault(); menuRefs.menuZoomIn?.click(); break;
             case 'zoom_out': e.preventDefault(); menuRefs.menuZoomOut?.click(); break;
             case 'zoom_reset': e.preventDefault(); menuRefs.menuZoomReset?.click(); break;
-            case 'new_tab': e.preventDefault(); app.tabs.createTab(); break;
+            case 'new_tab': e.preventDefault(); app.tabs.createTab({ name: app.i18n.t('untitled') }); break;
             case 'next_tab':
             case 'prev_tab':
                 if (app.tabs.projectTabs.length <= 1) { break; }
@@ -964,6 +966,10 @@ async function bootstrap() {
 
         if (app.dbStorage) {
             app.dbStorage.migrateFromLocalStorage().catch((err) => console.warn('IndexedDB migration failed:', err));
+        }
+
+        if (app.templates?.ensureCustomTemplatesHydrated) {
+            await app.templates.ensureCustomTemplatesHydrated();
         }
 
         await restoreSession();

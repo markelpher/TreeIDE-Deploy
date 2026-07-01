@@ -12,10 +12,11 @@ export function isProjectTreePath(filePathOrName) {
 }
 
 export function buildTemplateFilePayload(template) {
+    const label = String(template?.label || template?.name || '').trim();
     return {
         format: TEMPLATE_FILE_FORMAT,
         version: TEMPLATE_FILE_VERSION,
-        label: String(template?.label || '').trim(),
+        label,
         tree: String(template?.tree || ''),
         files: template?.files && typeof template.files === 'object' ? template.files : {}
     };

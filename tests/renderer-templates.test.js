@@ -42,7 +42,13 @@ const app = {
         },
         getFileTypeLabel(path) {
             return String(path).split('.').pop() || 'file';
-        }
+        },
+        getProjectName: () => 'my-app',
+        getSaveProjectName: () => 'my-app'
+    },
+    dbStorage: {
+        get: vi.fn(async () => null),
+        set: vi.fn(async () => {})
     },
 
     helpers: {
@@ -211,7 +217,7 @@ describe('template sources', () => {
         expect(templates.selectedTemplateName).toBe('custom-my-starter');
     });
 
-    it('clears the file panel when the structure editor is emptied', () => {
+    it('clears the file panel when the structure editor is emptied', async () => {
         document.body.innerHTML = `
             <textarea id="editor"></textarea>
             <div id="templatesModal">
@@ -238,7 +244,8 @@ describe('template sources', () => {
         }));
         templates.setTemplateSource('custom');
         templates.selectedTemplateName = 'custom-demo';
-        templates.openTemplatesModal();
+        await templates.openTemplatesModal();
+        templates.bindTemplateModal();
 
         const treeEditor = document.getElementById('templateTreeEditor');
         treeEditor.value = '';
@@ -250,7 +257,7 @@ describe('template sources', () => {
         expect(document.getElementById('templateFilePanel').classList.contains('has-file')).toBe(false);
     });
 
-    it('updates live structure preview while editing a custom template', () => {
+    it('updates live structure preview while editing a custom template', async () => {
         document.body.innerHTML = `
             <textarea id="editor"></textarea>
             <div id="templatesModal">
@@ -279,15 +286,16 @@ describe('template sources', () => {
         }));
         templates.setTemplateSource('custom');
         templates.selectedTemplateName = 'custom-demo';
-        templates.openTemplatesModal();
+        await templates.openTemplatesModal();
+        templates.bindTemplateModal();
 
         const treeEditor = document.getElementById('templateTreeEditor');
-        treeEditor.value = 'demo/\n    index.js\n    lib/';
+        treeEditor.value = 'demo/\n    index.js\n    lib/\n        utils.js';
         treeEditor.dispatchEvent(new Event('input', { bubbles: true }));
 
         const preview = document.getElementById('templateTreePreview');
         expect(preview.innerHTML).toContain('demo/');
-        expect(preview.innerHTML).toContain('lib/');
+        expect(preview.innerHTML).toContain('utils.js');
         expect(preview.querySelector('[tabindex="0"]')).toBeNull();
     });
 
@@ -346,6 +354,67 @@ describe('template sources', () => {
         expect(custom['custom-dropped']).toBeTruthy();
         expect(templates.selectedTemplateName).toBe('custom-dropped');
         expect(app.toast.showToast).toHaveBeenCalledWith('template_import_success');
+    });
+
+    it('persists custom template structure and file edits automatically', async () => {
+        vi.useFakeTimers();
+        document.body.innerHTML = `
+            <textarea id="editor"></textarea>
+            <div id="templatesModal">
+                <div id="templatesList"></div>
+                <div id="templatesEmptyState" class="hidden"></div>
+                <div id="templateStructureBody"></div>
+                <textarea id="templateTreeEditor"></textarea>
+                <div id="templateTreePreview"></div>
+                <div id="templateFilePanel" class="template-file-panel has-file">
+                    <div class="template-file-header">
+                        <span id="templateFileName" class="template-file-path">demo/index.js</span>
+                        <span id="templateFileMode" class="template-file-mode">js</span>
+                    </div>
+                    <div class="template-file-body">
+                        <textarea id="templateFileEditor">original</textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+        app.editor.bindEditorInput();
+
+        localStorage.setItem('custom_templates', JSON.stringify({
+            'custom-demo': {
+                label: 'Demo',
+                tree: 'demo/\n    index.js',
+                files: { 'demo/index.js': 'original' }
+            }
+        }));
+        templates.setTemplateSource('custom');
+        templates.selectedTemplateName = 'custom-demo';
+        await templates.openTemplatesModal();
+        templates.bindTemplateModal();
+
+        const treeEditor = document.getElementById('templateTreeEditor');
+        const fileEditor = document.getElementById('templateFileEditor');
+
+        treeEditor.value = 'demo/\n    index.js\n    utils.js';
+        treeEditor.dispatchEvent(new Event('input', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        let custom = JSON.parse(localStorage.getItem('custom_templates'));
+        expect(custom['custom-demo'].tree).toContain('utils.js');
+        expect(custom['custom-demo'].files['demo/utils.js']).toBe('');
+
+        fileEditor.value = 'console.log("updated")';
+        fileEditor.dispatchEvent(new Event('input', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        custom = JSON.parse(localStorage.getItem('custom_templates'));
+        expect(custom['custom-demo'].files['demo/index.js']).toBe('console.log("updated")');
+
+        templates.closeTemplatesModal();
+        custom = JSON.parse(localStorage.getItem('custom_templates'));
+        expect(custom['custom-demo']).toBeTruthy();
+        expect(app.dbStorage.set).toHaveBeenCalled();
+
+        vi.useRealTimers();
     });
 
     it('switches to built-in templates when the last custom template is removed', async () => {

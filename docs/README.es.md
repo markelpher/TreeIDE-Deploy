@@ -2,25 +2,61 @@
 
 [English](../README.md) · [Português](README.pt-BR.md)
 
-Aplicación de escritorio ligera para diseñar estructuras de proyecto en texto, visualizarlas como un árbol interactivo y generar carpetas, archivos iniciales y archivos ZIP en pocos clics.
+Aplicación de escritorio ligera para diseñar estructuras de proyecto en texto simple, visualizarlas como un árbol interactivo y generar carpetas, archivos iniciales y archivos comprimidos mediante **Build Studio**.
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview.png)
+
+Tree IDE v2 es una reescritura completa de la [aplicación original v1](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto, previsualizarlas en vivo y generar proyectos — con arquitectura modular Vite + Electron, herramientas más ricas y releases multiplataforma.
 
 ## Funcionalidades
 
-- **Vista en árbol en vivo** — escribe una estructura en texto simple y ve el resultado al instante
-- **Generación de proyecto** — crea carpetas y archivos en una carpeta de salida seleccionada
-- **Exportación ZIP y tar.gz** — empaqueta la estructura actual después de crear o bajo demanda
-- **Extracción de archivos** — extrae ZIP, tar.gz, RAR y 7z mediante arrastrar y soltar
-- **Plantillas iniciales** — inserta estructuras listas para Node.js, React, Python, MVC y sitios estáticos
-- **Vista previa de archivos** — inspecciona el contenido generado antes de crear
-- **Validación** — detecta indentación incorrecta, nombres duplicados, rutas no válidas y estructuras vacías antes de escribir los archivos
-- **Iconos inteligentes** — iconos contextuales para carpetas comunes, lenguajes de programación, medios, archivos y configuración
-- **Deshacer y rehacer** — historial completo de deshacer y rehacer para editar el árbol
-- **Sesiones persistentes** — los proyectos se guardan automáticamente en IndexedDB
-- **Inglés, portugués y español** — traducción integrada de la interfaz con selección de idioma en el primer uso
-- **Temas y configuración** — temas claro y oscuro, selección de carpeta de salida y sesiones guardadas automáticamente
-- **Actualizador automático** — consulta versiones en GitHub Releases, descarga actualizaciones en la app y reinicia para instalar
+### Editor y árbol
+- **Vista en árbol en vivo** con conectores ASCII, iconos Lucide, carpetas plegables y resaltado del archivo activo
+- **Panel de validación** — indentación incorrecta, nombres no válidos, hermanos duplicados, rutas inseguras y estructuras vacías; haz clic en una advertencia para ir a la línea
+- **Deshacer / rehacer** con hasta 100 estados de historial
+- **Pestañas multi-proyecto** con indicadores de modificación, barra de pestañas desplazable y reordenación por arrastrar y soltar
+- **Pestañas de vista previa por archivo** — edita contenidos iniciales antes de crear; vista previa Markdown en vivo para archivos `.md`
+- **Sangría / reducción en bloque** con Tab y Shift+Tab, además de Backspace inteligente para bloques de sangría
+- **Navegación por teclado en el árbol** — flechas, Home, End y Enter
+- **Zoom del editor** — `Ctrl++`, `Ctrl+-` y `Ctrl+0`
+- **Paneles redimensionables** (editor, árbol, vista previa de archivo) con diseño persistido entre sesiones
+
+### Build Studio y salida
+- **Build Studio** — flujo de creación a pantalla completa con vista previa del árbol, contenido por archivo, estadísticas y opciones de salida
+- **Tres modos de salida** — crear estructura de carpetas en disco, exportar solo ZIP o exportar solo archivo `.tree`
+- **Salidas combinadas** — opcionalmente exportar ZIP junto con la carpeta e incluir el archivo `.tree` en el archivo
+- **Inspección previa** — escanea la carpeta de destino por estructura existente, `.tree` o ZIP antes de escribir
+- **Manejo de conflictos** — elige omitir o sobrescribir cuando archivos o carpetas ya existen
+- **Contenido inicial predeterminado** para 68+ tipos de archivo (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte y más)
+- **Placeholders i18n** en archivos generados (`{hello}`, `{lang}`, `{projectName}`, etc.)
+
+### Archivos y cifrado
+- **Exportación ZIP** con protección opcional por contraseña AES-256 vía 7-Zip
+- **Proyectos `.tree` cifrados** (formato TREEIDE1 / TREEIDE2, AES-256-GCM + scrypt)
+- **Importación de archivos** mediante diálogo o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` y `.7z`
+- **Solicitud de contraseña** para ZIP cifrados y archivos `.tree` protegidos
+- **Cargar carpeta como estructura** — escanea un directorio existente y lo convierte en texto editable
+
+### Plantillas
+- **19 plantillas iniciales integradas** — Frontend (HTML, React, Vite), Stacks (Node.js, MVC, Python, PHP), Systems (Go, Java, Kotlin, Rust, Ruby, Swift, Dart) y Native (C, C++, C#)
+- **Pantalla de Plantillas** — navegador a pantalla completa con tres columnas, pestañas integradas y personalizadas, edición inline de la estructura y vista previa en vivo
+- **Plantillas personalizadas** — crear en blanco, importar del proyecto actual, renombrar, editar contenidos inline, exportar o eliminar
+- **Archivos `.tree-template`** — exportar e importar plantillas personalizadas compartibles (JSON `treeide-template` v1)
+
+### UI, i18n y sesión
+- **Ventana sin marco personalizada** con minimizar, maximizar y cerrar; barra de menú (Archivo, Editar, Ver, Ventana, Acerca de)
+- **Modal de bienvenida** en el primer uso con selección de idioma y configuración agrupada
+- **Temas** — claro, oscuro y **Sistema** (sigue el esquema de colores del SO)
+- **Inglés, portugués (pt-BR) y español** — traducciones de la interfaz y de los diálogos del proceso principal
+- **Almacenamiento de sesión en IndexedDB** con guardado automático de pestañas abiertas, contenidos y nombres de proyectos
+- **Modos de sesión** — restaurar la última sesión al iniciar o siempre empezar limpio
+- **Fuentes incluidas** — Inter y JetBrains Mono; iconos Lucide locales (sin CDN)
+
+### Actualizador automático
+- **Actualizador en la app** — consulta GitHub Releases, descarga con progreso y reinicia para instalar
+- **Canales estable y beta**
+- **Notas de release localizadas** en el modal de actualización (inglés, portugués y español)
+- Edita las notas en `docs/changelog.md`; la CI las traduce para la app y publica el inglés en GitHub
 
 ## Sintaxis de la estructura
 
@@ -42,28 +78,36 @@ Las carpetas pueden terminar con `/` para mayor claridad. Tree IDE también dete
 
 ## Flujo de trabajo
 
-1. Escribe o pega una estructura de proyecto en el editor
+1. Escribe o pega una estructura de proyecto en el editor (o empieza desde **Plantillas**)
 2. Revisa la vista en árbol y el panel de validación
-3. Elige una carpeta de salida en la configuración
-4. Haz clic en **Build** para crear la estructura
-5. Opcionalmente exporta la misma estructura como archivo ZIP o tar.gz
+3. Personaliza contenidos iniciales en las pestañas de vista previa si es necesario
+4. Haz clic en **Build** para abrir **Build Studio**
+5. Elige el modo de salida (carpeta, ZIP, `.tree` o combinado) y confirma la ruta de destino
+6. Opcionalmente guarda el proyecto como `.tree` o exporta un archivo cifrado
 
-También puedes empezar desde el panel de Plantillas y personalizar el árbol generado y el contenido de los archivos antes de crear.
+También puedes abrir proyectos `.tree`, archivos comprimidos o carpetas mediante arrastrar y soltar o **Archivo → Abrir**.
 
 ## Atajos de teclado
 
 | Atajo | Acción |
 | --- | --- |
+| `Ctrl + N` | Nuevo proyecto |
+| `Ctrl + O` | Abrir proyecto |
 | `Ctrl + S` | Guardar proyecto `.tree` actual |
 | `Ctrl + Shift + S` | Guardar proyecto como |
-| `Ctrl + O` | Abrir proyecto |
-| `Ctrl + N` | Nuevo proyecto |
+| `Ctrl + Alt + S` | Guardar todos los proyectos |
+| `Ctrl + B` | Abrir Build Studio |
+| `Ctrl + Z` / `Ctrl + Y` | Deshacer / rehacer |
+| `Ctrl + T` | Nueva pestaña |
+| `Ctrl + Tab` / `Ctrl + Shift + Tab` | Siguiente / pestaña anterior |
+| `Ctrl + W` / `Ctrl + Shift + W` | Cerrar pestaña / cerrar todas |
+| `Ctrl + Q` | Salir de la app |
 | `Ctrl + R` | Recargar app |
-| `Ctrl + +` / `Ctrl + -` | Acercar / alejar zoom |
-| `Ctrl + 0` | Restablecer zoom |
+| `Ctrl + +` / `Ctrl + -` / `Ctrl + 0` | Acercar / alejar / restablecer zoom |
 | `F11` | Pantalla completa |
-| `Tab` | Aumentar sangría |
-| `Shift + Tab` | Disminuir sangría |
+| `Tab` / `Shift + Tab` | Aumentar / disminuir sangría |
+
+Los atajos son totalmente configurables en **Configuración → Atajos**.
 
 ## Desarrollo
 
@@ -85,6 +129,12 @@ Ejecuta las pruebas:
 
 ```bash
 npm test
+```
+
+Valida los archivos de idioma:
+
+```bash
+npm run i18n:validate
 ```
 
 ### Windows (x64 + arm64)
@@ -155,17 +205,29 @@ src/
 |   |-- css/                    # Estilos modulares
 |   |-- fonts/                  # Fuentes Inter y JetBrains Mono
 |-- shared/                     # Helpers compartidos, i18n, actualizador
-assets/                         # Iconos de la app
+assets/
+|   preview/
+|       preview.png             # Capturas para los READMEs
+|   icon.png                    # Iconos de la app
+|   icon-no-bg.png
+|   icon-no-bg.ico
 tests/                          # Pruebas Vitest
 build/                          # Configuración del instalador NSIS
 build-flatpak/                  # Empaquetado Flatpak
-docs/                           # Changelog manual, config de idiomas, README traducidos
-scripts/                        # Scripts de build y CI
+docs/
+|   changelog.md                # Notas de release en inglés (editar antes del tag)
+|   changelogs/
+|       locales.json            # Config de idiomas para traducción en CI
+|       pt.md                   # Notas en portugués (sobrescritas por Release Finalize)
+|       es.md                   # Notas en español (sobrescritas por Release Finalize)
+|   README.pt-BR.md             # READMEs traducidos
+|   README.es.md
+scripts/                        # Scripts de build, changelog y CI
 .github/workflows/
 |   windows-build.yml           # Build Windows (x64 + arm64)
 |   linux-build.yml             # Build Linux (x64 + arm64 + Flatpak)
 |   macos-build.yml             # Build macOS (arm64 DMG + ZIP)
-|   release-finalize.yml        # Localizar changelogs y publicar release
+|   release-finalize.yml        # Traducir changelogs y publicar release
 ```
 
 ## Licencia

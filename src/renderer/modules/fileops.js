@@ -1,4 +1,8 @@
-import { findRenameMatch } from '../../shared/helpers.js';
+import {
+    findRenameMatch,
+    resolveProjectName,
+    sanitizeProjectFileName
+} from '../../shared/helpers.js';
 import { toHtmlLang } from '../../shared/i18n.js';
 
 export function createFileops(app) {
@@ -10,9 +14,23 @@ const defaultFileLangs = {};
         return toHtmlLang(lang);
     }
 
+    function getUntitledLabel() {
+        return app.i18n ? app.i18n.t('untitled') : 'Untitled';
+    }
+
     function getProjectName() {
-        return app.state?.lastSavedProjectName
-            || (app.i18n ? app.i18n.t('untitled') : 'Untitled');
+        const S = app.state;
+        const activeTab = app.tabs?.getActiveTab?.();
+        return resolveProjectName({
+            tabName: activeTab?.name,
+            lastSavedName: S?.lastSavedProjectName,
+            filePath: S?.currentFilePath || activeTab?.filePath,
+            untitledLabel: getUntitledLabel()
+        });
+    }
+
+    function getSaveProjectName() {
+        return sanitizeProjectFileName(getProjectName());
     }
 
     function getAuthorName() {
@@ -222,12 +240,19 @@ const defaultFileLangs = {};
 
         S._isSaving = true;
         try {
+            app.tabs.saveCurrentTabState();
             const activeTab = app.tabs.getActiveTab();
-            const currentName = activeTab ? (activeTab.name || '') : '';
+            const untitledLabel = getUntitledLabel();
+            const currentName = resolveProjectName({
+                tabName: activeTab?.name,
+                lastSavedName: S.lastSavedProjectName,
+                filePath: S.currentFilePath || activeTab?.filePath,
+                untitledLabel
+            });
+            const savedName = sanitizeProjectFileName(currentName);
 
-            if (!S.currentFilePath || askPath || (currentName !== S.lastSavedProjectName)) {
-                const projectName = currentName || 'project';
-                const result = await app.electronAPI.saveTreeAs(S.editor.value, projectName, app.i18n.getCurrentLang());
+            if (!S.currentFilePath || askPath || (savedName !== sanitizeProjectFileName(S.lastSavedProjectName || ''))) {
+                const result = await app.electronAPI.saveTreeAs(S.editor.value, savedName, app.i18n.getCurrentLang());
                 if (result.canceled) { return false; }
                 if (handleSaveResult(result) || !result.filePath) { return false; }
                 S.currentFilePath = result.filePath;
@@ -253,7 +278,7 @@ const defaultFileLangs = {};
                 S.isModified = false;
                 persistFileContents();
                 showToast(app.i18n.t('saved'));
-                S.lastSavedProjectName = currentName;
+                S.lastSavedProjectName = savedName;
 
                 const activeTab2 = app.tabs.getActiveTab();
                 if (activeTab2) {
@@ -285,8 +310,7 @@ const defaultFileLangs = {};
             return false;
         }
 
-        const activeTab = app.tabs.getActiveTab();
-        const projectName = (activeTab && activeTab.name) || 'project';
+        const projectName = getSaveProjectName();
         const result = await app.electronAPI.exportZip(S.currentTree, projectName, { fileContents: S.fileContents }, app.i18n.getCurrentLang());
 
         if (result.error) { showToast(result.error, 4000); return false; }
@@ -365,6 +389,7 @@ const defaultFileLangs = {};
         syncFileContentsWithTree, persistFileContents, loadSavedFileContents,
         isMarkdownFile, getFileTypeLabel, formatMessage,
         getDefaultContentForFile, replaceTemplatePlaceholders, getHtmlLang,
+        getProjectName, getSaveProjectName,
         saveProject, autoSaveToDisk, exportCurrentTreeAsZip,
         handleLoadUnified, setBuildFolderPath, updateBuildFolderDisplay,
         chooseBuildFolder, ensureBuildFolderPath, getDefaultFileLangs,
