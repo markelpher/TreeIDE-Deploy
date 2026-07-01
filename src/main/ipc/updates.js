@@ -11,6 +11,10 @@ import {
 } from '../../shared/updateErrors.js';
 import { getUpdateInstallMode, isInAppUpdateInstallSupported } from '../../shared/updateInstall.js';
 import { normalizeDownloadPercent } from '../../shared/updateProgress.js';
+import {
+    isReleaseFinalized,
+    normalizeReleaseNotesEntries,
+} from '../../shared/releaseFinalize.js';
 
 const require = createRequire(import.meta.url);
 const semver = require('semver');
@@ -61,30 +65,17 @@ try {
 }
 
 function serializeReleaseNotes(value) {
-    if (!value) { return []; }
-    if (typeof value === 'string') { return [{ locale: 'en', notes: value }]; }
-    if (Array.isArray(value)) {
-        return value
-            .map((entry) => {
-                if (typeof entry === 'string') { return { locale: 'en', notes: entry }; }
-                if (entry && typeof entry === 'object') {
-                    const locale = entry.locale || 'en';
-                    const notes = entry.notes ?? entry.note ?? '';
-                    return { locale, notes };
-                }
-                return null;
-            })
-            .filter((entry) => entry && entry.notes);
+    return normalizeReleaseNotesEntries(value);
+}
+
+function shouldOfferUpdate(info, currentVersion) {
+    const latestVersion = info?.version;
+    if (!isUpdateNewer(latestVersion, currentVersion)) { return false; }
+    if (!isReleaseFinalized(info?.releaseNotes)) {
+        log.info(`Ignoring update ${latestVersion} — release notes are not finalized yet.`);
+        return false;
     }
-    if (typeof value === 'object') {
-        return Object.entries(value)
-            .map(([locale, entry]) => ({
-                locale,
-                notes: typeof entry === 'string' ? entry : (entry?.notes ?? entry?.note ?? '')
-            }))
-            .filter((entry) => entry.notes);
-    }
-    return [];
+    return true;
 }
 
 async function checkReleaseUpdate() {
@@ -106,7 +97,7 @@ async function checkReleaseUpdate() {
     const info = result?.updateInfo;
     const currentVersion = app.getVersion();
     const latestVersion = info?.version;
-    const updateAvailable = isUpdateNewer(latestVersion, currentVersion);
+    const updateAvailable = shouldOfferUpdate(info, currentVersion);
 
     if (latestVersion && !updateAvailable) {
         log.info(`No newer update: current=${currentVersion}, latest=${latestVersion}`);
@@ -118,8 +109,8 @@ async function checkReleaseUpdate() {
         currentVersion,
         latestVersion: updateAvailable ? latestVersion : currentVersion,
         releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
-        releaseNotes: serializeReleaseNotes(info?.releaseNotes),
-        assetName: info?.files?.[0]?.url || '',
+        releaseNotes: updateAvailable ? serializeReleaseNotes(info?.releaseNotes) : [],
+        assetName: updateAvailable ? (info?.files?.[0]?.url || '') : '',
     });
 }
 
@@ -128,8 +119,12 @@ export function registerUpdaterEvents(getMainWindow) {
 
     autoUpdater.on('update-available', (info) => {
         const currentVersion = app.getVersion();
-        if (!isUpdateNewer(info.version, currentVersion)) {
-            log.info(`Ignoring update ${info.version} — not newer than ${currentVersion}`);
+        if (!shouldOfferUpdate(info, currentVersion)) {
+            if (isUpdateNewer(info.version, currentVersion) && !isReleaseFinalized(info?.releaseNotes)) {
+                log.info(`Ignoring update ${info.version} — release is not finalized yet.`);
+            } else if (!isUpdateNewer(info.version, currentVersion)) {
+                log.info(`Ignoring update ${info.version} — not newer than ${currentVersion}`);
+            }
             return;
         }
         log.info(`Update available: ${info.version}`);

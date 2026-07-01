@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.62",
+  "version": "2.0.63",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -62,7 +62,7 @@
           "provider": "github",
           "owner": "markelpher",
           "repo": "TreeIDE-Deploy",
-          "releaseType": "release"
+          "releaseType": "draft"
         }
       ]
     },
@@ -106,7 +106,7 @@
           "provider": "github",
           "owner": "markelpher",
           "repo": "TreeIDE-Deploy",
-          "releaseType": "release"
+          "releaseType": "draft"
         }
       ]
     },
@@ -123,7 +123,7 @@
           "provider": "github",
           "owner": "markelpher",
           "repo": "TreeIDE-Deploy",
-          "releaseType": "release"
+          "releaseType": "draft"
         }
       ]
     },

@@ -1,0 +1,274 @@
+name: Release Finalize
+
+permissions:
+  actions: read
+  contents: write
+  models: read
+
+on:
+  workflow_run:
+    workflows:
+      - Build Windows
+      - Build Linux
+      - Build macOS
+    types:
+      - completed
+
+concurrency:
+  group: release-finalize-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    name: Translate, localize, and publish release
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Resolve release tag and verify all builds finished
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="${{ github.event.workflow_run.head_sha }}"
+          tag=$(git tag --points-at "$sha" | grep '^v' | head -1 || true)
+
+          if [ -z "$tag" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Not a tag release — skipping finalize."
+            exit 0
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+          prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
+          echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
+
+          is_prerelease='false'
+          if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
+            is_prerelease='true'
+          fi
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+          required_workflows=(
+            "Build Windows"
+            "Build Linux"
+            "Build macOS"
+          )
+
+          for workflow in "${required_workflows[@]}"; do
+            status=$(gh run list \
+              --workflow "$workflow" \
+              --commit "$sha" \
+              --json status,conclusion \
+              -q '.[0].status' || true)
+            conclusion=$(gh run list \
+              --workflow "$workflow" \
+              --commit "$sha" \
+              --json status,conclusion \
+              -q '.[0].conclusion' || true)
+
+            if [ -z "$status" ] || [ "$status" = "null" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "No run found for $workflow — skipping."
+              exit 0
+            fi
+
+            if [ "$status" != "completed" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "$workflow is still $status — waiting for all platform builds."
+              exit 0
+            fi
+
+            if [ "$conclusion" != "success" ]; then
+              echo "::error::$workflow finished with $conclusion; release will not be published."
+              exit 1
+            fi
+          done
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "All platform workflows succeeded for $tag."
+
+      - name: Skip when not a finalized release candidate
+        if: steps.meta.outputs.skip == 'true'
+        run: echo "Finalize prerequisites not met — exiting."
+
+      - name: Skip when release is already published
+        if: steps.meta.outputs.skip != 'true'
+        id: published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          is_draft=$(gh release view "$tag" --json isDraft -q '.isDraft' 2>/dev/null || echo "true")
+          if [ "$is_draft" = "false" ]; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "Release $tag is already published — skipping."
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Wait for draft release to be created
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          for attempt in $(seq 1 18); do
+            if gh release view "$tag" > /dev/null 2>&1; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 18 ]; then
+              echo "::error::Draft release $tag was not created by electron-builder."
+              exit 1
+            fi
+            echo "Draft release not ready yet, waiting 10s (attempt $attempt/18)..."
+            sleep 10
+          done
+
+      - name: Build multilingual changelog
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/build-release-changelogs.mjs \
+            "${{ steps.meta.outputs.prev }}" \
+            "${{ steps.meta.outputs.tag }}" \
+            "$RUNNER_TEMP/changelogs"
+
+      - name: Download all platform build artifacts
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="${{ steps.meta.outputs.sha }}"
+          mkdir -p dist
+
+          for workflow in "Build Windows" "Build Linux" "Build macOS"; do
+            run_id=$(gh run list \
+              --workflow "$workflow" \
+              --commit "$sha" \
+              --json databaseId \
+              -q '.[0].databaseId')
+            echo "Downloading artifacts from $workflow (run $run_id)"
+            gh run download "$run_id" --dir dist
+          done
+
+      - name: Inject localized releaseNotes into all latest*.yml
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          mapfile -t yml_files < <(find dist -type f -name 'latest*.yml' | sort -u)
+
+          if [ "${#yml_files[@]}" -eq 0 ]; then
+            echo "::error::No latest*.yml files found in downloaded artifacts."
+            exit 1
+          fi
+
+          args=()
+          for f in "${yml_files[@]}"; do
+            args+=(--latest "$f")
+          done
+
+          node scripts/inject-localized-notes.mjs \
+            "${args[@]}" \
+            --note "en=$RUNNER_TEMP/changelogs/en.md" \
+            --note "pt=$RUNNER_TEMP/changelogs/pt.md"
+
+      - name: Re-upload localized latest*.yml to release
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          shopt -s globstar nullglob
+          mapfile -t yml_files < <(find dist -type f -name 'latest*.yml' | sort -u)
+
+          for f in "${yml_files[@]}"; do
+            echo "[finalize] Uploading $(basename "$f") (clobber)"
+            gh release upload --clobber "$tag" "$f"
+          done
+
+      - name: Upload Flatpak bundles to release
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          shopt -s globstar nullglob
+          flatpaks=(dist/**/*.flatpak)
+
+          if [ "${#flatpaks[@]}" -eq 0 ]; then
+            echo "::warning::No Flatpak bundles found in artifacts."
+            exit 0
+          fi
+
+          for f in "${flatpaks[@]}"; do
+            echo "[finalize] Uploading $(basename "$f")"
+            gh release upload --clobber "$tag" "$f"
+          done
+
+      - name: Upload changelog files to release
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          gh release upload --clobber "$tag" \
+            "$RUNNER_TEMP/changelogs/changelog.md" \
+            "$RUNNER_TEMP/changelogs/en.md" \
+            "$RUNNER_TEMP/changelogs/pt.md"
+
+      - name: Write release-ready marker
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        run: |
+          version="${{ steps.meta.outputs.tag }}"
+          version="${version#v}"
+          printf '%s\n' "{\"version\":\"$version\",\"finalized\":true,\"locales\":[\"en\",\"pt\"]}" \
+            > "$RUNNER_TEMP/release-ready.json"
+
+      - name: Upload release-ready marker
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          gh release upload --clobber "$tag" "$RUNNER_TEMP/release-ready.json"
+
+      - name: Publish GitHub release
+        if: steps.meta.outputs.skip != 'true' && steps.published.outputs.already != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          version="${tag#v}"
+          release_name="Tree IDE v${version}"
+          edit_args=(
+            release edit "$tag"
+            --title "$release_name"
+            --notes-file "$RUNNER_TEMP/changelogs/github-release.md"
+            --draft=false
+          )
+          if [ "${{ steps.meta.outputs.is_prerelease }}" = 'true' ]; then
+            edit_args+=(--prerelease)
+          else
+            edit_args+=(--latest)
+          fi
+          gh "${edit_args[@]}"
+          echo "[finalize] Release $tag published with localized notes and all platform artifacts."
