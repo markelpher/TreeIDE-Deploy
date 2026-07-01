@@ -3,7 +3,6 @@ name: Build Linux
 permissions:
   actions: write
   contents: write
-  models: read
 
 on:
   workflow_dispatch:

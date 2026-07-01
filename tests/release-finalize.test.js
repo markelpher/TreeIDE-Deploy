@@ -1,7 +1,6 @@
 import {
     isReleaseFinalized,
     normalizeReleaseNotesEntries,
-    resolveFinalizedReleaseNotes,
 } from '../src/shared/releaseFinalize.js';
 
 describe('normalizeReleaseNotesEntries', () => {
@@ -37,28 +36,5 @@ describe('isReleaseFinalized', () => {
         ];
 
         expect(isReleaseFinalized(notes)).toBe(true);
-    });
-});
-
-describe('resolveFinalizedReleaseNotes', () => {
-    it('returns empty notes when the release is not finalized', () => {
-        expect(resolveFinalizedReleaseNotes('English only', 'pt')).toEqual({
-            finalized: false,
-            notes: '',
-            locale: 'en',
-        });
-    });
-
-    it('picks the preferred locale when the release is finalized', () => {
-        const notes = [
-            { locale: 'en', notes: 'English notes' },
-            { locale: 'pt', notes: 'Notas em português' },
-        ];
-
-        expect(resolveFinalizedReleaseNotes(notes, 'pt')).toEqual({
-            finalized: true,
-            notes: 'Notas em português',
-            locale: 'pt',
-        });
     });
 });

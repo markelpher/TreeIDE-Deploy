@@ -201,22 +201,6 @@ jobs:
             "$RUNNER_TEMP/changelogs/en.md" \
             "$RUNNER_TEMP/changelogs/pt.md"
 
-      - name: Write release-ready marker
-        if: steps.published.outputs.already != 'true'
-        run: |
-          version="${{ steps.meta.outputs.tag }}"
-          version="${version#v}"
-          printf '%s\n' "{\"version\":\"$version\",\"finalized\":true,\"locales\":[\"en\",\"pt\"]}" \
-            > "$RUNNER_TEMP/release-ready.json"
-
-      - name: Upload release-ready marker
-        if: steps.published.outputs.already != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="${{ steps.meta.outputs.tag }}"
-          gh release upload --clobber "$tag" "$RUNNER_TEMP/release-ready.json"
-
       - name: Publish GitHub release
         if: steps.published.outputs.already != 'true'
         env:

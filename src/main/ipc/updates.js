@@ -64,10 +64,6 @@ try {
     log.warn('electron-updater not available:', err.message);
 }
 
-function serializeReleaseNotes(value) {
-    return normalizeReleaseNotesEntries(value);
-}
-
 function shouldOfferUpdate(info, currentVersion) {
     const latestVersion = info?.version;
     if (!isUpdateNewer(latestVersion, currentVersion)) { return false; }
@@ -109,7 +105,7 @@ async function checkReleaseUpdate() {
         currentVersion,
         latestVersion: updateAvailable ? latestVersion : currentVersion,
         releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
-        releaseNotes: updateAvailable ? serializeReleaseNotes(info?.releaseNotes) : [],
+        releaseNotes: updateAvailable ? normalizeReleaseNotesEntries(info?.releaseNotes) : [],
         assetName: updateAvailable ? (info?.files?.[0]?.url || '') : '',
     });
 }
@@ -134,7 +130,7 @@ export function registerUpdaterEvents(getMainWindow) {
             currentVersion: app.getVersion(),
             latestVersion: info.version,
             releaseName: normalizeReleaseName(info.releaseName, info.version),
-            releaseNotes: serializeReleaseNotes(info.releaseNotes),
+            releaseNotes: normalizeReleaseNotesEntries(info.releaseNotes),
             assetName: info?.files?.[0]?.url || '',
         }));
     });
@@ -233,4 +229,3 @@ export function registerUpdateIpc(isReadyToCloseRef) {
     });
 }
 
-export { checkReleaseUpdate };

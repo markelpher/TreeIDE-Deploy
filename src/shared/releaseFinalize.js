@@ -3,8 +3,6 @@
  * localized release notes for every supported locale.
  */
 
-import { resolveLocalizedReleaseNotes } from './releaseNotes.js';
-
 const DEFAULT_REQUIRED_LOCALES = ['en', 'pt'];
 
 /**
@@ -72,18 +70,4 @@ export function isReleaseFinalized(releaseNotes, requiredLocales = DEFAULT_REQUI
         const key = String(locale).toLowerCase();
         return byLocale.has(key) && byLocale.get(key).length > 0;
     });
-}
-
-/**
- * @param {unknown} releaseNotes
- * @param {string} [preferredLocale]
- * @returns {{ finalized: boolean, notes: string, locale: string }}
- */
-export function resolveFinalizedReleaseNotes(releaseNotes, preferredLocale = 'en') {
-    if (!isReleaseFinalized(releaseNotes)) {
-        return { finalized: false, notes: '', locale: 'en' };
-    }
-
-    const { notes, locale } = resolveLocalizedReleaseNotes(releaseNotes, preferredLocale);
-    return { finalized: true, notes, locale };
 }

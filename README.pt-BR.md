@@ -97,47 +97,22 @@ npm run build
 
 ```text
 src/
-|-- main/
-|   |-- main.js                 # Processo principal Electron, updater e IPC
-|   |-- mainTranslations.js     # Traducoes do processo principal
-|   |-- tarCreator.js           # Exportacao tar.gz
-|   |-- treeCreator.js          # Criacao de pastas e arquivos
-|   |-- treeParser.js           # Parser da sintaxe de arvore
-|   |-- zipCreator.js           # Exportacao ZIP
-|-- preload/
-|   |-- preload.js              # Ponte segura via contextBridge
+|-- main/                       # Processo principal Electron, IPC, projeto/arquivos
+|-- preload/                    # API contextBridge exposta ao renderer
 |-- renderer/
 |   |-- index.html              # Ponto de entrada HTML
-|   |-- css/                    # 17 estilos modulares
+|   |-- main.js                 # Bootstrap do renderer
+|   |-- modules/                # Editor, arvore, modais, build studio, abas, etc.
+|   |-- data/                   # Conteudos padrao e templates iniciais
+|   |-- css/                    # Estilos modulares
 |   |-- fonts/                  # Fontes Inter e JetBrains Mono
-|   |-- js/                     # 21 modulos JavaScript
-|       |-- renderer.js         # Logica principal do renderer
-|       |-- renderer-fileops.js # Operacoes de abrir e salvar arquivos
-|       |-- renderer-markdown.js# Suporte a preview Markdown
-|       |-- renderer-modals.js  # Logica de modais
-|       |-- renderer-shortcuts.js# Atalhos do teclado
-|       |-- renderer-storage.js # Configuracoes e localStorage
-|       |-- renderer-templates.js# Insercao de templates
-|       |-- renderer-toast.js   # Sistema de notificacoes toast
-|       |-- renderer-tree.js    # Renderizacao e interacao da arvore
-|       |-- renderer-undoredo.js# Desfazer e refazer
-|       |-- renderer-validation.js# Validacao da estrutura
-|       |-- tabs.js             # Gerenciamento de abas
-|       |-- constants-defaults.js# Valores padrao, temas, idiomas
-|       |-- constants-templates.js# Templates de projeto
-|       |-- customSelect.js     # Widget de select personalizado
-|       |-- db-storage.js       # Persistencia IndexedDB
-|       |-- fileTypes.js        # Mapeamento de extensao para icone
-|       |-- helpers.js          # Funcoes utilitarias
-|       |-- icons.js            # Helpers de icones Lucide
-|       |-- lucide-local.js     # Biblioteca Lucide embutida
-|       |-- translations.js     # Strings em ingles e portugues
-|-- assets/                     # Icones do app e imagem de preview
-|-- tests/                      # Testes Vitest
-|-- build/                      # Configuracao do instalador NSIS
-|-- build-flatpak/              # Empacotamento Flatpak
-|-- scripts/                    # Scripts de build e CI
-|-- package.json                # Metadados, scripts e configuracao
+|-- shared/                     # Helpers compartilhados, i18n, updater
+assets/                         # Icones do app
+tests/                          # Testes Vitest
+build/                          # Configuracao do instalador NSIS
+build-flatpak/                  # Empacotamento Flatpak
+scripts/                        # Scripts de build e CI
+.github/workflows/              # CI multiplataforma e release finalize
 ```
 
 ## Licenca

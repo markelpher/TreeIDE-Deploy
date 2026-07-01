@@ -97,47 +97,22 @@ npm run build
 
 ```text
 src/
-|-- main/
-|   |-- main.js                 # Electron main process, updater, and build IPC
-|   |-- mainTranslations.js     # Main process translations
-|   |-- tarCreator.js           # tar.gz export logic
-|   |-- treeCreator.js          # Folder and file creation logic
-|   |-- treeParser.js           # Tree syntax parser
-|   |-- zipCreator.js           # ZIP export logic
-|-- preload/
-|   |-- preload.js              # Safe renderer API bridge via contextBridge
+|-- main/                       # Electron main process, IPC, project/archive logic
+|-- preload/                    # contextBridge API exposed to the renderer
 |-- renderer/
 |   |-- index.html              # HTML entry point
-|   |-- css/                    # 17 modular stylesheets
+|   |-- main.js                 # Renderer bootstrap
+|   |-- modules/                # Editor, tree, modals, build studio, tabs, etc.
+|   |-- data/                   # Default file contents and starter templates
+|   |-- css/                    # Modular stylesheets
 |   |-- fonts/                  # Inter and JetBrains Mono fonts
-|   |-- js/                     # 21 JavaScript modules
-|       |-- renderer.js         # Main renderer entry logic
-|       |-- renderer-fileops.js # File open and save operations
-|       |-- renderer-markdown.js# Markdown preview support
-|       |-- renderer-modals.js  # Modal dialog logic
-|       |-- renderer-shortcuts.js# Keyboard shortcut handling
-|       |-- renderer-storage.js # Settings and localStorage
-|       |-- renderer-templates.js# Template insertion UI
-|       |-- renderer-toast.js   # Toast notification system
-|       |-- renderer-tree.js    # Tree rendering and interaction
-|       |-- renderer-undoredo.js# Undo and redo for tree edits
-|       |-- renderer-validation.js# Tree structure validation
-|       |-- tabs.js             # Tab management
-|       |-- constants-defaults.js# Default values, themes, languages
-|       |-- constants-templates.js# Starter project templates
-|       |-- customSelect.js     # Custom select widget
-|       |-- db-storage.js       # IndexedDB session persistence
-|       |-- fileTypes.js        # File extension to icon mapping
-|       |-- helpers.js          # Shared utility functions
-|       |-- icons.js            # Lucide icon helpers
-|       |-- lucide-local.js     # Bundled Lucide icon library
-|       |-- translations.js     # English and Portuguese strings
-|-- assets/                     # App icons and preview image
-|-- tests/                      # Vitest test files
-|-- build/                      # NSIS installer configuration
-|-- build-flatpak/              # Flatpak packaging
-|-- scripts/                    # Build and CI helper scripts
-|-- package.json                # App metadata, scripts, and build config
+|-- shared/                     # Shared helpers, i18n, updater logic
+assets/                         # App icons
+tests/                          # Vitest test files
+build/                          # NSIS installer configuration
+build-flatpak/                  # Flatpak packaging
+scripts/                        # Build and CI helper scripts
+.github/workflows/              # Multi-platform CI and release finalize
 ```
 
 ## License

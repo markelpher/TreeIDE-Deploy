@@ -19,16 +19,6 @@
  *     --note en=path/to/en.md \
  *     --note pt=path/to/pt.md
  *
- * Or via JSON input from another script:
- *   echo '{"en": "...", "pt": "..."}' > /tmp/notes.json
- *   node scripts/inject-localized-notes.mjs \
- *     --latest dist/latest.yml \
- *     --notes-json /tmp/notes.json
- *
- * If a `latest.yml` already contains a `releaseNotes` string, the
- * script preserves it under the "en" locale unless a `--note en=…`
- * is also provided (in which case the explicit one wins). This
- * protects releases that were tagged before this pipeline existed.
  */
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
@@ -36,7 +26,7 @@ import { argv, exit } from 'node:process';
 import { resolve, basename } from 'node:path';
 
 function parseArgs(args) {
-    const out = { latest: [], notes: new Map(), notesJson: null };
+    const out = { latest: [], notes: new Map() };
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
         if (a === '--latest' || a === '-l') {
@@ -50,8 +40,6 @@ function parseArgs(args) {
             const locale = value.slice(0, eq).trim();
             const path = value.slice(eq + 1).trim();
             out.notes.set(locale, path);
-        } else if (a === '--notes-json') {
-            out.notesJson = args[++i];
         } else if (a === '--help' || a === '-h') {
             printHelp();
             exit(0);
@@ -72,44 +60,18 @@ Options:
       --note <l>=<path>   Add a localized note. Locale is the language tag
                           the user agent matches against. Path is a UTF-8
                           markdown file whose contents become the notes.
-      --notes-json <path> JSON file with {"locale": "markdown", …} entries
-                          merged into the --note set.
   -h, --help              Show this help.`);
 }
 
 async function loadNotes(opts) {
-    const notes = new Map(opts.notes);
-    if (opts.notesJson) {
-        let raw;
-        try {
-            raw = await readFile(opts.notesJson, 'utf8');
-        } catch (err) {
-            console.error(`Cannot read --notes-json file: ${opts.notesJson}`);
-            exit(2);
-        }
-        let parsed;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (err) {
-            console.error(`--notes-json is not valid JSON: ${err.message}`);
-            exit(2);
-        }
-        for (const [locale, markdown] of Object.entries(parsed)) {
-            if (!notes.has(locale)) {notes.set(locale, { inline: markdown });}
-        }
-    }
     const resolved = new Map();
-    for (const [locale, source] of notes) {
-        if (typeof source === 'object' && source.inline !== undefined) {
-            resolved.set(locale, source.inline);
-        } else {
-            try {
-                const content = await readFile(source, 'utf8');
-                resolved.set(locale, content);
-            } catch (err) {
-                console.error(`Cannot read --note file for locale "${locale}": ${source}`);
-                exit(2);
-            }
+    for (const [locale, source] of opts.notes) {
+        try {
+            const content = await readFile(source, 'utf8');
+            resolved.set(locale, content);
+        } catch (err) {
+            console.error(`Cannot read --note file for locale "${locale}": ${source}`);
+            exit(2);
         }
     }
     return resolved;
@@ -202,7 +164,7 @@ function fixReleaseName(yamlText) {
     });
 }
 
-/** Lightweight structural checks — no YAML parser (CI release-notes jobs skip npm install). */
+/** Lightweight structural checks — no YAML parser (CI finalize job skips npm install). */
 function validateLatestYaml(yamlText, label) {
     if (!/^version:\s*\S+/m.test(yamlText)) {
         console.error(`[inject] ${label}: missing version field`);
@@ -249,7 +211,7 @@ async function main() {
     }
     const localized = await loadNotes(opts);
     if (localized.size === 0) {
-        console.error('No localized notes provided (use --note or --notes-json).');
+        console.error('No localized notes provided (use --note).');
         exit(2);
     }
     const targets = await expandLatestGlobs(opts.latest);
