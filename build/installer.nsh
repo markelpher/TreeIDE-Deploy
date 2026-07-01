@@ -7,21 +7,10 @@
   LangString ${NAME} 3082 "${VALUE}"
 !macroend
 
-; Override electron-builder addLangs — stock SpanishInternational.nsh shows a long picker label
-!macro addLangs
-  !insertmacro MUI_LANGUAGE "English"
-  !insertmacro MUI_LANGUAGE "PortugueseBR"
-  LoadLanguageFile "${NSISDIR}\Contrib\Language files\SpanishInternational.nlf"
-  !insertmacro LANGFILE_INCLUDE_WITHDEFAULT \
-    "${BUILD_RESOURCES_DIR}\SpanishInternational.nsh" \
-    "${NSISDIR}\Contrib\Language files\English.nsh"
-  !define /ifndef MUI_LANGDLL_LANGUAGES ""
-  !define /redef MUI_LANGDLL_LANGUAGES \
-    `"${LANGFILE_SpanishInternational_LANGDLL}" "${LANG_SpanishInternational}" ${MUI_LANGDLL_LANGUAGES}`
-  !define /ifndef MUI_LANGDLL_LANGUAGES_CP ""
-  !define /redef MUI_LANGDLL_LANGUAGES_CP \
-    `"${LANGFILE_SpanishInternational_LANGDLL}" "${LANG_SpanishInternational}" "${LANG_SpanishInternational_CP}" ${MUI_LANGDLL_LANGUAGES_CP}`
-!macroend
+; Short "Español" in the picker — stock SpanishInternational.nsh skips LANGFILE names when these exist
+!define LANGFILE_SpanishInternational_ENGLISHNAME "Spanish"
+!define LANGFILE_SpanishInternational_NAME "Español"
+!define LANGFILE_SpanishInternational_LANGDLL "Español"
 
 LangString languagePageTitle 1033 "Installer Language"
 LangString languagePageTitle 1046 "Idioma do instalador"
