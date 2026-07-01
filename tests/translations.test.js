@@ -1,24 +1,32 @@
 
 import { translations } from '../src/shared/i18n.js';
 
+const localeCodes = Object.keys(translations);
+
 describe('translations', () => {
-    it('has both en and pt locales', () => {
+    it('defines en, pt, and es locales', () => {
         expect(translations.en).toBeDefined();
         expect(translations.pt).toBeDefined();
+        expect(translations.es).toBeDefined();
     });
 
-    it('every en key has a corresponding pt key', () => {
+    it('every en key exists in all other locales', () => {
         const enKeys = Object.keys(translations.en);
-        const ptKeys = new Set(Object.keys(translations.pt));
-        const missing = enKeys.filter(k => !ptKeys.has(k));
-        expect(missing).toEqual([]);
+        for (const code of localeCodes) {
+            if (code === 'en') { continue; }
+            const localeKeys = new Set(Object.keys(translations[code]));
+            const missing = enKeys.filter((k) => !localeKeys.has(k));
+            expect(missing, `missing in ${code}`).toEqual([]);
+        }
     });
 
-    it('every pt key has a corresponding en key', () => {
-        const ptKeys = Object.keys(translations.pt);
+    it('every non-en key exists in en', () => {
         const enKeys = new Set(Object.keys(translations.en));
-        const missing = ptKeys.filter(k => !enKeys.has(k));
-        expect(missing).toEqual([]);
+        for (const code of localeCodes) {
+            if (code === 'en') { continue; }
+            const missing = Object.keys(translations[code]).filter((k) => !enKeys.has(k));
+            expect(missing, `extra in ${code}`).toEqual([]);
+        }
     });
 
     it('no translation values are empty', () => {
@@ -30,28 +38,32 @@ describe('translations', () => {
         }
     });
 
-    it('includes shared error keys from src/shared/locales/{en,pt}.json', () => {
+    it('includes shared error keys from src/shared/locales/{en,pt,es}.json', () => {
         expect(String(translations.en.error_file_too_large)).toMatch(/500MB/);
         expect(String(translations.pt.error_unsupported_file_type)).toMatch(/\{ext\}/);
+        expect(String(translations.es.error_unsupported_file_type)).toMatch(/\{ext\}/);
     });
 
     it('placeholder names are consistent across languages', () => {
         const placeholderRegex = /\{(\w+)\}/g;
         for (const key of Object.keys(translations.en)) {
             const enPlaceholders = new Set();
-            const ptPlaceholders = new Set();
             let m;
 
             placeholderRegex.lastIndex = 0;
             while ((m = placeholderRegex.exec(translations.en[key])) !== null) {
                 enPlaceholders.add(m[1]);
             }
-            placeholderRegex.lastIndex = 0;
-            while ((m = placeholderRegex.exec(translations.pt[key])) !== null) {
-                ptPlaceholders.add(m[1]);
-            }
 
-            expect([...enPlaceholders].sort()).toEqual([...ptPlaceholders].sort());
+            for (const code of localeCodes) {
+                if (code === 'en') { continue; }
+                const localePlaceholders = new Set();
+                placeholderRegex.lastIndex = 0;
+                while ((m = placeholderRegex.exec(translations[code][key])) !== null) {
+                    localePlaceholders.add(m[1]);
+                }
+                expect([...localePlaceholders].sort(), `${code}:${key}`).toEqual([...enPlaceholders].sort());
+            }
         }
     });
 });

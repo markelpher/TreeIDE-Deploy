@@ -1,3 +1,4 @@
+import { toDateLocale } from '../../shared/i18n.js';
 import {
     resolveLocalizedReleaseNotes,
     shouldTranslateChangelogSections,
@@ -51,9 +52,12 @@ export function createModals(app) {
         downloadLabel.textContent = app.i18n.t('update_download_release');
     }
 
+    const escapeHtmlFallback = app.helpers.escapeHtml;
+    const renderMarkdown = app.markdown ? app.markdown.renderMarkdown : null;
+    function __showToast(msg, dur) { app.toast.showToast(msg, dur); }
+
     function resetReleaseUpdateButton() {
         const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
-        const downloadLabel = document.getElementById('updateDownloadLabel');
         const progressEl = document.getElementById('releaseUpdateProgress');
         const progressFill = document.getElementById('releaseUpdateProgressFill');
         const progressText = document.getElementById('releaseUpdateProgressText');
@@ -128,10 +132,6 @@ export function createModals(app) {
             ? sanitizeHtml(html)
             : `<p class="release-update-changelog-empty">${escapeHtmlFallback(app.i18n ? app.i18n.t('update_changelog_empty') : 'No details for this release.')}</p>`;
     }
-
-    const escapeHtmlFallback = app.helpers.escapeHtml;
-    const renderMarkdown = app.markdown ? app.markdown.renderMarkdown : null;
-    function __showToast(msg, dur) { app.toast.showToast(msg, dur); }
 
     function normalizeReleaseNotes(value) {
         const preferredLocale = (app.i18n && typeof app.i18n.getCurrentLang === 'function')
@@ -208,7 +208,6 @@ export function createModals(app) {
                 isDownloadingUpdate = false;
                 isUpdateDownloaded = true;
                 const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
-                const downloadLabel = document.getElementById('updateDownloadLabel');
                 const progressEl = document.getElementById('releaseUpdateProgress');
                 const progressFill = document.getElementById('releaseUpdateProgressFill');
                 const progressText = document.getElementById('releaseUpdateProgressText');
@@ -258,7 +257,7 @@ export function createModals(app) {
     }
 
     async function initializeAppInfo() {
-        const lang = app.i18n?.getCurrentLang?.() === 'pt' ? 'pt-BR' : 'en-US';
+        const lang = toDateLocale(app.i18n?.getCurrentLang?.() || 'en');
         const lastCheckedEl = document.getElementById('settingsLastChecked');
         let versionText = formatVersionText(bundledVersion, false);
 
@@ -292,6 +291,11 @@ export function createModals(app) {
             } catch (err) {
                 console.warn('Release info unavailable:', err);
             }
+        }
+
+        applyUpdateDownloadLabel();
+        if (latestReleaseUpdate?.releaseNotes) {
+            populateReleaseChangelog(latestReleaseUpdate.releaseNotes);
         }
     }
 
@@ -585,7 +589,7 @@ export function createModals(app) {
                 if (result && !result.ok) {
                     isDownloadingUpdate = false;
                     resetReleaseUpdateButton();
-                app.toast.showToast(translateUpdateError(app.i18n, result.error), 4000);
+                    __showToast(translateUpdateError(app.i18n, result.error), 4000);
                 }
             } catch (err) {
                 isDownloadingUpdate = false;

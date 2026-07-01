@@ -1,6 +1,6 @@
 # Tree IDE
 
-[English](README.md)
+[Inglês](../README.md) · [Espanhol](README.es.md)
 
 Um aplicativo desktop leve para projetar estruturas de projeto em texto, visualiza-las como uma arvore interativa e gerar pastas, arquivos iniciais e arquivos ZIP em poucos cliques.
 
@@ -18,7 +18,7 @@ Um aplicativo desktop leve para projetar estruturas de projeto em texto, visuali
 - **Icones inteligentes** — icones contextuais para pastas comuns, linguagens de programacao, midia, arquivos e configuracao
 - **Desfazer e refazer** — historico completo de undo e redo para edicao da arvore
 - **Sessoes persistentes** — projetos sao salvos automaticamente no IndexedDB
-- **Ingles e Portugues** — traducao integrada da interface com selecao de idioma no primeiro uso
+- **Inglês, Portugues e Espanhol** — traducao integrada da interface com selecao de idioma no primeiro uso
 - **Temas e configuracoes** — temas claro e escuro, selecao de pasta de saida e sessoes salvas automaticamente
 - **Atualizador automatico** — verifique versoes no GitHub Releases, baixe atualizacoes no app e reinicie para instalar
 
@@ -103,7 +103,7 @@ Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && elec
 | Metadados do atualizador | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
 | Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
 | Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Arquivos de release (x64 / arm64) | `Tree-IDE-Setup-{version}-{arch}.exe` (NSIS), `Tree-IDE-{version}-{arch}.msi`, `Tree-IDE-Portable-{version}-{arch}.exe` |
+| Arquivos de release (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
 
 ### Linux (x64 + arm64)
 
@@ -159,6 +159,7 @@ assets/                         # Icones do app
 tests/                          # Testes Vitest
 build/                          # Configuracao do instalador NSIS
 build-flatpak/                  # Empacotamento Flatpak
+docs/                           # Changelog manual, config de idiomas, READMEs traduzidos
 scripts/                        # Scripts de build e CI
 .github/workflows/
 |   windows-build.yml           # Build Windows (x64 + arm64)

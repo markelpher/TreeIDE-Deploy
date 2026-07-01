@@ -1,3 +1,5 @@
+import { toHtmlLang } from '../../shared/i18n.js';
+
 export function createShell(app) {
 
 function resolveThemePreference(val) {
@@ -74,7 +76,7 @@ function handleLangChange(val) {
         app.shortcuts.renderShortcutsTable();
     }
 
-    document.documentElement.lang = val === 'pt' ? 'pt-br' : 'en';
+    document.documentElement.lang = toHtmlLang(val);
 
     if (shouldTranslateProjectName && nameSpan) {
         app.editor.updateFileNameDisplay(app.i18n.t('untitled'));

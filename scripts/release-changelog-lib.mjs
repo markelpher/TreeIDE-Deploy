@@ -8,7 +8,7 @@ import { env } from 'node:process';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(__dirname);
 
-export const MANUAL_CHANGELOG_PATH = path.join(root, 'changelog.md');
+export const MANUAL_CHANGELOG_PATH = path.join(root, 'docs', 'changelog.md');
 
 /** @param {string} tag */
 export function formatReleaseTitle(tag) {
@@ -141,6 +141,6 @@ export async function writeEnglishNotes({ prev, current, outPath, manualPath = M
     const appNotes = stripFullChangelogLink(await readFile(generatedPath, 'utf8'));
     await writeFile(outPath, appNotes, 'utf8');
     await writeGithubReleaseNotes(outPath, compareUrl);
-    console.log('[changelogs] changelog.md empty or missing; generated English notes from git history');
+    console.log('[changelogs] docs/changelog.md empty or missing; generated English notes from git history');
     return 'git';
 }

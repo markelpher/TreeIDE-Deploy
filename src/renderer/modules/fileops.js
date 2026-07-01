@@ -1,4 +1,5 @@
 import { findRenameMatch } from '../../shared/helpers.js';
+import { toHtmlLang } from '../../shared/i18n.js';
 
 export function createFileops(app) {
 
@@ -6,7 +7,7 @@ const defaultFileLangs = {};
 
     function getHtmlLang() {
         const lang = (app.i18n && app.i18n.getCurrentLang && app.i18n.getCurrentLang()) || 'en';
-        return lang === 'pt' ? 'pt-br' : 'en';
+        return toHtmlLang(lang);
     }
 
     function getProjectName() {

@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.69",
+  "version": "2.0.70",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -68,7 +68,7 @@
     },
     "nsis": {
       "include": "build/installer.nsh",
-      "artifactName": "Tree-IDE-Setup-${version}-${arch}.${ext}",
+      "artifactName": "Tree-IDE-Setup-${version}-win-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
@@ -88,10 +88,10 @@
       "runAfterFinish": true
     },
     "portable": {
-      "artifactName": "Tree-IDE-Portable-${version}-${arch}.${ext}"
+      "artifactName": "Tree-IDE-Portable-${version}-win-${arch}.${ext}"
     },
     "msi": {
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}"
+      "artifactName": "Tree-IDE-${version}-win-${arch}.${ext}"
     },
     "linux": {
       "target": [

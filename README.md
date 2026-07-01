@@ -1,6 +1,6 @@
 # Tree IDE
 
-[Português](README.pt-BR.md)
+[Português](docs/README.pt-BR.md) · [Español](docs/README.es.md)
 
 A lightweight desktop app for designing project structures in text, previewing them as a visual tree, and generating folders, starter files, and ZIP archives in a few clicks.
 
@@ -18,7 +18,7 @@ A lightweight desktop app for designing project structures in text, previewing t
 - **Smart icons** — contextual icons for common folders, programming languages, media, archives, and config files
 - **Undo and redo** — full undo/redo history for tree editing
 - **Session persistence** — projects are automatically saved to IndexedDB
-- **English and Portuguese** — built-in interface translations with first-run language selection
+- **English, Portuguese, and Spanish** — built-in interface translations with first-run language selection
 - **Themes and settings** — dark and light themes, build folder selection, and autosaved sessions
 - **Auto-updater** — check GitHub Releases with Electron updater, download updates in-app, and restart to install
 
@@ -103,7 +103,7 @@ On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-b
 | Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
 | CI workflow | `Build Windows` — `.github/workflows/windows-build.yml` |
 | CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Release files (x64 / arm64) | `Tree-IDE-Setup-{version}-{arch}.exe` (NSIS), `Tree-IDE-{version}-{arch}.msi`, `Tree-IDE-Portable-{version}-{arch}.exe` |
+| Release files (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
 
 ### Linux (x64 + arm64)
 
@@ -159,6 +159,7 @@ assets/                         # App icons
 tests/                          # Vitest test files
 build/                          # NSIS installer configuration
 build-flatpak/                  # Flatpak packaging
+docs/                           # Manual changelog, locale config, translated READMEs
 scripts/                        # Build and CI helper scripts
 .github/workflows/
 |   windows-build.yml           # Build Windows (x64 + arm64)

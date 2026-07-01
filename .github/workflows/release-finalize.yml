@@ -133,7 +133,8 @@ jobs:
           node scripts/inject-localized-notes.mjs \
             "${args[@]}" \
             --note "en=$RUNNER_TEMP/changelogs/en.md" \
-            --note "pt=$RUNNER_TEMP/changelogs/pt.md"
+            --note "pt=$RUNNER_TEMP/changelogs/pt.md" \
+            --note "es=$RUNNER_TEMP/changelogs/es.md"
 
       - name: Re-upload localized latest*.yml to release
         if: steps.published.outputs.already != 'true'

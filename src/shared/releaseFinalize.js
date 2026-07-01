@@ -3,7 +3,7 @@
  * localized release notes for every supported locale.
  */
 
-const DEFAULT_REQUIRED_LOCALES = ['en', 'pt'];
+const DEFAULT_REQUIRED_LOCALES = ['en', 'pt', 'es'];
 
 /**
  * Normalizes electron-updater releaseNotes into { locale, notes } entries.

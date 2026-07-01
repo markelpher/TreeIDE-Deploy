@@ -152,6 +152,7 @@
   "decrypt_password_lead_both": "The archive {file} is password-protected and may include encrypted content. Enter the password to open it.",
   "english": "English",
   "portuguese": "Portuguese",
+  "spanish": "Spanish",
   "settings": "Settings",
   "general": "General",
   "welcome_title": "Welcome to Tree IDE",

@@ -1,4 +1,4 @@
-## What's new in v2.0.69
+## What's new in v2.0.70
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -74,7 +74,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Stable and beta update channels**
 - **Localized release notes** in the update modal (English and Portuguese)
 - **Collapsible “What’s new”** section in the update dialog
-- **Manual `changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
+- **Manual `docs/changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
 - **Split release notes** — app update modal shows changelog text only; the GitHub compare link (`Full Changelog`) appears on the GitHub release page, not inside the app
 - **GitHub Models translation** — Portuguese release notes are generated in CI via the `models.github.ai` API
 

@@ -29,10 +29,20 @@ describe('isReleaseFinalized', () => {
         expect(isReleaseFinalized([{ locale: 'en', notes: 'English only' }])).toBe(false);
     });
 
+    it('returns false when Spanish notes are missing', () => {
+        const notes = [
+            { locale: 'en', notes: 'English notes' },
+            { locale: 'pt', notes: 'Notas em português' },
+        ];
+
+        expect(isReleaseFinalized(notes)).toBe(false);
+    });
+
     it('returns true when every required locale is present', () => {
         const notes = [
             { locale: 'en', notes: 'English notes' },
             { locale: 'pt', notes: 'Notas em português' },
+            { locale: 'es', notes: 'Notas en español' },
         ];
 
         expect(isReleaseFinalized(notes)).toBe(true);

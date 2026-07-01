@@ -2,9 +2,9 @@
 /**
  * Builds release notes for GitHub and in-app update modals.
  *
- * - English (en.md) comes from the root changelog.md when that file has content.
+ * - English (en.md) comes from docs/changelog.md when that file has content.
  *   Otherwise it is generated from git history (generate-changelog.mjs).
- * - Every other locale in changelogs/locales.json is translated from English.
+ * - Every other locale in docs/changelogs/locales.json is translated from English.
  * - The app picks the matching locale at runtime (see src/shared/releaseNotes.js).
  *
  * Usage:
@@ -25,7 +25,7 @@ import { combineChangelogs, stripFullChangelogLink, writeEnglishNotes } from './
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(__dirname);
-const LOCALES_PATH = path.join(root, 'changelogs', 'locales.json');
+const LOCALES_PATH = path.join(root, 'docs', 'changelogs', 'locales.json');
 
 function runNode(scriptRelative, args) {
     const scriptPath = path.join(root, scriptRelative);
@@ -46,7 +46,7 @@ async function loadLocales() {
     const raw = await readFile(LOCALES_PATH, 'utf8');
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed.locales) || parsed.locales.length === 0) {
-        throw new Error('changelogs/locales.json must define a non-empty locales array');
+        throw new Error('docs/changelogs/locales.json must define a non-empty locales array');
     }
     return parsed.locales;
 }
@@ -65,7 +65,7 @@ async function main() {
     const locales = await loadLocales();
     const sourceLocale = locales.find((locale) => locale.source);
     if (!sourceLocale) {
-        throw new Error('changelogs/locales.json must mark exactly one locale with "source": true');
+        throw new Error('docs/changelogs/locales.json must mark exactly one locale with "source": true');
     }
 
     await mkdir(outDir, { recursive: true });

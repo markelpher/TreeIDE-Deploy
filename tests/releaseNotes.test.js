@@ -22,6 +22,16 @@ describe('resolveLocalizedReleaseNotes', () => {
         expect(result.notes).toContain('Adicionado');
     });
 
+    it('returns Spanish notes for a Spanish user', () => {
+        const result = resolveLocalizedReleaseNotes([
+            { locale: 'en', notes: '### Added\n\n- feat: one' },
+            { locale: 'es', notes: '### Agregado\n\n- feat: uno' },
+        ], 'es');
+
+        expect(result.locale).toBe('es');
+        expect(result.notes).toContain('Agregado');
+    });
+
     it('falls back to English when locale is missing', () => {
         const result = resolveLocalizedReleaseNotes([
             { locale: 'en', notes: '### Added\n\n- feat: one' },
@@ -35,6 +45,7 @@ describe('resolveLocalizedReleaseNotes', () => {
 describe('shouldTranslateChangelogSections', () => {
     it('skips section rewrite when full translation is already selected', () => {
         expect(shouldTranslateChangelogSections('pt', 'pt')).toBe(false);
+        expect(shouldTranslateChangelogSections('es', 'es')).toBe(false);
     });
 
     it('rewrites section headers only when showing English to a localized UI', () => {

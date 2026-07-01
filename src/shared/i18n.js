@@ -1,10 +1,31 @@
 import en from './locales/en.json' with { type: 'json' };
 import pt from './locales/pt.json' with { type: 'json' };
+import es from './locales/es.json' with { type: 'json' };
 
-export const SUPPORTED_LOCALES = ['en', 'pt'];
+export const SUPPORTED_LOCALES = ['en', 'pt', 'es'];
 export const DEFAULT_LOCALE = 'en';
 
-export const translations = { en, pt };
+export const LOCALE_HTML_LANG = {
+    en: 'en',
+    pt: 'pt-br',
+    es: 'es',
+};
+
+export const translations = { en, pt, es };
+
+export function toHtmlLang(lang) {
+    return LOCALE_HTML_LANG[lang] ?? LOCALE_HTML_LANG[DEFAULT_LOCALE];
+}
+
+const LOCALE_DATE_FORMAT = {
+    en: 'en-US',
+    pt: 'pt-BR',
+    es: 'es',
+};
+
+export function toDateLocale(lang) {
+    return LOCALE_DATE_FORMAT[lang] ?? LOCALE_DATE_FORMAT[DEFAULT_LOCALE];
+}
 
 export function isSupportedLocale(lang) {
     return SUPPORTED_LOCALES.includes(lang);
@@ -27,7 +48,7 @@ function updateDocumentI18n(i18n) {
     if (typeof document === 'undefined' || !document.querySelectorAll) { return; }
 
     const currentLang = i18n.getCurrentLang();
-    document.documentElement.lang = currentLang === 'pt' ? 'pt-br' : 'en';
+    document.documentElement.lang = toHtmlLang(currentLang);
 
     document.querySelectorAll('[data-i18n]').forEach((el) => {
         if (DYNAMIC_I18N_SKIP_IDS.has(el.id)) { return; }
@@ -61,8 +82,10 @@ function detectLang() {
         const stored = localStorage.getItem('language');
         if (isSupportedLocale(stored)) { return stored; }
     }
-    if (typeof navigator !== 'undefined' && navigator.language?.split('-')[0] === 'pt') {
-        return 'pt';
+    if (typeof navigator !== 'undefined') {
+        const browserLang = navigator.language?.split('-')[0];
+        if (browserLang === 'pt') { return 'pt'; }
+        if (browserLang === 'es') { return 'es'; }
     }
     return DEFAULT_LOCALE;
 }

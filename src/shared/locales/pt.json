@@ -152,6 +152,7 @@
   "decrypt_password_lead_both": "O arquivo {file} está protegido por senha e pode conter conteúdo criptografado. Digite a senha para abrir.",
   "english": "Inglês",
   "portuguese": "Português",
+  "spanish": "Espanhol",
   "settings": "Configurações",
   "general": "Geral",
   "welcome_title": "Bem-vindo ao Tree IDE",

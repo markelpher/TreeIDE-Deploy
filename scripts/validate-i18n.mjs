@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const langs = ['en', 'pt'];
+const langs = ['en', 'pt', 'es'];
 
 function loadJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));

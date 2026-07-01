@@ -1,6 +1,0 @@
-{
-  "locales": [
-    { "code": "en", "label": "English", "source": true },
-    { "code": "pt", "label": "Português (Brasil)", "translateFrom": "en" }
-  ]
-}
