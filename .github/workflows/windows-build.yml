@@ -112,10 +112,13 @@ jobs:
             Write-Host "Keeping latest previous cache for $($group.Name): $($cacheToKeep.key)"
 
             $groupCaches |
-              Where-Object { $_.id -ne $cacheToKeep.id } |
+              Where-Object { $_.id.ToString() -ne $cacheToKeep.id.ToString() } |
               ForEach-Object {
                 Write-Host "Deleting old cache for $($group.Name): $($_.key)"
-                gh cache delete $_.id
+                gh cache delete $_.id 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Cache $($_.id) already removed, skipping."
+                }
               }
           }
 
@@ -216,10 +219,13 @@ jobs:
             Write-Host "Keeping latest previous cache for $($group.Name): $($cacheToKeep.key)"
 
             $groupCaches |
-              Where-Object { $_.id -ne $cacheToKeep.id } |
+              Where-Object { $_.id.ToString() -ne $cacheToKeep.id.ToString() } |
               ForEach-Object {
                 Write-Host "Deleting old cache for $($group.Name): $($_.key)"
-                gh cache delete $_.id
+                gh cache delete $_.id 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                  Write-Host "Cache $($_.id) already removed, skipping."
+                }
               }
           }
 
