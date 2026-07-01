@@ -1,0 +1,143 @@
+.tree-item {
+    display: flex;
+    align-items: center;
+    cursor: default;
+    line-height: 1.7;
+    min-height: calc(1em * 1.7);
+}
+
+.tree-fold-btn,
+.tree-fold-spacer {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+}
+
+.tree-fold-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.tree-fold-btn:hover,
+.tree-fold-btn:focus-visible {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+    outline: none;
+}
+
+.tree-fold-btn .lucide {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.15s ease;
+}
+
+.tree-item.folder-node.collapsed .tree-fold-btn .lucide {
+    transform: rotate(-90deg);
+}
+
+.tree-item.folder-node {
+    cursor: pointer;
+}
+
+.tree-item.file-node {
+    cursor: pointer;
+}
+
+.tree-item.file-node.no-preview {
+    cursor: default;
+}
+
+.tree-item.file-node:hover .tree-item-name,
+.tree-item.file-node.active-file .tree-item-name {
+    color: var(--accent-color);
+}
+
+.tree-item.file-node.no-preview:hover .tree-item-name {
+    color: var(--text-primary);
+}
+
+/* Tree Structure Colors */
+.tree-connector {
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.1);
+    user-select: none;
+    white-space: pre;
+}
+
+.tree-icon,
+.tree-item .lucide {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+    vertical-align: middle;
+    margin-right: 8px;
+    opacity: 0.9;
+}
+
+.tree-icon-folder {
+    color: var(--accent-color);
+}
+
+.tree-icon-docker {
+    color: var(--text-secondary);
+}
+
+.tree-icon-react {
+    color: var(--text-secondary);
+}
+
+.tree-icon-vue {
+    color: var(--text-secondary);
+}
+
+.tree-icon-svelte {
+    color: var(--text-secondary);
+}
+
+.tree-icon-html {
+    color: var(--text-secondary);
+}
+
+.tree-icon-database {
+    color: var(--text-secondary);
+}
+
+.tree-icon-text {
+    color: var(--text-primary);
+}
+
+.tree-icon-code {
+    color: var(--text-secondary);
+}
+
+.tree-icon-image,
+.tree-icon-archive,
+.tree-icon-audio,
+.tree-icon-video,
+.tree-icon-json,
+.tree-icon-default {
+    color: var(--text-secondary);
+}
+
+.tree-item-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-children {
+    display: block;
+}

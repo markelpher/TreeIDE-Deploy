@@ -1,0 +1,483 @@
+name: Build Linux
+
+permissions:
+  actions: write
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-linux-x64:
+    name: Build AppImage, DEB and Snap (x64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-build-${{ runner.os }}-x64-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-x64-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Snapcraft
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: snapcore/action-setup@v1
+        with:
+          snapcraft-channel: latest/stable
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Release tag $GITHUB_REF_NAME does not match package.json version $PACKAGE_VERSION."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Linux x64 artifacts (AppImage + DEB + Snap)
+        run: |
+          MAX_ATTEMPTS=3
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            PUBLISH_MODE="always"
+          else
+            PUBLISH_MODE="never"
+          fi
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
+            npx electron-builder --linux AppImage deb snap --x64 --publish "$PUBLISH_MODE" && break
+
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              DELAY=$((20 * attempt))
+              echo "electron-builder failed. Retrying in $DELAY seconds..."
+              sleep $DELAY
+            else
+              exit 1
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Snap Store
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: snapcore/action-publish@v1
+        env:
+          SNAP_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_TOKEN }}
+        with:
+          snap: dist/*.snap
+          release: stable
+
+      - name: Clean old build caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CACHES_JSON=$(gh cache list --limit 1000 --json id,key,createdAt)
+
+          if [ -z "$CACHES_JSON" ] || [ "$CACHES_JSON" = "[]" ]; then
+            echo "No caches found."
+            exit 0
+          fi
+
+          get_cache_family() {
+            echo "$1" | sed -E 's/-[a-f0-9]{32,64}$//' | sed -E 's/-[0-9a-f]{8,}$//'
+          }
+
+          echo "$CACHES_JSON" | jq -r '.[].key' | while read -r key; do
+            get_cache_family "$key"
+          done | sort -u | while read -r family; do
+            LATEST_ID=$(echo "$CACHES_JSON" | jq -r --arg fam "$family" '
+              [.[] | select(.key | startswith($fam))] |
+              sort_by(.createdAt) | reverse | .[0].id
+            ')
+
+            echo "Keeping latest cache for $family: $LATEST_ID"
+
+            echo "$CACHES_JSON" | jq -r --arg fam "$family" --arg keep "$LATEST_ID" '
+              [.[] | select(.key | startswith($fam)) | select(.id != $keep) | .id] | .[]
+            ' | while read -r old_id; do
+              echo "Deleting old cache for $family: $old_id"
+              gh cache delete "$old_id"
+            done
+          done
+
+      - name: Upload Linux x64 artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tree-ide-linux-x64
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.snap
+            dist/*.blockmap
+            dist/latest*.yml
+          if-no-files-found: error
+
+  build-linux-arm:
+    name: Build AppImage and DEB (arm64)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-build-${{ runner.os }}-arm64-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-arm64-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Release tag $GITHUB_REF_NAME does not match package.json version $PACKAGE_VERSION."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Linux arm64 artifacts (AppImage + DEB)
+        run: |
+          MAX_ATTEMPTS=3
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            PUBLISH_MODE="always"
+          else
+            PUBLISH_MODE="never"
+          fi
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
+            npx electron-builder --linux AppImage deb --arm64 --publish "$PUBLISH_MODE" && break
+
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              DELAY=$((20 * attempt))
+              echo "electron-builder failed. Retrying in $DELAY seconds..."
+              sleep $DELAY
+            else
+              exit 1
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean old build caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CACHES_JSON=$(gh cache list --limit 1000 --json id,key,createdAt)
+
+          if [ -z "$CACHES_JSON" ] || [ "$CACHES_JSON" = "[]" ]; then
+            echo "No caches found."
+            exit 0
+          fi
+
+          get_cache_family() {
+            echo "$1" | sed -E 's/-[a-f0-9]{32,64}$//' | sed -E 's/-[0-9a-f]{8,}$//'
+          }
+
+          echo "$CACHES_JSON" | jq -r '.[].key' | while read -r key; do
+            get_cache_family "$key"
+          done | sort -u | while read -r family; do
+            LATEST_ID=$(echo "$CACHES_JSON" | jq -r --arg fam "$family" '
+              [.[] | select(.key | startswith($fam))] |
+              sort_by(.createdAt) | reverse | .[0].id
+            ')
+
+            echo "Keeping latest cache for $family: $LATEST_ID"
+
+            echo "$CACHES_JSON" | jq -r --arg fam "$family" --arg keep "$LATEST_ID" '
+              [.[] | select(.key | startswith($fam)) | select(.id != $keep) | .id] | .[]
+            ' | while read -r old_id; do
+              echo "Deleting old cache for $family: $old_id"
+              gh cache delete "$old_id"
+            done
+          done
+
+      - name: Upload Linux arm64 artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tree-ide-linux-arm64
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.blockmap
+            dist/latest*.yml
+          if-no-files-found: error
+
+  build-flatpak-x64:
+    name: Build Flatpak (x86_64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-build-${{ runner.os }}-x64-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-x64-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08 org.electronjs.Electron2.BaseApp//23.08
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Electron app for Flatpak
+        run: |
+          npx electron-builder --linux dir --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Flatpak bundle
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          flatpak-builder --repo=repo --force-clean build-flatpak/flatpak/com.treeide.treeide.yml
+          flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
+
+      - name: Upload Flatpak x86_64 artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tree-ide-linux-flatpak-x64
+          path: dist/*.flatpak
+          if-no-files-found: error
+
+  build-flatpak-arm:
+    name: Build Flatpak (aarch64)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: electron-build-${{ runner.os }}-arm64-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-arm64-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y flathub --runtime org.freedesktop.Platform/aarch64/23.08 org.freedesktop.Sdk/aarch64/23.08 org.electronjs.Electron2.BaseApp/aarch64/23.08
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Electron app for Flatpak
+        run: |
+          npx electron-builder --linux dir --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Flatpak bundle
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          flatpak-builder --repo=repo --force-clean build-flatpak/flatpak/com.treeide.treeide.yml
+          flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
+
+      - name: Upload Flatpak aarch64 artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tree-ide-linux-flatpak-arm64
+          path: dist/*.flatpak
+          if-no-files-found: error
+
+  release-notes:
+    name: Translate, localize, and update release
+    needs: [build-linux-x64, build-linux-arm, build-flatpak-x64, build-flatpak-arm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Compute previous tag
+        id: meta
+        run: |
+          tag="${{ github.ref_name }}"
+          prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
+          is_prerelease='false'
+          if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
+            is_prerelease='true'
+          fi
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for release to be created
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          for attempt in $(seq 1 12); do
+            if gh release view "$tag" > /dev/null 2>&1; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "::error::Release $tag was not created by electron-builder."
+              exit 1
+            fi
+            echo "Release not ready yet, waiting 10s (attempt $attempt/12)..."
+            sleep 10
+          done
+
+      - name: Generate categorized changelog (English)
+        run: |
+          node scripts/generate-changelog.mjs \
+            "${{ steps.meta.outputs.prev }}" \
+            "${{ steps.meta.outputs.tag }}" \
+            "$RUNNER_TEMP/changelog.en.md"
+
+      - name: Translate changelog to Portuguese
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The translator uses the GitHub Models API (gpt-4o-mini) via the
+          # GITHUB_TOKEN secret, which is automatically available in every
+          # job. If the API call fails the script falls back to writing the
+          # source markdown unchanged so the release still ships.
+          node scripts/translate-changelog.mjs \
+            --input "$RUNNER_TEMP/changelog.en.md" \
+            --output "$RUNNER_TEMP/changelog.pt.md" \
+            --target pt
+
+      - name: Download Linux build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist
+          pattern: tree-ide-linux-*
+          merge-multiple: true
+
+      - name: Inject localized releaseNotes into latest.yml
+        run: |
+          # The build jobs produced a `latest-linux.yml` per arch (x64,
+          # arm64). Both files get the same localized releaseNotes, so
+          # the user sees the changelog in their language regardless of
+          # which package they fetch.
+          shopt -s nullglob
+          for f in dist/latest*.yml; do
+            echo "[localize] Processing $f"
+            node scripts/inject-localized-notes.mjs \
+              --latest "$f" \
+              --note "en=$RUNNER_TEMP/changelog.en.md" \
+              --note "pt=$RUNNER_TEMP/changelog.pt.md"
+          done
+
+      - name: Re-upload localized latest.yml to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          shopt -s nullglob
+          for f in dist/latest*.yml; do
+            echo "[localize] Uploading $f (clobber)"
+            gh release upload --clobber "$tag" "$f"
+          done
+
+      - name: Update GitHub release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          release_name="Tree IDE $tag"
+          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelog.en.md")
+          if [ "${{ steps.meta.outputs.is_prerelease }}" = 'true' ]; then
+            edit_args+=(--prerelease)
+          else
+            edit_args+=(--latest)
+          fi
+          gh "${edit_args[@]}"

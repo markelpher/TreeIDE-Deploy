@@ -1,0 +1,232 @@
+.compact-btn {
+    margin-top: 0;
+    padding: 8px 12px;
+    white-space: nowrap;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+select {
+    background-color: var(--bg-accent);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    min-width: 120px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select:hover {
+    border-color: var(--text-secondary);
+}
+
+select:focus-visible {
+    border-color: var(--text-secondary);
+    box-shadow: 0 0 0 3px rgba(160, 160, 160, 0.08);
+}
+
+/* Update/Confirmation Button Row */
+.modal-body div[style*="display: flex"] {
+    display: flex;
+    gap: 12px;
+}
+
+.modal-actions .primary-btn,
+.modal-actions .secondary-btn {
+    flex: 1;
+    margin-top: 0;
+}
+
+/* Red Hover for "No" Button */
+#cancelConfirmBtn:hover {
+    background-color: var(--dropdown-hover);
+    border-color: #e81123;
+    color: #e81123;
+}
+
+.primary-btn {
+    background-color: var(--accent-color);
+    color: var(--bg-primary);
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-btn:hover {
+    background-color: var(--accent-hover);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.primary-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.primary-btn:active {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.settings-section a {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+/* Toggle Switch Styling */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    transition: .4s;
+    border-radius: 18px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    top: 2px;
+    background-color: var(--text-secondary);
+    transition: transform 0.4s, background-color 0.4s;
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+input:checked+.slider {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+input:checked+.slider:before {
+    transform: translateX(16px);
+    background-color: var(--bg-primary);
+}
+
+.secondary-btn {
+    background-color: var(--bg-accent);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.secondary-btn:hover {
+    background-color: var(--bg-accent);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.secondary-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.secondary-btn-flat {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.secondary-btn-flat:hover {
+    background-color: var(--dropdown-hover);
+    color: var(--text-primary);
+}
+
+/* Specific styling for 'Don't Save' to give it a subtle warning feel */
+#dontSaveUnsavedBtn:hover {
+    background-color: var(--dropdown-hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.primary-btn-flat {
+    background-color: var(--bg-accent);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.primary-btn-flat:hover {
+    background-color: var(--border-color);
+    border-color: var(--text-secondary);
+}
+
+.styled-input {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.styled-input:focus {
+    border-color: var(--text-secondary);
+}
+
+.styled-input:focus-visible {
+    border-color: var(--text-secondary);
+    box-shadow: 0 0 0 3px rgba(160, 160, 160, 0.08);
+}

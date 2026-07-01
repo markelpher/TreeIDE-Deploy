@@ -1,0 +1,226 @@
+/* Toast Notification */
+#toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: 10px;
+    z-index: 2500;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    font-size: 13px;
+    font-weight: 500;
+    display: none;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Shared Modal Styling */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeInModal 0.25s ease;
+}
+
+.modal.closing {
+    animation: fadeOutModal 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    animation: slideInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal.closing .modal-content {
+    animation: slideOutModal 0.24s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+}
+
+.modal-close:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-accent) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--bg-accent);
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+.modal-actions {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.build-tab-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.build-tab-option:hover {
+    background: var(--bg-accent);
+}
+
+.build-tab-option input.build-tab-checkbox {
+    accent-color: var(--accent-color);
+    width: 16px;
+    height: 16px;
+}
+
+.build-tab-option-label {
+    font-size: 13px;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.decrypt-password-modal {
+    text-align: left;
+}
+
+.decrypt-password-modal .modal-header h2 {
+    flex: 1;
+    min-width: 0;
+    margin-right: 12px;
+}
+
+.decrypt-password-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: visible;
+}
+
+.decrypt-password-lead {
+    margin: 0 0 18px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.decrypt-password-file {
+    color: var(--text-primary);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.decrypt-password-field {
+    margin: 0;
+}
+
+.decrypt-password-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.decrypt-password-input {
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+}
+
+.decrypt-password-error {
+    margin: 8px 0 0;
+    min-height: 18px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #f87171;
+}
+
+.decrypt-password-error[hidden] {
+    display: none;
+}
+
+.decrypt-password-actions {
+    justify-content: stretch;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.decrypt-password-actions .primary-btn,
+.decrypt-password-actions .secondary-btn {
+    flex: 1;
+    margin: 0;
+    min-width: 0;
+}

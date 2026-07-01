@@ -1,0 +1,41 @@
+.panel-resize-handle {
+    flex: 0 0 1px;
+    width: 1px;
+    align-self: stretch;
+    cursor: col-resize;
+    touch-action: none;
+    background-color: var(--border-color);
+    position: relative;
+    z-index: 3;
+    transition: background-color 0.15s ease;
+}
+
+.panel-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: -5px;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle:focus-visible,
+.panel-resize-handle.is-active {
+    background-color: var(--accent-color);
+}
+
+.panel-resize-handle:focus-visible {
+    outline: none;
+}
+
+body.is-panel-resizing,
+body.is-panel-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+body.is-panel-resizing iframe,
+body.is-panel-resizing textarea {
+    pointer-events: none;
+}

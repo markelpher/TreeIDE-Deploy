@@ -1,0 +1,120 @@
+@media (max-width: 980px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .panel-resize-handle {
+        display: none;
+    }
+
+    .editor-shell,
+    #treeView,
+    .file-preview-panel {
+        flex: 1 1 auto !important;
+        width: auto !important;
+    }
+
+    #editor {
+        min-height: 220px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-area {
+        min-height: 260px;
+        flex-direction: column;
+    }
+
+    .templates-modal-content,
+    .settings-modal-content {
+        width: calc(100vw - 32px);
+        height: calc(100vh - 32px);
+    }
+
+    .template-preview {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(180px, 0.9fr) minmax(220px, 1.1fr);
+    }
+
+    .template-tree-preview {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+@media (max-width: 720px) {
+    .toolbar {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .toolbar {
+        overflow-x: auto;
+    }
+
+    .toolbar button {
+        white-space: nowrap;
+    }
+
+    .templates-browser,
+    .settings-container {
+        flex-direction: column;
+    }
+
+    .templates-list,
+    .modal-sidebar {
+        display: flex;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .template-option,
+    .sidebar-tab {
+        flex: 0 0 auto;
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .project-tab {
+        max-width: 160px;
+    }
+
+    .folder-picker {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .settings-row {
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .settings-row > .custom-select,
+    .settings-row > select.styled-select,
+    .settings-row > .toggle-switch,
+    .settings-row > .folder-picker {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .folder-path {
+        max-width: 100%;
+        text-align: left;
+    }
+
+    .shortcuts-table th:first-child,
+    .shortcuts-table td:first-child {
+        width: auto;
+    }
+
+    .shortcuts-table th:last-child,
+    .shortcuts-table td:last-child {
+        text-align: left;
+        width: auto;
+    }
+}

@@ -1,0 +1,143 @@
+.file-preview-panel {
+    flex: 1;
+    display: none;
+    min-width: 0;
+    min-height: 0;
+    background-color: var(--bg-primary);
+}
+
+.file-preview-panel.show {
+    display: flex;
+    flex-direction: column;
+}
+
+#filePreviewEditor {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 32px 32px 32px 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    tab-size: 4;
+    min-height: 0;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.file-preview-mode {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    background: var(--bg-accent);
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.file-preview-mode:empty {
+    display: none;
+}
+
+.file-preview-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.file-preview-panel.markdown-file #filePreviewEditor,
+.file-preview-panel.markdown-file #markdownPreview {
+    flex: 1;
+}
+
+.file-preview-panel.markdown-file #filePreviewEditor {
+    border-right: 1px solid var(--border-color);
+}
+
+.markdown-preview {
+    display: none;
+    padding: 32px 32px 32px 24px;
+    overflow-y: auto;
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.file-preview-panel.markdown-file .markdown-preview {
+    display: block;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+    margin: 0 0 12px;
+    color: var(--text-primary);
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol,
+.markdown-preview pre {
+    margin: 0 0 12px;
+}
+
+.markdown-preview code,
+.markdown-preview pre {
+    font-family: var(--font-mono);
+    background: var(--bg-accent);
+    border-radius: 6px;
+}
+
+.markdown-preview code {
+    padding: 2px 5px;
+}
+
+.markdown-preview pre {
+    padding: 10px;
+    overflow-x: auto;
+}
+
+.markdown-preview pre code {
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+.markdown-preview strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.markdown-preview em {
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+.markdown-preview del {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.markdown-preview a {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--border-strong);
+}
+
+.markdown-preview a:hover {
+    text-decoration-color: var(--accent-color);
+}
+
+.markdown-preview hr {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 16px 0;
+}

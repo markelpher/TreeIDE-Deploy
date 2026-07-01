@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Tree IDE
+Comment=A lightweight, open-source project structure editor
+Exec=tree-ide %U
+Icon=com.treeide.treeide
+Type=Application
+Categories=Development;TextEditor;
+StartupWMClass=tree-ide

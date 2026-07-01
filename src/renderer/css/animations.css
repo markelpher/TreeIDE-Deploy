@@ -1,0 +1,92 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInModal {
+    from {
+        transform: scale(0.96) translateY(12px);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutModal {
+    from {
+        opacity: 1;
+        backdrop-filter: blur(12px);
+    }
+
+    to {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+}
+
+@keyframes slideOutModal {
+    from {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: scale(0.97) translateY(8px);
+        opacity: 0;
+    }
+}
+
+@keyframes progressShimmer {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes conflictFlash {
+    0%   { background-color: var(--bg-elevated); }
+    60%  { background-color: var(--bg-accent); }
+    100% { background-color: transparent; }
+}
+
+@keyframes pulse {
+    0%, 100% { border-color: var(--accent-color); }
+    50%      { border-color: var(--border-strong); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

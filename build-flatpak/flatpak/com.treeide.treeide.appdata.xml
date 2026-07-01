@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.treeide.treeide</id>
+  <name>Tree IDE</name>
+  <summary>A lightweight, open-source project structure editor</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>
+      Tree IDE is a lightweight, open-source project structure editor.
+      Create, edit and manage your project file trees with ease.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/markelpher/TreeIDE-Deploy</url>
+  <developer_name>Mare</developer_name>
+  <releases>
+    <release version="2.0.49" date="2026-06-16"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

@@ -1,0 +1,588 @@
+/* Option C — full-screen creation studio */
+
+body.build-studio-active .app-header,
+body.build-studio-active .toolbar,
+body.build-studio-active .project-tabs-bar,
+body.build-studio-active .container {
+    display: none !important;
+}
+
+body.build-studio-active .drop-overlay {
+    display: none !important;
+}
+
+.build-studio {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    --studio-footer-offset: 56px;
+}
+
+.build-studio[hidden] {
+    display: none !important;
+}
+
+.build-studio-header {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.build-studio-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 24px 0;
+}
+
+.build-studio-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.build-studio-header-divider {
+    width: 100%;
+    height: 1px;
+    margin: 10px 0 0;
+    padding: 0;
+    border: none;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
+
+.build-studio-header-meta {
+    padding: 0 24px 12px;
+}
+
+.build-studio-header-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 18px;
+    min-height: 18px;
+    font-size: 13px;
+}
+
+.build-studio-stat-name,
+.build-studio-stat-separator,
+.build-studio-stat-detail {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    line-height: 18px;
+    font-size: 13px;
+}
+
+.build-studio-stat-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.build-studio-stat-separator {
+    justify-content: center;
+    width: 8px;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+.build-studio-stat-detail {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.build-project-tabs-bar {
+    display: none;
+    align-items: center;
+    overflow: hidden;
+}
+
+.build-project-tabs-bar:not([hidden]) {
+    display: flex;
+    margin-top: 10px;
+    min-height: 36px;
+}
+
+.build-studio-header-meta:not(.has-project-tabs) .build-studio-header-stats {
+    padding-bottom: 2px;
+}
+
+.build-project-tabs-bar .project-tab-list {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    gap: 4px;
+}
+
+.build-studio-body {
+    --studio-section-pad: 22px;
+    --studio-options-width: clamp(340px, 34vw, 400px);
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.build-studio-preview {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.build-studio-preview-label,
+.build-studio-options-label {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 11px var(--studio-section-pad, 22px);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.build-studio-preview-label {
+    background: var(--bg-secondary);
+}
+
+.build-studio-options-label {
+    background: var(--bg-primary);
+}
+
+.build-studio-preview-split {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+}
+
+.build-studio-tree-wrap {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--studio-section-pad, 22px);
+    padding-bottom: calc(var(--studio-section-pad, 22px) + var(--studio-footer-offset, 56px));
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.build-studio-file-panel {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+#buildStudioTreeView .tree-connector {
+    color: rgba(255, 255, 255, 0.2);
+    white-space: pre;
+    font-family: var(--font-mono);
+}
+
+body.light-theme #buildStudioTreeView .tree-connector {
+    color: rgba(0, 0, 0, 0.2);
+}
+
+.build-studio-file-panel:not(.has-file) .build-studio-file-header {
+    display: none;
+}
+
+.build-studio-file-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    padding: 0 var(--studio-section-pad, 22px);
+    height: 36px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.build-studio-file-path {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.build-studio-file-path:empty {
+    display: none;
+}
+
+.build-studio-file-mode {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    background: var(--bg-accent);
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.build-studio-file-mode:empty {
+    display: none;
+}
+
+.build-studio-file-body {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.build-studio-file-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 24px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+    pointer-events: none;
+}
+
+.build-studio-file-panel.has-file .build-studio-file-empty {
+    display: none;
+}
+
+#buildStudioFileEditor {
+    display: none;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    outline: none;
+    resize: none;
+    padding: var(--studio-section-pad, 22px);
+    padding-bottom: calc(var(--studio-section-pad, 22px) + var(--studio-footer-offset, 56px));
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    tab-size: 4;
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: default;
+}
+
+.build-studio-file-panel.has-file #buildStudioFileEditor {
+    display: block;
+}
+
+.build-studio-file-panel.markdown-file #buildStudioFileEditor {
+    border-right: 1px solid var(--border-color);
+}
+
+#buildStudioMarkdownPreview {
+    display: none;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--studio-section-pad, 22px);
+    padding-bottom: calc(var(--studio-section-pad, 22px) + var(--studio-footer-offset, 56px));
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.build-studio-file-panel.markdown-file #buildStudioFileEditor,
+.build-studio-file-panel.markdown-file #buildStudioMarkdownPreview {
+    display: block;
+}
+
+#buildStudioTreeView {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.build-studio-tree-empty {
+    margin: 24px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.build-studio-options {
+    flex: 0 0 var(--studio-options-width, 380px);
+    width: var(--studio-options-width, 380px);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.build-studio-options-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--studio-section-pad, 22px);
+    padding-bottom: calc(var(--studio-section-pad, 22px) + var(--studio-footer-offset, 56px));
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.build-studio-destination {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.build-studio-destination-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+}
+
+.build-studio-destination-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.build-studio-folder-path {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 12px;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.build-studio-folder-path.empty {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.build-studio-warning {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.build-studio-options-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: opacity 0.15s;
+}
+
+.build-studio-options-group.is-disabled,
+.build-studio-options-group.is-disabled .build-password-fields {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+#buildStudioZipExtras {
+    margin-top: 4px;
+}
+
+.build-studio-option-group-label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.build-studio-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+}
+
+.build-studio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.build-studio-option:hover:not(.is-disabled) {
+    background: var(--bg-accent);
+}
+
+.build-studio-option.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.build-studio-option input {
+    margin-top: 2px;
+    accent-color: var(--accent-color);
+}
+
+.build-studio-option input:disabled {
+    cursor: not-allowed;
+}
+
+.build-studio-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+
+.build-studio-option-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.35;
+}
+
+.build-studio-option-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.build-password-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 2px;
+}
+
+.build-password-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.build-password-input {
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.build-password-input:focus {
+    outline: 2px solid color-mix(in srgb, var(--accent-color) 35%, transparent);
+    border-color: var(--accent-color);
+}
+
+.build-studio-options-group.is-disabled .build-password-input,
+.build-studio-options-group.is-disabled .build-studio-option {
+    cursor: not-allowed;
+}
+
+.build-studio-footer {
+    position: absolute;
+    right: 24px;
+    bottom: 20px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+
+.build-studio-footer .primary-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+    .build-studio-body {
+        flex-direction: column;
+    }
+
+    .build-studio-preview {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .build-studio-preview-split {
+        flex-direction: column;
+    }
+
+    .build-studio-tree-wrap {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        max-height: 40vh;
+    }
+
+    .build-studio-file-panel {
+        min-height: 200px;
+    }
+
+    .build-studio-body {
+        --studio-options-width: 100%;
+    }
+
+    .build-studio-options {
+        flex: none;
+        width: 100%;
+        max-height: 40vh;
+    }
+
+    .build-studio-options-body {
+        gap: 18px;
+    }
+}

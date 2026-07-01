@@ -1,0 +1,406 @@
+/* Project Tabs Bar */
+.project-tabs-bar {
+    height: 36px;
+    background-color: rgba(var(--bg-secondary-rgb, 18, 18, 18), 0.8);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.project-tab-list {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 0 24px;
+    scrollbar-width: none;
+}
+
+.project-tab-list::-webkit-scrollbar {
+    display: none;
+}
+
+.project-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 12px;
+    font-size: 12px;
+    font-family: var(--font-sans);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 220px;
+    min-width: 80px;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    user-select: none;
+    position: relative;
+    height: 28px;
+}
+
+.project-tab:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+    border-color: var(--accent-color);
+}
+
+.project-tab:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.project-tab:active {
+    transform: scale(0.98);
+}
+
+.project-tab.active {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+    border-color: var(--accent-color);
+}
+
+.project-tab.dragging {
+    opacity: 0.4;
+    transform: scale(0.98);
+}
+
+.project-tab.drag-over-left {
+    box-shadow: inset 3px 0 0 0 var(--accent-color);
+}
+
+.project-tab.drag-over-right {
+    box-shadow: inset -3px 0 0 0 var(--accent-color);
+}
+
+.project-tab-modified {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-color);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--bg-secondary);
+}
+
+.project-tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    margin-left: 2px;
+    margin-right: -2px;
+}
+
+.project-tab:hover .project-tab-close,
+.project-tab.active .project-tab-close,
+.project-tab:focus-within .project-tab-close {
+    opacity: 1;
+}
+
+.project-tab-close:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.project-tab-close .lucide {
+    width: 11px;
+    height: 11px;
+}
+
+.project-tab-rename-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    padding: 1px;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.project-tab-rename-icon .lucide {
+    width: 11px;
+    height: 11px;
+}
+
+.project-tab:hover .project-tab-rename-icon,
+.project-tab.active .project-tab-rename-icon {
+    display: flex;
+}
+
+.project-tab-rename-icon:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.project-tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.project-tab-name[contenteditable="true"] {
+    outline: none;
+    background: var(--bg-primary);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    padding: 0 4px;
+    min-width: 30px;
+    cursor: text;
+}
+
+.project-tab-new {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.project-tab-new:hover {
+    background-color: var(--bg-accent);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.project-tab-new:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.project-tab-new .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+/* Code Editor Tabs */
+.code-tabs-bar {
+    height: 36px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.code-tab-list {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 0 4px;
+    scrollbar-width: none;
+}
+
+.code-tab-list::-webkit-scrollbar {
+    display: none;
+}
+
+/* Tab scroll buttons */
+.tab-scroll-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.18s ease, color 0.15s ease, transform 0.12s ease;
+    pointer-events: none;
+}
+
+.tab-scroll-btn.visible {
+    display: flex;
+    opacity: 0.9;
+    pointer-events: auto;
+}
+
+.tab-scroll-btn.visible:hover {
+    opacity: 1;
+    color: var(--text-primary);
+    transform: scale(1.12);
+}
+
+.tab-scroll-btn.visible:active {
+    transform: scale(0.92);
+}
+
+.tab-scroll-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+    opacity: 1;
+}
+
+.tab-scroll-btn .lucide {
+    width: 14px;
+    height: 14px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+body.light-theme .tab-scroll-btn .lucide {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+/* Fade gradients for scroll buttons */
+.project-tabs-bar::before,
+.project-tabs-bar::after,
+.code-tabs-bar::before,
+.code-tabs-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    z-index: 4;
+}
+
+.project-tabs-bar::before,
+.code-tabs-bar::before {
+    left: 0;
+    background: linear-gradient(
+        to right,
+        var(--bg-secondary) 0%,
+        var(--bg-secondary) 30%,
+        transparent 100%
+    );
+}
+
+.project-tabs-bar::after,
+.code-tabs-bar::after {
+    right: 0;
+    background: linear-gradient(
+        to left,
+        var(--bg-secondary) 0%,
+        var(--bg-secondary) 30%,
+        transparent 100%
+    );
+}
+
+/* Show the fade only when its corresponding button is visible */
+.project-tabs-bar.has-scroll-left::before,
+.code-tabs-bar.has-scroll-left::before {
+    opacity: 1;
+}
+
+.project-tabs-bar.has-scroll-right::after,
+.code-tabs-bar.has-scroll-right::after {
+    opacity: 1;
+}
+
+.tab-scroll-left {
+    left: 0;
+}
+
+.tab-scroll-right {
+    right: 0;
+}
+
+.code-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 160px;
+    min-width: 50px;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.code-tab:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+    border-color: var(--text-secondary);
+}
+
+.code-tab.active {
+    color: var(--text-primary);
+    background-color: var(--bg-accent);
+    border-color: var(--accent-color);
+}
+
+.code-tab .lucide {
+    width: 12px;
+    height: 12px;
+}
+
+.code-tab-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.code-tab:hover .code-tab-close {
+    opacity: 1;
+}
+
+.code-tab-close:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.code-tab-close .lucide {
+    width: 10px;
+    height: 10px;
+}
+
+

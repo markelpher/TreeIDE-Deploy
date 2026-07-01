@@ -14,8 +14,8 @@ on:
       - main
 
 jobs:
-  build-windows:
-    name: Build MSI, EXE and Portable
+  build-windows-x64:
+    name: Build MSI, EXE and Portable (x64)
     runs-on: windows-latest
 
     steps:
@@ -36,9 +36,9 @@ jobs:
           path: |
             ~/AppData/Local/electron/Cache
             ~/AppData/Local/electron-builder/Cache
-          key: electron-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: electron-build-${{ runner.os }}-x64-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            electron-build-${{ runner.os }}-
+            electron-build-${{ runner.os }}-x64-
 
       - name: Install dependencies
         run: npm ci
@@ -58,7 +58,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Windows artifacts
+      - name: Build Windows x64 artifacts
         shell: pwsh
         run: |
           $maxAttempts = 3
@@ -82,52 +82,6 @@ jobs:
           exit $LASTEXITCODE
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update GitHub release notes
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $releaseName = "Tree IDE $tag"
-          $isPrerelease = $tag -match "(beta|alpha|rc)"
-
-          for ($attempt = 1; $attempt -le 6; $attempt++) {
-            gh release view $tag *> $null
-            if ($LASTEXITCODE -eq 0) {
-              break
-            }
-
-            if ($attempt -eq 6) {
-              Write-Error "Release $tag was not created by electron-builder."
-              exit 1
-            }
-
-            Start-Sleep -Seconds 5
-          }
-
-          $previousTag = git tag --sort=-v:refname |
-            Where-Object { $_ -like "v*" -and $_ -ne $tag } |
-            Select-Object -First 1
-
-          if ($previousTag) {
-            $compareUrl = "https://github.com/markelpher/TreeIDE-Deploy/compare/$previousTag...$tag"
-          } else {
-            $compareUrl = "https://github.com/markelpher/TreeIDE-Deploy/compare/$tag"
-          }
-
-          $notesPath = Join-Path $env:RUNNER_TEMP "tree-ide-release-notes.md"
-          "**Full Changelog**: $compareUrl" | Set-Content -Path $notesPath -Encoding UTF8
-
-          $editArgs = @("release", "edit", $tag, "--title", $releaseName, "--notes-file", $notesPath)
-          if ($isPrerelease) {
-            $editArgs += "--prerelease"
-          } else {
-            $editArgs += "--latest"
-          }
-
-          & gh @editArgs
 
       - name: Clean old build caches
         shell: pwsh
@@ -165,13 +119,231 @@ jobs:
               }
           }
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows x64 artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: tree-ide-windows
+          name: tree-ide-windows-x64
           path: |
             dist/*.exe
             dist/*.msi
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error
+
+  build-windows-arm:
+    name: Build MSI, EXE and Portable (arm64)
+    runs-on: windows-11-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache Electron build dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: electron-build-${{ runner.os }}-arm64-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-build-${{ runner.os }}-arm64-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build Windows arm64 artifacts
+        shell: pwsh
+        run: |
+          $maxAttempts = 3
+          $publishMode = if ("${{ github.ref }}" -like "refs/tags/v*") { "always" } else { "never" }
+
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "electron-builder attempt $attempt of $maxAttempts"
+            npx electron-builder --win nsis msi portable --arm64 --publish $publishMode
+
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            if ($attempt -lt $maxAttempts) {
+              $delaySeconds = 20 * $attempt
+              Write-Host "electron-builder failed with exit code $LASTEXITCODE. Retrying in $delaySeconds seconds..."
+              Start-Sleep -Seconds $delaySeconds
+            }
+          }
+
+          exit $LASTEXITCODE
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean old build caches
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $caches = @(gh cache list --limit 1000 --json id,key,createdAt |
+            ConvertFrom-Json |
+            Sort-Object { [datetime]$_.createdAt } -Descending)
+
+          if (-not $caches) {
+            Write-Host "No caches found."
+            exit 0
+          }
+
+          function Get-CacheFamily($key) {
+            $family = $key -replace "-[a-f0-9]{32,64}$", ""
+            $family = $family -replace "-[0-9a-f]{8,}$", ""
+            return $family
+          }
+
+          $cacheGroups = $caches | Group-Object { Get-CacheFamily $_.key }
+
+          foreach ($group in $cacheGroups) {
+            $groupCaches = @($group.Group | Sort-Object { [datetime]$_.createdAt } -Descending)
+            $cacheToKeep = $groupCaches | Select-Object -First 1
+
+            Write-Host "Keeping latest previous cache for $($group.Name): $($cacheToKeep.key)"
+
+            $groupCaches |
+              Where-Object { $_.id -ne $cacheToKeep.id } |
+              ForEach-Object {
+                Write-Host "Deleting old cache for $($group.Name): $($_.key)"
+                gh cache delete $_.id
+              }
+          }
+
+      - name: Upload Windows arm64 artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tree-ide-windows-arm64
+          path: |
+            dist/*.exe
+            dist/*.msi
+            dist/*.blockmap
+            dist/latest*.yml
+          if-no-files-found: error
+
+  release-notes:
+    name: Translate, localize, and update release
+    needs: [build-windows-x64, build-windows-arm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Compute previous tag
+        id: meta
+        run: |
+          tag="${{ github.ref_name }}"
+          prev=$(git tag --sort=-v:refname | grep '^v' | grep -v "^$tag$" | head -1 || true)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prev=${prev:-}" >> "$GITHUB_OUTPUT"
+          is_prerelease='false'
+          if echo "$tag" | grep -qE '(beta|alpha|rc)'; then
+            is_prerelease='true'
+          fi
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for release to be created
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          for attempt in $(seq 1 12); do
+            if gh release view "$tag" > /dev/null 2>&1; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 12 ]; then
+              echo "::error::Release $tag was not created by electron-builder."
+              exit 1
+            fi
+            echo "Release not ready yet, waiting 10s (attempt $attempt/12)..."
+            sleep 10
+          done
+
+      - name: Generate categorized changelog (English)
+        run: |
+          node scripts/generate-changelog.mjs \
+            "${{ steps.meta.outputs.prev }}" \
+            "${{ steps.meta.outputs.tag }}" \
+            "$RUNNER_TEMP/changelog.en.md"
+
+      - name: Translate changelog to Portuguese
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The translator uses the GitHub Models API (gpt-4o-mini) via the
+          # GITHUB_TOKEN secret, which is automatically available in every
+          # job. If the API call fails the script falls back to writing the
+          # source markdown unchanged so the release still ships.
+          node scripts/translate-changelog.mjs \
+            --input "$RUNNER_TEMP/changelog.en.md" \
+            --output "$RUNNER_TEMP/changelog.pt.md" \
+            --target pt
+
+      - name: Download Windows build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist
+          pattern: tree-ide-windows-*
+          merge-multiple: true
+
+      - name: Inject localized releaseNotes into latest.yml
+        run: |
+          # The build jobs produced a `latest*.yml` per arch (x64, arm64).
+          # Both files get the same localized releaseNotes, so the user
+          # sees the changelog in their language regardless of which
+          # installer they fetch.
+          shopt -s nullglob
+          for f in dist/latest*.yml; do
+            echo "[localize] Processing $f"
+            node scripts/inject-localized-notes.mjs \
+              --latest "$f" \
+              --note "en=$RUNNER_TEMP/changelog.en.md" \
+              --note "pt=$RUNNER_TEMP/changelog.pt.md"
+          done
+
+      - name: Re-upload localized latest.yml to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          shopt -s nullglob
+          for f in dist/latest*.yml; do
+            echo "[localize] Uploading $f (clobber)"
+            gh release upload --clobber "$tag" "$f"
+          done
+
+      - name: Update GitHub release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          release_name="Tree IDE $tag"
+          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelog.en.md")
+          if [ "${{ steps.meta.outputs.is_prerelease }}" = 'true' ]; then
+            edit_args+=(--prerelease)
+          else
+            edit_args+=(--latest)
+          fi
+          gh "${edit_args[@]}"

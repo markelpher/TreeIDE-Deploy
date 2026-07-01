@@ -1,0 +1,63 @@
+.container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.editor-shell {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    background-color: var(--bg-primary);
+}
+
+#editor {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.65;
+    padding: 32px 32px 32px 24px;
+    border: none;
+    outline: none;
+    resize: none;
+    tab-size: 4;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+#treeView {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    background-color: var(--bg-secondary);
+    padding: 32px 32px 32px 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    overflow: auto;
+    color: var(--text-secondary);
+}
+
+.preview-area {
+    flex: 1 1 0;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
+}
+
+#treeView .tree-connector {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+body.light-theme #treeView .tree-connector {
+    color: rgba(0, 0, 0, 0.2);
+}

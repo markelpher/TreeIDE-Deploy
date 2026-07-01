@@ -1,0 +1,376 @@
+/* Validation Panel */
+.validation-panel {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    max-width: 420px;
+    z-index: 2500;
+    display: none;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid #e81123;
+    color: var(--text-primary);
+    padding: 12px 14px;
+    border-radius: 8px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.validation-panel.show {
+    display: block;
+}
+
+.validation-panel strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.validation-panel ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.validation-error-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.validation-error-btn:hover,
+.validation-error-btn:focus-visible {
+    color: var(--accent-color);
+}
+
+/* Folder Settings */
+.folder-setting-row {
+    align-items: center;
+}
+
+.folder-setting-row > label {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    white-space: nowrap;
+}
+
+.folder-picker {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 180px;
+    flex: 1;
+}
+
+.folder-picker .secondary-btn {
+    flex: 0 0 auto;
+}
+
+
+
+.folder-path {
+    display: none;
+    /* visibility is controlled by JS: renderer-fileops.js uses style.display */
+}
+
+.folder-path-list {
+    margin: -4px 0 14px 0;
+}
+
+.folder-path-list-item {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.folder-path-list-item.empty {
+    color: var(--text-secondary);
+    opacity: 0.6;
+    font-style: italic;
+}
+
+#welcomeModal .welcome-modal-content {
+    width: min(440px, calc(100vw - 32px));
+    max-width: min(440px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+}
+
+#welcomeModal .welcome-modal-body {
+    text-align: left;
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 16px 24px 24px;
+}
+
+#welcomeModal .welcome-description {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#welcomeModal .settings-section {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+#welcomeModal .settings-section:last-of-type {
+    margin-bottom: 12px;
+}
+
+#welcomeModal .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+#welcomeModal .settings-row:last-child {
+    margin-bottom: 0;
+}
+
+#welcomeModal .settings-row > label:not(.toggle-switch) {
+    min-width: 0;
+    white-space: normal;
+}
+
+#welcomeModal .settings-row > .custom-select,
+#welcomeModal .settings-row > select.styled-select,
+#welcomeModal .settings-row > .folder-picker,
+#welcomeModal .settings-row > .styled-input {
+    margin-left: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+#welcomeModal .custom-select {
+    width: 100%;
+    max-width: 100%;
+}
+
+#welcomeModal .welcome-folder-row .folder-picker {
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+#welcomeModal .welcome-folder-row .folder-picker .secondary-btn {
+    width: 100%;
+}
+
+#welcomeModal .welcome-folder-row .folder-path-list {
+    width: 100%;
+    margin: 0;
+}
+
+#welcomeModal .settings-hint {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#welcomeModal #startBtn {
+    width: 100%;
+    margin-top: 4px;
+}
+
+#welcomeModal .settings-row:has(.custom-select.open) {
+    z-index: 30;
+}
+
+#welcomeModal .custom-select.open .custom-select-options {
+    z-index: 40;
+}
+
+#confirmMsg {
+    white-space: pre-line;
+}
+
+/* Drop Overlay */
+.drop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.drop-overlay.show {
+    display: flex;
+}
+
+.drop-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.drop-icon {
+    width: 64px;
+    height: 64px;
+    opacity: 0.8;
+}
+
+/* Shortcut Key Button */
+.shortcut-key {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 100px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.shortcut-key:hover {
+    border-color: var(--accent-color);
+    background: var(--bg-primary);
+}
+
+.shortcut-key:focus {
+    outline: none;
+}
+
+.shortcut-key:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.shortcut-key.capturing {
+    border-color: var(--accent-color);
+    background: var(--bg-primary);
+    animation: pulse 1.2s ease-in-out infinite;
+    color: var(--text-secondary);
+}
+
+.shortcut-key.capturing .shortcut-key-badge {
+    opacity: 0.35;
+}
+
+.shortcut-key-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-style: italic;
+}
+
+.shortcut-key-separator {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    user-select: none;
+    margin: 0 1px;
+}
+
+.shortcut-key-badge {
+    background: var(--kbd-bg);
+    border: 1px solid var(--kbd-border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    box-shadow: 0 1px 0 var(--kbd-shadow);
+    line-height: 1.3;
+    font-weight: 500;
+    min-width: 18px;
+    text-align: center;
+    display: inline-block;
+}
+
+.shortcut-key-badge.modifier {
+    background: var(--kbd-modifier-bg);
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 5px;
+    font-weight: 600;
+}
+
+.shortcut-key:hover .shortcut-key-badge {
+    border-color: var(--accent-color);
+}
+
+/* Shortcut categories */
+.shortcut-category-row td {
+    padding: 24px 0 10px 0;
+}
+
+.shortcuts-table td.shortcut-category {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-color);
+    border-bottom: none;
+    padding-bottom: 4px;
+    text-align: left;
+}
+
+.shortcuts-header {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.restore-shortcuts-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+}
+
+.restore-shortcuts-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+    background: var(--bg-accent);
+}
+
+.restore-shortcuts-btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}

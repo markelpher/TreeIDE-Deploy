@@ -1,0 +1,364 @@
+.about-version {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    margin: 0 0 16px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-accent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.release-update-modal-content {
+    max-width: 460px;
+}
+
+.release-update-body {
+    padding: 28px 24px 24px;
+    text-align: center;
+}
+
+.release-update-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    border-radius: 14px;
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    box-sizing: border-box;
+    line-height: 0;
+}
+
+.release-update-icon .lucide {
+    width: 27px;
+    height: 27px;
+    display: block;
+    stroke-width: 2;
+    transform: translateY(0);
+}
+
+.release-update-copy p {
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.release-update-version {
+    margin: 18px 0 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+}
+
+.release-update-version .lucide {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.release-update-version strong {
+    color: var(--accent-color);
+}
+
+.release-update-progress {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.release-update-progress.show {
+    display: flex;
+}
+
+.release-update-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-accent);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.release-update-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-color);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.release-update-progress.show.downloading .release-update-progress-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+    animation: progressShimmer 1.5s infinite;
+}
+
+body.light-theme .release-update-progress.show.downloading .release-update-progress-fill::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.10) 50%, transparent 100%);
+}
+
+.release-update-progress-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-color);
+    min-width: 40px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.release-update-progress.complete .release-update-progress-fill {
+    background: #22c55e;
+}
+
+.release-update-progress.complete .release-update-progress-text {
+    color: #22c55e;
+}
+
+.release-update-actions {
+    padding: 20px 0 0;
+    border-top: 0;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.release-update-changelog {
+    margin-top: 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    text-align: left;
+    overflow: hidden;
+    transition: border-bottom-color 0.15s ease;
+}
+
+.release-update-changelog[hidden] {
+    display: none;
+}
+
+.release-update-changelog-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 14px;
+    background: transparent;
+    border: 0;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.release-update-changelog-toggle:hover,
+.release-update-changelog-toggle:focus-visible {
+    background: var(--bg-accent);
+    outline: none;
+    text-decoration: none;
+}
+
+.release-update-changelog-toggle:hover .release-update-changelog-chevron,
+.release-update-changelog-toggle:focus-visible .release-update-changelog-chevron {
+    color: var(--text-primary);
+}
+
+.release-update-changelog-toggle-label {
+    flex: 1;
+    text-decoration: none;
+}
+
+.release-update-changelog-chevron {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+    margin: 0;
+    display: block;
+}
+
+.release-update-changelog[aria-expanded="true"] .release-update-changelog-chevron {
+    transform: rotate(180deg);
+    color: var(--text-primary);
+}
+
+.release-update-changelog-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    border-top: 1px solid transparent;
+}
+
+.release-update-changelog[aria-expanded="true"] .release-update-changelog-body {
+    max-height: 320px;
+    overflow-y: auto;
+    border-top-color: var(--border-color);
+}
+
+.release-update-changelog-content {
+    padding: 14px 16px 16px;
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.release-update-changelog-content > *:first-child {
+    margin-top: 0;
+}
+
+.release-update-changelog-content > *:last-child {
+    margin-bottom: 0;
+}
+
+.release-update-changelog-content h1,
+.release-update-changelog-content h2,
+.release-update-changelog-content h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 12px 0 6px;
+    letter-spacing: 0.01em;
+}
+
+.release-update-changelog-content h1:first-child,
+.release-update-changelog-content h2:first-child,
+.release-update-changelog-content h3:first-child {
+    margin-top: 0;
+}
+
+.release-update-changelog-content p {
+    margin: 6px 0;
+    color: var(--text-primary);
+}
+
+.release-update-changelog-content ul {
+    margin: 6px 0;
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.release-update-changelog-content li {
+    margin: 2px 0;
+    color: var(--text-primary);
+}
+
+.release-update-changelog-content li::marker {
+    color: var(--text-secondary);
+}
+
+.release-update-changelog-content code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.release-update-changelog-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.release-update-changelog-content em {
+    color: var(--text-primary);
+    font-style: italic;
+}
+
+.release-update-changelog-content del {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.release-update-changelog-content pre {
+    margin: 8px 0;
+    padding: 10px 12px;
+    background: var(--bg-accent);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.release-update-changelog-content pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+}
+
+.release-update-changelog-content a {
+    color: var(--accent-color);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--border-strong);
+}
+
+.release-update-changelog-content a:hover {
+    text-decoration-color: var(--accent-color);
+}
+
+.release-update-changelog-empty {
+    margin: 0;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 12px;
+}
+
+.update-download-btn {
+    min-width: 170px;
+}
+
+.update-download-btn:hover,
+.update-download-btn:focus {
+    background-color: var(--accent-color);
+    transform: none;
+    box-shadow: none;
+}
+
+.update-download-btn:active {
+    transform: none;
+}
+
+.update-download-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+#declineReleaseUpdateBtn:hover,
+#declineReleaseUpdateBtn:focus {
+    background-color: var(--dropdown-hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+#declineReleaseUpdateBtn:active {
+    background-color: var(--border-color);
+}

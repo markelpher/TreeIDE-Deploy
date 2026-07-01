@@ -1,0 +1,869 @@
+export function createModals(app) {
+
+// Lazy getters - elements may not exist when script loads
+    function getEl(id) { return document.getElementById(id); }
+    function sanitizeHtml(html) {
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        const walker = template.content.ownerDocument.createTreeWalker(template.content, 1, null, false);
+        const allowedTags = new Set(['a','b','strong','i','em','ul','ol','li','p','br','hr','h1','h2','h3','h4','h5','h6','pre','code','blockquote','del','ins','sup','sub','table','thead','tbody','tr','th','td','span','div']);
+        const removeNodes = [];
+        while (walker.nextNode()) {
+            const node = walker.currentNode;
+            if (node.nodeType === 1 && !allowedTags.has(node.tagName.toLowerCase())) {
+                removeNodes.push(node);
+            }
+            if (node.nodeType === 1) {
+                ['onclick','onload','onerror','onmouseover','onfocus','onblur','onchange','onsubmit','onkeydown','onkeyup','onkeypress'].forEach(attr => node.removeAttribute(attr));
+                if (node.tagName.toLowerCase() === 'a') {
+                    const href = node.getAttribute('href') || '';
+                    if (!/^(https?:|mailto:|#)/i.test(href)) {node.removeAttribute('href');}
+                }
+            }
+        }
+        removeNodes.forEach(n => n.parentNode?.removeChild(n));
+        return template.innerHTML;
+    }
+    let latestReleaseUpdate = null;
+    let dismissedReleaseVersion = '';
+
+    let isDownloadingUpdate = false;
+    let isUpdateDownloaded = false;
+
+    function resetReleaseUpdateButton() {
+        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+        const downloadLabel = document.getElementById('updateDownloadLabel');
+        const progressEl = document.getElementById('releaseUpdateProgress');
+        const progressFill = document.getElementById('releaseUpdateProgressFill');
+        const progressText = document.getElementById('releaseUpdateProgressText');
+        const declineBtn = document.getElementById('declineReleaseUpdateBtn');
+
+        if (declineBtn) {declineBtn.style.display = '';}
+        if (downloadBtn) {
+            downloadBtn.style.display = '';
+            downloadBtn.disabled = false;
+        }
+        if (progressEl) {
+            progressEl.classList.remove('show', 'downloading', 'complete');
+        }
+        if (progressFill) {progressFill.style.width = '0%';}
+        if (progressText) {progressText.textContent = '0%';}
+        if (progressEl) {
+            progressEl.setAttribute('aria-valuenow', '0');
+            progressEl.setAttribute('aria-valuetext', '0%');
+        }
+        if (downloadLabel) {downloadLabel.textContent = app.i18n.t('update_download_release');}
+        isDownloadingUpdate = false;
+        isUpdateDownloaded = false;
+    }
+
+    function showReleaseUpdateModal(info) {
+        latestReleaseUpdate = info;
+        const currentVer = document.getElementById('releaseUpdateCurrent');
+        const latestVer = document.getElementById('releaseUpdateLatest');
+        if (currentVer) {currentVer.textContent = `v${info.currentVersion || '---'}`;}
+        if (latestVer) {latestVer.textContent = `v${info.latestVersion || '---'}`;}
+
+        populateReleaseChangelog(info.releaseNotes);
+
+        resetReleaseUpdateButton();
+        const modal = getEl('releaseUpdateModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            trapFocus(modal);
+        }
+        app.icons.refreshIcons();
+    }
+
+    function populateReleaseChangelog(releaseNotes) {
+        const section = document.getElementById('releaseUpdateChangelog');
+        const content = document.getElementById('releaseUpdateChangelogContent');
+        const toggle = document.getElementById('releaseUpdateChangelogToggle');
+        if (!section || !content) {return;}
+
+        const notes = normalizeReleaseNotes(releaseNotes);
+        if (!notes) {
+            section.hidden = true;
+            section.setAttribute('aria-expanded', 'false');
+            if (toggle) {toggle.setAttribute('aria-expanded', 'false');}
+            content.textContent = '';
+            return;
+        }
+
+        section.hidden = false;
+        const renderNotes = app.markdown?.renderReleaseNotes || renderMarkdown;
+        const rendered = (typeof renderNotes === 'function')
+            ? renderNotes(notes)
+            : escapeHtmlFallback(notes).replace(/\r?\n/g, '<br>');
+        // GitHub-sourced release notes are authored in English, so when
+        // the user is reading in another language the section headers
+        // (`### Added`, `### Fixed`, …) get rewritten in place here.
+        const html = translateChangelogSections(rendered);
+        content.innerHTML = html
+            ? sanitizeHtml(html)
+            : `<p class="release-update-changelog-empty">${escapeHtmlFallback(app.i18n ? app.i18n.t('update_changelog_empty') : 'No details for this release.')}</p>`;
+    }
+
+    // Score a locale code against the user's preferred language.
+    // Exact matches win. Prefix matches (e.g. user "pt-BR" → entry
+    // "pt") score lower but still beat a generic fallback. Anything
+    // else scores 0.
+    function scoreLocaleMatch(entryLocale, preferredLocale) {
+        if (!entryLocale || !preferredLocale) {return 0;}
+        const e = String(entryLocale).toLowerCase();
+        const p = String(preferredLocale).toLowerCase();
+        if (e === p) {return 100;}
+        if (e === p.split('-')[0] || p === e.split('-')[0]) {return 50;}
+        if (e.split('-')[0] === p.split('-')[0]) {return 25;}
+        return 0;
+    }
+
+    // Pick the best entry from a LocalizedReleaseNotes[] (or per-locale
+    // object) for the user's currently selected app language. We prefer
+    // the app's `i18n.getCurrentLang()` (which is what the rest of the
+    // UI uses) and only fall back to navigator.language if i18n is
+    // missing. Returns an empty string if no entry matches.
+    function pickLocalizedNote(value, preferredLocale) {
+        if (!value) {return '';}
+        const lang = (preferredLocale || (
+            (app.i18n && typeof app.i18n.getCurrentLang === 'function')
+                ? app.i18n.getCurrentLang()
+                : (navigator.language || 'en')
+        )).toLowerCase();
+
+        let entries = [];
+        if (Array.isArray(value)) {
+            entries = value
+                .map((entry) => {
+                    if (typeof entry === 'string') {return { locale: 'en', notes: entry };}
+                    if (entry && typeof entry === 'object') {
+                        return { locale: entry.locale || 'en', notes: entry.notes ?? entry.note ?? '' };
+                    }
+                    return null;
+                })
+                .filter((entry) => entry && entry.notes);
+        } else if (typeof value === 'object') {
+            entries = Object.entries(value)
+                .map(([locale, entry]) => ({
+                    locale,
+                    notes: typeof entry === 'string' ? entry : (entry?.notes ?? entry?.note ?? '')
+                }))
+                .filter((entry) => entry.notes);
+        } else {
+            return '';
+        }
+
+        if (entries.length === 0) {return '';}
+        if (entries.length === 1) {return entries[0].notes;}
+
+        // Score each entry, sort descending, return the best
+        const scored = entries
+            .map((entry) => ({ entry, score: scoreLocaleMatch(entry.locale, lang) }))
+            .sort((a, b) => b.score - a.score);
+
+        return scored[0].entry.notes;
+    }
+
+    function normalizeReleaseNotes(value) {
+        if (!value) {return '';}
+        if (typeof value === 'string') {return value.trim();}
+        return pickLocalizedNote(value).trim();
+    }
+
+    const escapeHtmlFallback = app.helpers.escapeHtml;
+    const renderMarkdown = app.markdown ? app.markdown.renderMarkdown : null;
+    function __showToast(msg, dur) { app.toast.showToast(msg, dur); }
+
+    function queueOrShowReleaseUpdate(info) {
+        if (info.latestVersion === dismissedReleaseVersion) {return;}
+        const welcome = getEl('welcomeModal');
+        if (welcome && welcome.style.display === 'flex') {
+            latestReleaseUpdate = info;
+            return;
+        }
+        showReleaseUpdateModal(info);
+    }
+
+    function handleUpdateCheckResult(result) {
+        if (result?.error || result?.ok === false) {
+            console.warn('Release update check failed:', result?.error);
+            __showToast(app.i18n.t(result?.error || 'update_failed'), 4000);
+            return;
+        }
+        if (result?.updateAvailable) {
+            queueOrShowReleaseUpdate(result);
+        } else if (result?.ok !== false) {
+            __showToast(app.i18n.t('update_up_to_date'), 3000);
+        }
+    }
+
+    async function checkReleaseUpdateOnStartup() {
+        if (!app.electronAPI || !app.electronAPI.checkReleaseUpdate) {return;}
+        try {
+            const result = await app.electronAPI.checkReleaseUpdate();
+            handleUpdateCheckResult(result);
+        } catch (err) {
+            console.warn('Release update check failed:', err);
+        }
+    }
+
+    function bindReleaseUpdateEvents() {
+        if (!app.electronAPI) {return;}
+
+        if (app.electronAPI.onReleaseUpdateAvailable) {
+            app.electronAPI.onReleaseUpdateAvailable((info) => queueOrShowReleaseUpdate(info));
+        }
+        if (app.electronAPI.onReleaseUpdateError) {
+            app.electronAPI.onReleaseUpdateError((message) => {
+                isDownloadingUpdate = false;
+                resetReleaseUpdateButton();
+                __showToast(app.i18n.t(message || 'update_failed'), 4000);
+            });
+        }
+        if (app.electronAPI.onUpdateDownloadProgress) {
+            app.electronAPI.onUpdateDownloadProgress((progress) => {
+                const progressEl = document.getElementById('releaseUpdateProgress');
+                const progressFill = document.getElementById('releaseUpdateProgressFill');
+                const progressText = document.getElementById('releaseUpdateProgressText');
+
+                const percent = Math.round(progress.percent);
+                if (progressEl) {
+                    progressEl.classList.add('show', 'downloading');
+                    progressEl.setAttribute('aria-valuenow', String(percent));
+                    progressEl.setAttribute('aria-valuetext', `${percent}%`);
+                }
+                if (progressFill) {progressFill.style.width = `${progress.percent}%`;}
+                if (progressText) {progressText.textContent = `${percent}%`;}
+            });
+        }
+        if (app.electronAPI.onUpdateDownloaded) {
+            app.electronAPI.onUpdateDownloaded((_info) => {
+                isDownloadingUpdate = false;
+                isUpdateDownloaded = true;
+                const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+                const downloadLabel = document.getElementById('updateDownloadLabel');
+                const progressEl = document.getElementById('releaseUpdateProgress');
+                const progressFill = document.getElementById('releaseUpdateProgressFill');
+                const progressText = document.getElementById('releaseUpdateProgressText');
+
+                if (downloadBtn) {
+                    downloadBtn.style.display = '';
+                    downloadBtn.disabled = false;
+                }
+                if (progressEl) {
+                    progressEl.classList.remove('downloading');
+                    progressEl.classList.add('show', 'complete');
+                }
+                if (progressEl) {
+                    progressEl.setAttribute('aria-valuenow', '100');
+                    progressEl.setAttribute('aria-valuetext', '100%');
+                }
+                if (progressFill) {progressFill.style.width = '100%';}
+                if (progressText) {progressText.textContent = '100%';}
+                if (downloadLabel) {downloadLabel.textContent = app.i18n.t('update_install_restart');}
+            });
+        }
+    }
+
+    const bundledVersion = typeof __TREEIDE_VERSION__ !== 'undefined' ? __TREEIDE_VERSION__ : null;
+
+    function formatVersionText(version, isPackaged) {
+        if (!version) { return 'v---'; }
+        return isPackaged ? `v${version}` : `v${version} dev`;
+    }
+
+    function applyVersionDisplay(versionText) {
+        const aboutVersion = document.getElementById('aboutVersion');
+        if (aboutVersion) { aboutVersion.textContent = versionText; }
+        const settingsVersion = document.getElementById('settingsCurrentVersion');
+        if (settingsVersion) { settingsVersion.textContent = versionText; }
+    }
+
+    function formatReleaseDate(isoDate, lang) {
+        if (!isoDate) { return ''; }
+        const d = new Date(isoDate);
+        if (Number.isNaN(d.getTime())) { return ''; }
+        return d.toLocaleDateString(lang, { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    async function initializeAppInfo() {
+        const lang = app.i18n?.getCurrentLang?.() === 'pt' ? 'pt-BR' : 'en-US';
+        const lastCheckedEl = document.getElementById('settingsLastChecked');
+        let versionText = formatVersionText(bundledVersion, false);
+
+        if (app.electronAPI?.getAppInfo) {
+            try {
+                const appInfo = await app.electronAPI.getAppInfo();
+                if (!appInfo?.error && appInfo?.version) {
+                    versionText = formatVersionText(appInfo.version, !!appInfo.isPackaged);
+                }
+            } catch (err) {
+                console.warn('App info unavailable:', err);
+            }
+        }
+
+        applyVersionDisplay(versionText);
+
+        if (lastCheckedEl) {
+            const cached = localStorage.getItem('current_release_date');
+            lastCheckedEl.textContent = cached ? formatReleaseDate(cached, lang) : '';
+        }
+
+        if (app.electronAPI?.getCurrentReleaseInfo) {
+            try {
+                const info = await app.electronAPI.getCurrentReleaseInfo();
+                if (!info?.error && info?.releaseDate) {
+                    localStorage.setItem('current_release_date', info.releaseDate);
+                    if (lastCheckedEl) {
+                        lastCheckedEl.textContent = formatReleaseDate(info.releaseDate, lang);
+                    }
+                }
+            } catch (err) {
+                console.warn('Release info unavailable:', err);
+            }
+        }
+    }
+
+    // Real GitHub-sourced release notes are authored in English (with
+    // English section headers like "### Added"). When the user is reading
+    // in another language we still want the structural elements of the
+    // release notes — the section headers — to appear in their language
+    // while the commit subjects stay in their original (typically English)
+    // language. This pass walks the rendered HTML and rewrites the
+    // known English section labels in place.
+    function translateChangelogSections(html) {
+        if (!html || !app.i18n) {return html;}
+        let currentLang = 'en';
+        try {
+            currentLang = app.i18n.getCurrentLang();
+        } catch (err) {
+            return html;
+        }
+        if (currentLang === 'en') {return html;}
+
+        const sections = ['added', 'changed', 'fixed', 'removed', 'other', 'breaking'];
+        let result = html;
+        for (const section of sections) {
+            const key = `update_changelog_section_${section}`;
+            let localized = key;
+            try {
+                localized = app.i18n.t(key);
+            } catch (err) {
+                // t() throws when the active language has no
+                // translations object at all (e.g. a brand-new locale
+                // string). Treat that the same as a missing key.
+                continue;
+            }
+            // If the translation is missing, t() returns the key itself
+            // (e.g. "update_changelog_section_added"). Skip those so we
+            // never replace a real English header with a leaked key.
+            if (localized === key) {continue;}
+            const english = section.charAt(0).toUpperCase() + section.slice(1);
+            for (const tag of ['h2', 'h3', 'h4']) {
+                result = result.replaceAll(`<${tag}>${english}</${tag}>`, `<${tag}>${localized}</${tag}>`);
+                result = result.replaceAll(`<${tag}>${english.toLowerCase()}</${tag}>`, `<${tag}>${localized}</${tag}>`);
+            }
+        }
+        return result;
+    }
+
+    // Sidebar tabs in settings
+    const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    sidebarTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.getAttribute('data-tab');
+            sidebarTabs.forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
+            tab.classList.add('active');
+            tab.setAttribute('aria-selected', 'true');
+            tabPanes.forEach(pane => {
+                pane.classList.remove('active');
+                if (pane.id === `tab-${targetTab}`) {pane.classList.add('active');}
+            });
+            app.icons.refreshIcons();
+        });
+    });
+
+    // Prompt modal
+    let promptResolver = null;
+    const promptModal = document.getElementById('promptModal');
+    const promptTitle = document.getElementById('promptTitle');
+    const promptLabel = document.getElementById('promptLabel');
+    const promptInput = document.getElementById('promptInput');
+
+    function closePromptModal(value) {
+        const resolver = promptResolver;
+        promptResolver = null;
+        if (promptModal && promptModal.style.display === 'flex') {
+            closeModalAnimated(promptModal, {
+                onClosed: () => { if (resolver) { resolver(value); } }
+            });
+        } else if (resolver) {
+            resolver(value);
+        }
+    }
+
+    let decryptPasswordResolver = null;
+    const decryptPasswordModal = document.getElementById('decryptPasswordModal');
+    const decryptPasswordTitle = document.getElementById('decryptPasswordTitle');
+    const decryptPasswordLead = document.getElementById('decryptPasswordLead');
+    const decryptPasswordLabel = document.getElementById('decryptPasswordLabel');
+    const decryptPasswordInput = document.getElementById('decryptPasswordInput');
+    const decryptPasswordError = document.getElementById('decryptPasswordError');
+
+    function closeDecryptPasswordModal(value) {
+        const resolver = decryptPasswordResolver;
+        decryptPasswordResolver = null;
+        if (decryptPasswordModal && decryptPasswordModal.style.display === 'flex') {
+            closeModalAnimated(decryptPasswordModal, {
+                onClosed: () => { if (resolver) { resolver(value); } }
+            });
+        } else if (resolver) {
+            resolver(value);
+        }
+    }
+
+    const DECRYPT_LEAD_KEYS = {
+        tree: 'decrypt_password_lead_tree',
+        zip: 'decrypt_password_lead_zip',
+        both: 'decrypt_password_lead_both'
+    };
+
+    function renderDecryptPasswordLead(kind, fileName) {
+        const t = (key) => app.i18n.t(key);
+        const safeName = escapeHtmlFallback(fileName || t('untitled'));
+        const leadKey = DECRYPT_LEAD_KEYS[kind] || DECRYPT_LEAD_KEYS.tree;
+        return t(leadKey).replace('{file}', `<span class="decrypt-password-file">${safeName}</span>`);
+    }
+
+    function focusDecryptPasswordInput(selectOnError = false) {
+        if (!decryptPasswordInput) { return; }
+        decryptPasswordInput.focus();
+        if (selectOnError) {
+            decryptPasswordInput.select();
+        }
+    }
+
+    function showDecryptPasswordModal({ fileName, kind = 'tree', wrongPassword = false }) {
+        const t = (key) => app.i18n.t(key);
+
+        if (decryptPasswordTitle) {
+            decryptPasswordTitle.textContent = t('decrypt_password_title');
+        }
+        if (decryptPasswordLabel) {
+            decryptPasswordLabel.textContent = t('decrypt_password_label');
+        }
+        if (decryptPasswordLead) {
+            decryptPasswordLead.innerHTML = renderDecryptPasswordLead(kind, fileName);
+        }
+        if (decryptPasswordInput) {
+            decryptPasswordInput.placeholder = t('decrypt_password_placeholder');
+            if (!wrongPassword) {
+                decryptPasswordInput.value = '';
+            }
+        }
+        if (decryptPasswordError) {
+            if (wrongPassword) {
+                decryptPasswordError.hidden = false;
+                decryptPasswordError.textContent = t('error_wrong_password');
+            } else {
+                decryptPasswordError.hidden = true;
+                decryptPasswordError.textContent = '';
+            }
+        }
+
+        decryptPasswordResolver = null;
+        if (decryptPasswordModal) {
+            decryptPasswordModal.style.display = 'flex';
+            trapFocus(decryptPasswordModal, decryptPasswordInput);
+            app.icons.refreshIcons(decryptPasswordModal);
+        }
+        focusDecryptPasswordInput(wrongPassword);
+
+        return new Promise((resolve) => { decryptPasswordResolver = resolve; });
+    }
+
+    const decryptPasswordSubmit = document.getElementById('decryptPasswordSubmit');
+    const decryptPasswordCancel = document.getElementById('decryptPasswordCancel');
+    const closeDecryptPasswordModalBtn = document.getElementById('closeDecryptPasswordModal');
+
+    const submitDecryptPassword = () => {
+        const value = decryptPasswordInput?.value || '';
+        if (!value.trim()) {
+            if (decryptPasswordError) {
+                decryptPasswordError.hidden = false;
+                decryptPasswordError.textContent = app.i18n.t('decrypt_password_required');
+            }
+            decryptPasswordInput?.focus();
+            return;
+        }
+        closeDecryptPasswordModal(value);
+    };
+
+    if (decryptPasswordSubmit) {
+        decryptPasswordSubmit.addEventListener('click', submitDecryptPassword);
+    }
+    if (decryptPasswordCancel) {
+        decryptPasswordCancel.addEventListener('click', () => closeDecryptPasswordModal(null));
+    }
+    if (closeDecryptPasswordModalBtn) {
+        closeDecryptPasswordModalBtn.addEventListener('click', () => closeDecryptPasswordModal(null));
+    }
+    if (decryptPasswordInput) {
+        decryptPasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitDecryptPassword();
+            }
+        });
+    }
+
+    function showPromptAsync(message, defaultValue = '', title) {
+        if (promptLabel) {promptLabel.textContent = message;}
+        if (promptTitle) {promptTitle.textContent = title || app.i18n.t('template_name_prompt');}
+        if (promptInput) {
+            promptInput.value = defaultValue || '';
+        }
+        promptResolver = null;
+        if (promptModal) {
+            promptModal.style.display = 'flex';
+            trapFocus(promptModal);
+            if (promptInput) {
+                setTimeout(() => {
+                    promptInput.focus();
+                    promptInput.select();
+                }, 0);
+            }
+        }
+        return new Promise((resolve) => { promptResolver = resolve; });
+    }
+
+    // Confirm modal
+    let confirmCallback = null;
+    let confirmResolver = null;
+    let confirmBusy = false;
+    const confirmIdleWaiters = [];
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmTitle = document.getElementById('confirmTitle');
+    const confirmMsg = document.getElementById('confirmMsg');
+
+    function showConfirm(message, title, onConfirm) {
+        if (confirmMsg) {confirmMsg.textContent = message;}
+        if (confirmTitle) {confirmTitle.textContent = title || app.i18n.t('confirm_title');}
+        // A new modal invocation invalidates any prior pending resolver/callback.
+        // Otherwise a previous async confirm could fire when the user later
+        // clicks Agree on a new confirm that uses a sync callback.
+        confirmCallback = onConfirm || null;
+        confirmResolver = null;
+        if (confirmModal) {
+            confirmModal.style.display = 'flex';
+            trapFocus(confirmModal);
+        }
+    }
+
+    function closeReleaseUpdateModal() {
+        if (latestReleaseUpdate?.latestVersion) { dismissedReleaseVersion = latestReleaseUpdate.latestVersion; }
+        const modal = getEl('releaseUpdateModal');
+        if (modal) {
+            closeModalAnimated(modal);
+        }
+    }
+
+    // Bind release update button events
+    const declineReleaseUpdateBtn = document.getElementById('declineReleaseUpdateBtn');
+    if (declineReleaseUpdateBtn) {declineReleaseUpdateBtn.addEventListener('click', closeReleaseUpdateModal);}
+
+    const closeReleaseUpdateModalBtn = document.getElementById('closeReleaseUpdateModal');
+    if (closeReleaseUpdateModalBtn) {closeReleaseUpdateModalBtn.addEventListener('click', closeReleaseUpdateModal);}
+
+    // Changelog toggle (collapsible "What's new" section)
+    const changelogSection = document.getElementById('releaseUpdateChangelog');
+    const changelogToggle = document.getElementById('releaseUpdateChangelogToggle');
+    if (changelogSection && changelogToggle) {
+        changelogToggle.addEventListener('click', () => {
+            const expanded = changelogToggle.getAttribute('aria-expanded') === 'true';
+            const next = !expanded;
+            changelogToggle.setAttribute('aria-expanded', String(next));
+            changelogSection.setAttribute('aria-expanded', String(next));
+        });
+    }
+
+    const downloadReleaseUpdateBtn = document.getElementById('downloadReleaseUpdateBtn');
+    if (downloadReleaseUpdateBtn) {
+        downloadReleaseUpdateBtn.addEventListener('click', async () => {
+            if (isUpdateDownloaded) {
+                app.electronAPI.installUpdate();
+                return;
+            }
+            if (isDownloadingUpdate) {return;}
+
+            isDownloadingUpdate = true;
+            const progressEl = document.getElementById('releaseUpdateProgress');
+            const declineBtn = document.getElementById('declineReleaseUpdateBtn');
+            if (progressEl) {progressEl.classList.add('show', 'downloading');}
+            if (declineBtn) {declineBtn.style.display = 'none';}
+            downloadReleaseUpdateBtn.style.display = 'none';
+
+            try {
+                const result = await app.electronAPI.downloadUpdate();
+                if (result && !result.ok) {
+                    isDownloadingUpdate = false;
+                    resetReleaseUpdateButton();
+                app.toast.showToast(app.i18n.t(result.error || 'update_failed'), 4000);
+                }
+            } catch (err) {
+                isDownloadingUpdate = false;
+                resetReleaseUpdateButton();
+                __showToast(app.i18n.t('update_failed'), 4000);
+            }
+        });
+    }
+
+    // Focus trap — keeps Tab/Shift+Tab cycling inside the active modal
+    let trappedModal = null;
+    let lastFocusedBeforeModal = null;
+    const MODAL_CLOSE_MS = 260;
+    const modalCloseStates = new WeakMap();
+
+    function getModalCloseState(modal) {
+        let state = modalCloseStates.get(modal);
+        if (!state) {
+            state = { generation: 0, timeoutId: null };
+            modalCloseStates.set(modal, state);
+        }
+        return state;
+    }
+
+    function cancelModalClose(modal) {
+        if (!modal) { return; }
+        const state = getModalCloseState(modal);
+        if (state.timeoutId) {
+            clearTimeout(state.timeoutId);
+            state.timeoutId = null;
+        }
+        state.generation += 1;
+        modal.classList.remove('closing');
+    }
+
+    function closeModalAnimated(modal, { releaseTrap = true, onClosed } = {}) {
+        if (!modal) {
+            onClosed?.();
+            return;
+        }
+
+        if (modal.style.display !== 'flex') {
+            onClosed?.();
+            return;
+        }
+
+        if (modal.classList.contains('closing')) {
+            onClosed?.();
+            return;
+        }
+
+        const state = getModalCloseState(modal);
+        if (state.timeoutId) {
+            clearTimeout(state.timeoutId);
+            state.timeoutId = null;
+        }
+
+        const generation = state.generation + 1;
+        state.generation = generation;
+        modal.classList.add('closing');
+
+        let finished = false;
+        const finish = () => {
+            if (finished || state.generation !== generation) { return; }
+            finished = true;
+            state.timeoutId = null;
+            modal.classList.remove('closing');
+            modal.style.display = 'none';
+            if (releaseTrap && trappedModal === modal) {
+                releaseFocus();
+            }
+            onClosed?.();
+        };
+
+        const animTarget = modal.querySelector('.modal-content') || modal;
+        animTarget.addEventListener('animationend', (e) => {
+            if (e.target === animTarget) { finish(); }
+        }, { once: true });
+        state.timeoutId = setTimeout(finish, MODAL_CLOSE_MS);
+    }
+
+    function trapFocus(modal, preferredFocusEl = null) {
+        if (!modal) { return; }
+        cancelModalClose(modal);
+        const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const focusTarget = preferredFocusEl && modal.contains(preferredFocusEl)
+            ? preferredFocusEl
+            : focusable[0];
+        if (trappedModal === modal) {
+            focusTarget?.focus();
+            return;
+        }
+        trappedModal = modal;
+        lastFocusedBeforeModal = document.activeElement;
+        focusTarget?.focus();
+    }
+
+    function releaseFocus() {
+        if (!trappedModal) {return;}
+        trappedModal = null;
+        if (lastFocusedBeforeModal && document.contains(lastFocusedBeforeModal)) {
+            lastFocusedBeforeModal.focus();
+        }
+        lastFocusedBeforeModal = null;
+    }
+
+    function releaseConfirmBusy() {
+        confirmBusy = false;
+        const waiters = confirmIdleWaiters.splice(0);
+        waiters.forEach((resolve) => resolve());
+    }
+
+    function waitForConfirmIdle() {
+        if (!confirmBusy) { return Promise.resolve(); }
+        return new Promise((resolve) => { confirmIdleWaiters.push(resolve); });
+    }
+
+    function settleConfirm(result) {
+        const callback = confirmCallback;
+        const resolver = confirmResolver;
+        confirmCallback = null;
+        confirmResolver = null;
+
+        const finish = () => {
+            if (result && callback) { callback(); }
+            if (resolver) { resolver(result); }
+            releaseConfirmBusy();
+        };
+
+        if (!confirmModal || confirmModal.style.display !== 'flex') {
+            finish();
+            return Promise.resolve();
+        }
+
+        return new Promise((done) => {
+            closeModalAnimated(confirmModal, {
+                onClosed: () => {
+                    finish();
+                    done();
+                }
+            });
+        });
+    }
+
+    function showConfirmAsync(message, title) {
+        return waitForConfirmIdle().then(() => {
+            confirmBusy = true;
+            showConfirm(message, title, null);
+            return new Promise((resolve) => { confirmResolver = resolve; });
+        });
+    }
+
+    function handleFocusTrap(e) {
+        if (!trappedModal || trappedModal.style.display !== 'flex' || trappedModal.classList.contains('closing')) { return; }
+        const focusable = trappedModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) {return;}
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            const id = trappedModal.id;
+            const modal = trappedModal;
+
+            if (id === 'settingsModal' || id === 'aboutModal' || id === 'templatesModal' || id === 'unsavedModal') {
+                closeModalAnimated(modal);
+            } else if (id === 'confirmModal') {
+                settleConfirm(false);
+            } else if (id === 'promptModal') {
+                closePromptModal(null);
+            } else if (id === 'decryptPasswordModal') {
+                closeDecryptPasswordModal(null);
+            } else if (id === 'releaseUpdateModal') {
+                closeReleaseUpdateModal();
+            } else if (id === 'welcomeModal') {
+                closeModalAnimated(modal, {
+                    onClosed: () => { localStorage.setItem('onboarding_done', 'true'); }
+                });
+            }
+            return;
+        }
+        if (e.key === 'Tab') {
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        }
+    }
+
+    document.addEventListener('keydown', handleFocusTrap);
+
+    // Global click handler for modal dismiss and external links
+    window.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' && e.target.href && e.target.href.startsWith('http') && app.electronAPI) {
+            e.preventDefault();
+            app.electronAPI.openExternal(e.target.href);
+        }
+        if (e.target.id === 'settingsModal') { closeModalAnimated(e.target); }
+        if (e.target.id === 'aboutModal') { closeModalAnimated(e.target); }
+        if (e.target.id === 'templatesModal') { closeModalAnimated(e.target); }
+        if (e.target.id === 'releaseUpdateModal') { closeReleaseUpdateModal(); }
+        if (e.target.id === 'unsavedModal') { closeModalAnimated(e.target); }
+        if (e.target.id === 'welcomeModal') { return; }
+        if (e.target.id === 'promptModal') {
+            closePromptModal(null);
+        }
+        if (e.target.id === 'decryptPasswordModal') {
+            closeDecryptPasswordModal(null);
+        }
+        if (e.target.id === 'confirmModal') {
+            settleConfirm(false);
+        }
+    });
+
+    return {
+        showPromptAsync,
+        closePromptModal,
+        showDecryptPasswordModal,
+        closeDecryptPasswordModal,
+        showConfirm,
+        showConfirmAsync,
+        settleConfirm,
+        showReleaseUpdateModal,
+        closeReleaseUpdateModal,
+        resetReleaseUpdateButton,
+        checkReleaseUpdateOnStartup,
+        handleUpdateCheckResult,
+        bindReleaseUpdateEvents,
+        initializeAppInfo,
+        populateReleaseChangelog,
+        normalizeReleaseNotes,
+        translateChangelogSections,
+        closeModalAnimated,
+        trapFocus,
+        releaseFocus,
+        get latestReleaseUpdate() { return latestReleaseUpdate; },
+        set latestReleaseUpdate(val) { latestReleaseUpdate = val; },
+        get confirmCallback() { return confirmCallback; },
+        set confirmCallback(val) { confirmCallback = val; },
+        get confirmResolver() { return confirmResolver; },
+        set confirmResolver(val) { confirmResolver = val; },
+        get promptResolver() { return promptResolver; },
+        set promptResolver(val) { promptResolver = val; }
+    };
+
+
+}

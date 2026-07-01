@@ -1,8 +1,8 @@
 {
   "name": "tree-ide",
-  "version": "2.0.48",
+  "version": "2.0.49",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
-  "author": "Mare",
+  "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
   "engines": {
     "node": ">=24"
@@ -11,17 +11,34 @@
     "type": "git",
     "url": "https://github.com/markelpher/TreeIDE-Deploy.git"
   },
+  "type": "module",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "electron .",
-    "simulate-update": "electron src/main/dev-simulate-update.js",
-    "test": "node tests/treeCore.test.js",
-    "build": "electron-builder"
+    "start": "vite build && node scripts/start-electron.cjs",
+    "dev": "node scripts/dev.cjs",
+    "build:renderer": "vite build",
+    "build": "vite build && electron-builder",
+    "build:mac": "vite build && electron-builder --mac dmg zip --arm64",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons:generate": "node scripts/generate-lucide-local.mjs",
+    "i18n:validate": "node scripts/validate-i18n.mjs",
+    "lint": "eslint . --ext .js,.mjs",
+    "lint:fix": "eslint . --ext .js,.mjs --fix",
+    "format": "prettier --check \"src/**/*.js\" \"src/**/*.css\" \"tests/**/*.js\"",
+    "format:fix": "prettier --write \"src/**/*.js\" \"src/**/*.css\" \"tests/**/*.js\""
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "electron": "^42.0.1",
     "electron-builder": "^26.8.1",
-    "electron-reloader": "^1.2.3"
+    "electron-reloader": "^1.2.3",
+    "eslint": "^10.5.0",
+    "happy-dom": "^20.10.6",
+    "lucide-static": "^1.22.0",
+    "prettier": "^3.8.4",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   },
   "build": {
     "appId": "com.treeide.treeide",
@@ -32,6 +49,7 @@
         "msi",
         "portable"
       ],
+      "executableName": "Tree IDE",
       "icon": "assets/icon-no-bg.ico",
       "publish": [
         {
@@ -44,11 +62,11 @@
     },
     "nsis": {
       "include": "build/installer.nsh",
-      "artifactName": "Tree-IDE-Setup-${version}.${ext}",
+      "artifactName": "Tree-IDE-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
-      "perMachine": false,
+      "perMachine": true,
       "installerIcon": "assets/icon-no-bg.ico",
       "uninstallerIcon": "assets/icon-no-bg.ico",
       "installerLanguages": [
@@ -64,23 +82,99 @@
       "runAfterFinish": true
     },
     "portable": {
-      "artifactName": "Tree-IDE-Portable-${version}.${ext}"
+      "artifactName": "Tree-IDE-Portable-${version}-${arch}.${ext}"
     },
     "msi": {
-      "artifactName": "Tree-IDE-${version}.${ext}"
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "snap"
+      ],
+      "icon": "assets/icon-no-bg.png",
+      "category": "Development",
+      "publish": [
+        {
+          "provider": "github",
+          "owner": "markelpher",
+          "repo": "TreeIDE-Deploy",
+          "releaseType": "release"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "assets/icon-no-bg.png",
+      "category": "public.app-category.developer-tools",
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "publish": [
+        {
+          "provider": "github",
+          "owner": "markelpher",
+          "repo": "TreeIDE-Deploy",
+          "releaseType": "release"
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "title": "Tree IDE ${version}"
+    },
+    "deb": {
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    },
+    "snap": {
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "confinement": "strict",
+      "summary": "A lightweight project structure editor",
+      "grade": "stable",
+      "plugs": [
+        "default",
+        "removable-media"
+      ],
+      "environment": {
+        "TMPDIR": "$XDG_RUNTIME_DIR"
+      }
     },
     "files": [
       "src/main/**/*",
       "src/preload/**/*",
-      "src/renderer/**/*",
+      "src/shared/**/*",
+      "dist/renderer/**/*",
       "assets/**/*",
       "package.json",
       "node_modules/**/*"
     ],
-    "asar": true
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/7zip-bin/**/*"
+    ]
   },
   "dependencies": {
+    "7zip-min": "^3.0.1",
+    "adm-zip": "^0.5.17",
     "electron-log": "^5.4.3",
-    "electron-updater": "^6.8.3"
+    "electron-updater": "^6.8.3",
+    "electron-winstaller": "^5.4.0",
+    "node-unrar-js": "^2.0.2"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true
   }
 }
