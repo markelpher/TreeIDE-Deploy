@@ -1,9 +1,9 @@
 app-id: com.treeide.treeide
 runtime: org.freedesktop.Platform
-runtime-version: '23.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 base: org.electronjs.Electron2.BaseApp
-base-version: '23.08'
+base-version: '25.08'
 command: tree-ide
 separate-locales: false
 finish-args:
@@ -20,22 +20,17 @@ finish-args:
 modules:
   - name: tree-ide
     buildsystem: simple
-    build-options:
-      env:
-        XDG_CACHE_HOME: /run/build/tree-ide/flatpak-node/cache
-        npm_config_cache: /run/build/tree-ide/flatpak-node/npm-cache
-        npm_config_offline: 'true'
     build-commands:
       - cp -r dist/linux-unpacked /app/tree-ide
-      - install -Dm755 tree-ide.sh /app/bin/tree-ide
-      - install -Dm644 com.treeide.treeide.desktop /app/share/applications/com.treeide.treeide.desktop
+      - install -Dm755 build-flatpak/flatpak/tree-ide.sh /app/bin/tree-ide
+      - install -Dm644 build-flatpak/flatpak/com.treeide.treeide.desktop /app/share/applications/com.treeide.treeide.desktop
       - for size in 16 32 48 64 128 256 512; do mkdir -p /app/share/icons/hicolor/${size}x${size}/apps; install -Dm644 assets/icon-no-bg.png /app/share/icons/hicolor/${size}x${size}/apps/com.treeide.treeide.png; done
-      - install -Dm644 com.treeide.treeide.appdata.xml /app/share/metainfo/com.treeide.treeide.appdata.xml
+      - install -Dm644 build-flatpak/flatpak/com.treeide.treeide.appdata.xml /app/share/metainfo/com.treeide.treeide.appdata.xml
     sources:
       - type: dir
-        path: .
-      - type: shell
-        commands:
-          - mkdir -p flatpak-node
-          - npm ci --prefix . --cache flatpak-node/npm-cache
-          - npx electron-builder --linux dir
+        path: ../..
+        exclude:
+          - .git
+          - .flatpak-build
+          - repo
+          - node_modules

@@ -1,3 +1,8 @@
+import {
+    resolveLocalizedReleaseNotes,
+    shouldTranslateChangelogSections,
+} from '../../shared/releaseNotes.js';
+
 export function createModals(app) {
 
 // Lazy getters - elements may not exist when script loads
@@ -81,7 +86,10 @@ export function createModals(app) {
         const toggle = document.getElementById('releaseUpdateChangelogToggle');
         if (!section || !content) {return;}
 
-        const notes = normalizeReleaseNotes(releaseNotes);
+        const preferredLocale = (app.i18n && typeof app.i18n.getCurrentLang === 'function')
+            ? app.i18n.getCurrentLang()
+            : (navigator.language || 'en');
+        const { notes, locale: notesLocale } = resolveLocalizedReleaseNotes(releaseNotes, preferredLocale);
         if (!notes) {
             section.hidden = true;
             section.setAttribute('aria-expanded', 'false');
@@ -95,84 +103,24 @@ export function createModals(app) {
         const rendered = (typeof renderNotes === 'function')
             ? renderNotes(notes)
             : escapeHtmlFallback(notes).replace(/\r?\n/g, '<br>');
-        // GitHub-sourced release notes are authored in English, so when
-        // the user is reading in another language the section headers
-        // (`### Added`, `### Fixed`, …) get rewritten in place here.
-        const html = translateChangelogSections(rendered);
+        const html = shouldTranslateChangelogSections(preferredLocale, notesLocale)
+            ? translateChangelogSections(rendered)
+            : rendered;
         content.innerHTML = html
             ? sanitizeHtml(html)
             : `<p class="release-update-changelog-empty">${escapeHtmlFallback(app.i18n ? app.i18n.t('update_changelog_empty') : 'No details for this release.')}</p>`;
     }
 
-    // Score a locale code against the user's preferred language.
-    // Exact matches win. Prefix matches (e.g. user "pt-BR" → entry
-    // "pt") score lower but still beat a generic fallback. Anything
-    // else scores 0.
-    function scoreLocaleMatch(entryLocale, preferredLocale) {
-        if (!entryLocale || !preferredLocale) {return 0;}
-        const e = String(entryLocale).toLowerCase();
-        const p = String(preferredLocale).toLowerCase();
-        if (e === p) {return 100;}
-        if (e === p.split('-')[0] || p === e.split('-')[0]) {return 50;}
-        if (e.split('-')[0] === p.split('-')[0]) {return 25;}
-        return 0;
-    }
-
-    // Pick the best entry from a LocalizedReleaseNotes[] (or per-locale
-    // object) for the user's currently selected app language. We prefer
-    // the app's `i18n.getCurrentLang()` (which is what the rest of the
-    // UI uses) and only fall back to navigator.language if i18n is
-    // missing. Returns an empty string if no entry matches.
-    function pickLocalizedNote(value, preferredLocale) {
-        if (!value) {return '';}
-        const lang = (preferredLocale || (
-            (app.i18n && typeof app.i18n.getCurrentLang === 'function')
-                ? app.i18n.getCurrentLang()
-                : (navigator.language || 'en')
-        )).toLowerCase();
-
-        let entries = [];
-        if (Array.isArray(value)) {
-            entries = value
-                .map((entry) => {
-                    if (typeof entry === 'string') {return { locale: 'en', notes: entry };}
-                    if (entry && typeof entry === 'object') {
-                        return { locale: entry.locale || 'en', notes: entry.notes ?? entry.note ?? '' };
-                    }
-                    return null;
-                })
-                .filter((entry) => entry && entry.notes);
-        } else if (typeof value === 'object') {
-            entries = Object.entries(value)
-                .map(([locale, entry]) => ({
-                    locale,
-                    notes: typeof entry === 'string' ? entry : (entry?.notes ?? entry?.note ?? '')
-                }))
-                .filter((entry) => entry.notes);
-        } else {
-            return '';
-        }
-
-        if (entries.length === 0) {return '';}
-        if (entries.length === 1) {return entries[0].notes;}
-
-        // Score each entry, sort descending, return the best
-        const scored = entries
-            .map((entry) => ({ entry, score: scoreLocaleMatch(entry.locale, lang) }))
-            .sort((a, b) => b.score - a.score);
-
-        return scored[0].entry.notes;
-    }
-
-    function normalizeReleaseNotes(value) {
-        if (!value) {return '';}
-        if (typeof value === 'string') {return value.trim();}
-        return pickLocalizedNote(value).trim();
-    }
-
     const escapeHtmlFallback = app.helpers.escapeHtml;
     const renderMarkdown = app.markdown ? app.markdown.renderMarkdown : null;
     function __showToast(msg, dur) { app.toast.showToast(msg, dur); }
+
+    function normalizeReleaseNotes(value) {
+        const preferredLocale = (app.i18n && typeof app.i18n.getCurrentLang === 'function')
+            ? app.i18n.getCurrentLang()
+            : (navigator.language || 'en');
+        return resolveLocalizedReleaseNotes(value, preferredLocale).notes;
+    }
 
     function queueOrShowReleaseUpdate(info) {
         if (info.latestVersion === dismissedReleaseVersion) {return;}
@@ -324,13 +272,8 @@ export function createModals(app) {
         }
     }
 
-    // Real GitHub-sourced release notes are authored in English (with
-    // English section headers like "### Added"). When the user is reading
-    // in another language we still want the structural elements of the
-    // release notes — the section headers — to appear in their language
-    // while the commit subjects stay in their original (typically English)
-    // language. This pass walks the rendered HTML and rewrites the
-    // known English section labels in place.
+    // Fallback when no translated release notes exist for the user's
+    // locale: rewrite English section headers in the rendered HTML.
     function translateChangelogSections(html) {
         if (!html || !app.i18n) {return html;}
         let currentLang = 'en';

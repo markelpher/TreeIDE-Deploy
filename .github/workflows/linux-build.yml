@@ -278,7 +278,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
           sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08 org.electronjs.Electron2.BaseApp//23.08
+          sudo flatpak install -y flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 org.electronjs.Electron2.BaseApp//25.08
 
       - name: Run tests
         run: npm test
@@ -292,8 +292,8 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          flatpak-builder --repo=repo --force-clean build-flatpak/flatpak/com.treeide.treeide.yml
-          flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
+          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
+          sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
 
       - name: Upload Flatpak x86_64 artifact
         uses: actions/upload-artifact@v7
@@ -336,7 +336,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
           sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub --runtime org.freedesktop.Platform/aarch64/23.08 org.freedesktop.Sdk/aarch64/23.08 org.electronjs.Electron2.BaseApp/aarch64/23.08
+          sudo flatpak install -y flathub org.freedesktop.Platform/aarch64/25.08 org.freedesktop.Sdk/aarch64/25.08 org.electronjs.Electron2.BaseApp/aarch64/25.08
 
       - name: Run tests
         run: npm test
@@ -350,8 +350,8 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          flatpak-builder --repo=repo --force-clean build-flatpak/flatpak/com.treeide.treeide.yml
-          flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
+          sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
+          sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
 
       - name: Upload Flatpak aarch64 artifact
         uses: actions/upload-artifact@v7
@@ -407,25 +407,14 @@ jobs:
             sleep 10
           done
 
-      - name: Generate categorized changelog (English)
-        run: |
-          node scripts/generate-changelog.mjs \
-            "${{ steps.meta.outputs.prev }}" \
-            "${{ steps.meta.outputs.tag }}" \
-            "$RUNNER_TEMP/changelog.en.md"
-
-      - name: Translate changelog to Portuguese
+      - name: Build multilingual changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The translator uses the GitHub Models API (gpt-4o-mini) via the
-          # GITHUB_TOKEN secret, which is automatically available in every
-          # job. If the API call fails the script falls back to writing the
-          # source markdown unchanged so the release still ships.
-          node scripts/translate-changelog.mjs \
-            --input "$RUNNER_TEMP/changelog.en.md" \
-            --output "$RUNNER_TEMP/changelog.pt.md" \
-            --target pt
+          node scripts/build-release-changelogs.mjs \
+            "${{ steps.meta.outputs.prev }}" \
+            "${{ steps.meta.outputs.tag }}" \
+            "$RUNNER_TEMP/changelogs"
 
       - name: Download Linux build artifacts
         uses: actions/download-artifact@v7
@@ -445,8 +434,8 @@ jobs:
             echo "[localize] Processing $f"
             node scripts/inject-localized-notes.mjs \
               --latest "$f" \
-              --note "en=$RUNNER_TEMP/changelog.en.md" \
-              --note "pt=$RUNNER_TEMP/changelog.pt.md"
+              --note "en=$RUNNER_TEMP/changelogs/en.md" \
+              --note "pt=$RUNNER_TEMP/changelogs/pt.md"
           done
 
       - name: Re-upload localized latest.yml to release
@@ -465,11 +454,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${{ steps.meta.outputs.tag }}"
-          release_name="Tree IDE $tag"
-          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelog.en.md")
+          version="${tag#v}"
+          release_name="Tree IDE v${version}"
+          edit_args=(release edit "$tag" --title "$release_name" --notes-file "$RUNNER_TEMP/changelogs/en.md")
           if [ "${{ steps.meta.outputs.is_prerelease }}" = 'true' ]; then
             edit_args+=(--prerelease)
           else
             edit_args+=(--latest)
           fi
           gh "${edit_args[@]}"
+
+      - name: Upload changelog files to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          gh release upload --clobber "$tag" \
+            "$RUNNER_TEMP/changelogs/changelog.md" \
+            "$RUNNER_TEMP/changelogs/en.md" \
+            "$RUNNER_TEMP/changelogs/pt.md"
