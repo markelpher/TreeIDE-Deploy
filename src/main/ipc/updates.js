@@ -5,6 +5,10 @@
 import { createRequire } from 'node:module';
 import { ipcMain, app } from 'electron';
 import log from 'electron-log';
+import {
+    getUpdateErrorMessage,
+    normalizeReleaseName,
+} from '../../shared/updateErrors.js';
 
 const require = createRequire(import.meta.url);
 const semver = require('semver');
@@ -30,22 +34,6 @@ try {
     autoUpdater.logger.transports.file.level = 'info';
 } catch (err) {
     log.warn('electron-updater not available:', err.message);
-}
-
-function getUpdateErrorMessage(err) {
-    const rawMessage = err?.message || String(err || '');
-    const message = rawMessage.toLowerCase();
-
-    if (message.includes('releases.atom') || message.includes('authentication token') || message.includes('404')) {
-        return 'update_repo_inaccessible';
-    }
-    if (message.includes('latest.yml') || message.includes('latest-mac.yml') || message.includes('latest-linux.yml')) {
-        return 'update_metadata_missing';
-    }
-    if (message.includes('net::') || message.includes('network') || message.includes('enotfound') || message.includes('econnreset')) {
-        return 'update_network_error';
-    }
-    return rawMessage.replace(/\s+/g, ' ').slice(0, 180) || 'update_failed';
 }
 
 function serializeReleaseNotes(value) {
@@ -105,7 +93,7 @@ async function checkReleaseUpdate() {
         updateAvailable,
         currentVersion,
         latestVersion: updateAvailable ? latestVersion : currentVersion,
-        releaseName: info?.releaseName || `Tree IDE v${latestVersion}`,
+        releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
         releaseNotes: serializeReleaseNotes(info?.releaseNotes),
         assetName: info?.files?.[0]?.url || ''
     };
@@ -126,7 +114,7 @@ export function registerUpdaterEvents(getMainWindow) {
             updateAvailable: true,
             currentVersion: app.getVersion(),
             latestVersion: info.version,
-            releaseName: info.releaseName || `Tree IDE v${info.version}`,
+            releaseName: normalizeReleaseName(info.releaseName, info.version),
             releaseNotes: serializeReleaseNotes(info.releaseNotes),
             assetName: info?.files?.[0]?.url || ''
         });
@@ -154,14 +142,13 @@ export function registerUpdaterEvents(getMainWindow) {
         log.info(`Update downloaded: ${info.version}`);
         getMainWindow()?.webContents.send('update-downloaded', {
             version: info.version,
-            releaseName: info.releaseName || `Tree IDE v${info.version}`
+            releaseName: normalizeReleaseName(info.releaseName, info.version)
         });
     });
 
     autoUpdater.on('error', (err) => {
-        const message = getUpdateErrorMessage(err);
+        // Manual checks use IPC and show their own toast; emitting here caused duplicate errors.
         log.warn(`Update error: ${err?.message || String(err)}`);
-        getMainWindow()?.webContents.send('release-update-error', message);
     });
 }
 
@@ -206,4 +193,4 @@ export function registerUpdateIpc(isReadyToCloseRef) {
     });
 }
 
-export { getUpdateErrorMessage, checkReleaseUpdate };
+export { checkReleaseUpdate };

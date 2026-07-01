@@ -2,6 +2,7 @@ import {
     resolveLocalizedReleaseNotes,
     shouldTranslateChangelogSections,
 } from '../../shared/releaseNotes.js';
+import { translateUpdateError } from '../../shared/updateErrors.js';
 
 export function createModals(app) {
 
@@ -135,7 +136,7 @@ export function createModals(app) {
     function handleUpdateCheckResult(result) {
         if (result?.error || result?.ok === false) {
             console.warn('Release update check failed:', result?.error);
-            __showToast(app.i18n.t(result?.error || 'update_failed'), 4000);
+            __showToast(translateUpdateError(app.i18n, result?.error), 4000);
             return;
         }
         if (result?.updateAvailable) {
@@ -165,7 +166,7 @@ export function createModals(app) {
             app.electronAPI.onReleaseUpdateError((message) => {
                 isDownloadingUpdate = false;
                 resetReleaseUpdateButton();
-                __showToast(app.i18n.t(message || 'update_failed'), 4000);
+                __showToast(translateUpdateError(app.i18n, message), 4000);
             });
         }
         if (app.electronAPI.onUpdateDownloadProgress) {
@@ -556,7 +557,7 @@ export function createModals(app) {
                 if (result && !result.ok) {
                     isDownloadingUpdate = false;
                     resetReleaseUpdateButton();
-                app.toast.showToast(app.i18n.t(result.error || 'update_failed'), 4000);
+                app.toast.showToast(translateUpdateError(app.i18n, result.error), 4000);
                 }
             } catch (err) {
                 isDownloadingUpdate = false;

@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.58",
+  "version": "2.0.59",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -173,6 +173,7 @@
     ]
   },
   "dependencies": {
+    "semver": "^7.7.3",
     "7zip-min": "^3.0.1",
     "adm-zip": "^0.5.17",
     "electron-log": "^5.4.3",

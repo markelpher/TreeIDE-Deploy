@@ -753,6 +753,7 @@ function bindUpdateSettings() {
                     app.modals.handleUpdateCheckResult(result);
                 } catch (e) {
                     console.warn('Release update check failed:', e);
+                    app.toast?.showToast(app.i18n.t('update_failed'), 4000);
                 }
                 checkUpdateBtn.disabled = false;
                 checkUpdateBtn.textContent = app.i18n.t('check_updates') || 'Check for updates';

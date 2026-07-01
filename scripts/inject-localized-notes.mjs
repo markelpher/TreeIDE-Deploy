@@ -31,9 +31,13 @@
  * protects releases that were tagged before this pipeline existed.
  */
 
+import { createRequire } from 'node:module';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import { argv, exit } from 'node:process';
 import { resolve, basename } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const yaml = require('js-yaml');
 
 function parseArgs(args) {
     const out = { latest: [], notes: new Map(), notesJson: null };
@@ -185,6 +189,46 @@ function serializeLocalized(localized) {
     return out.join('\n');
 }
 
+function fixReleaseName(yamlText) {
+    const versionMatch = yamlText.match(/^version:\s*['"]?([^\s'"]+)['"]?\s*$/m);
+    const version = versionMatch?.[1]?.replace(/^v/, '');
+    if (!version) { return yamlText; }
+
+    const releaseNamePattern = /^releaseName:\s*(.*)$/m;
+    if (!releaseNamePattern.test(yamlText)) { return yamlText; }
+
+    return yamlText.replace(releaseNamePattern, (_line, value) => {
+        const trimmed = String(value || '').trim();
+        if (!trimmed || trimmed.includes('${version}')) {
+            return `releaseName: Tree IDE v${version}`;
+        }
+        return `releaseName: ${trimmed}`;
+    });
+}
+
+function validateLatestYaml(yamlText, label) {
+    let parsed;
+    try {
+        parsed = yaml.load(yamlText);
+    } catch (err) {
+        console.error(`[inject] ${label}: invalid YAML after injection: ${err.message}`);
+        exit(1);
+    }
+    if (!parsed || typeof parsed !== 'object') {
+        console.error(`[inject] ${label}: YAML root must be an object`);
+        exit(1);
+    }
+    if (!parsed.version) {
+        console.error(`[inject] ${label}: missing version field`);
+        exit(1);
+    }
+    const files = parsed.files;
+    if (!Array.isArray(files) || files.length === 0) {
+        console.error(`[inject] ${label}: files array is empty`);
+        exit(1);
+    }
+}
+
 async function expandLatestGlobs(paths) {
     const out = [];
     for (const p of paths) {
@@ -223,7 +267,9 @@ async function main() {
 
     for (const target of targets) {
         const original = await readFile(target, 'utf8');
-        const updated = injectLocalizedNotes(original, localized);
+        let updated = injectLocalizedNotes(original, localized);
+        updated = fixReleaseName(updated);
+        validateLatestYaml(updated, basename(target));
         if (updated === original) {
             console.log(`[inject] ${basename(target)}: no change`);
             continue;
