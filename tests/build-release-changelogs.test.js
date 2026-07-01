@@ -5,7 +5,7 @@ import {
     formatReleaseTitle,
     readManualChangelog,
     writeEnglishNotes,
-} from '../scripts/build-release-changelogs.mjs';
+} from '../scripts/release-changelog-lib.mjs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -20,7 +20,7 @@ describe('combineChangelogs', () => {
     it('merges locale sections into one markdown document', () => {
         const locales = [
             { code: 'en', label: 'English' },
-            { code: 'pt', label: 'Português (Brasil)' },
+            { code: 'pt', label: 'Portuguese (Brazil)' },
         ];
         const notes = new Map([
             ['en', '## What\'s new in v2.0.54\n\n### Added\n\n- feat: item (abc1234)'],
@@ -31,7 +31,7 @@ describe('combineChangelogs', () => {
 
         expect(combined).toContain('# Tree IDE v2.0.54');
         expect(combined).toContain('## English');
-        expect(combined).toContain('## Português (Brasil)');
+        expect(combined).toContain('## Portuguese (Brazil)');
         expect(combined).toContain('---');
         expect(combined).toContain('### Added');
         expect(combined).toContain('### Adicionado');

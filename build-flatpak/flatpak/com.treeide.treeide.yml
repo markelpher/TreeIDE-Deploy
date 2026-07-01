@@ -21,7 +21,7 @@ modules:
   - name: tree-ide
     buildsystem: simple
     build-commands:
-      - cp -r dist/linux-unpacked /app/tree-ide
+      - cp -r build-flatpak/staging/linux-unpacked /app/tree-ide
       - install -Dm755 build-flatpak/flatpak/tree-ide.sh /app/bin/tree-ide
       - install -Dm644 build-flatpak/flatpak/com.treeide.treeide.desktop /app/share/applications/com.treeide.treeide.desktop
       - for size in 16 32 48 64 128 256 512; do mkdir -p /app/share/icons/hicolor/${size}x${size}/apps; install -Dm644 assets/icon-no-bg.png /app/share/icons/hicolor/${size}x${size}/apps/com.treeide.treeide.png; done
@@ -29,8 +29,3 @@ modules:
     sources:
       - type: dir
         path: ../..
-        exclude:
-          - .git
-          - .flatpak-build
-          - repo
-          - node_modules

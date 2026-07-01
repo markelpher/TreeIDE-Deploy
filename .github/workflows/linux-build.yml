@@ -285,13 +285,18 @@ jobs:
 
       - name: Build Electron app for Flatpak
         run: |
+          npm run build:renderer
           npx electron-builder --linux dir --x64
+          rm -rf build-flatpak/staging/linux-unpacked
+          cp -a dist/linux-unpacked build-flatpak/staging/linux-unpacked
+          test -f build-flatpak/staging/linux-unpacked/tree-ide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          test -d build-flatpak/staging/linux-unpacked
           sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
 
@@ -343,13 +348,18 @@ jobs:
 
       - name: Build Electron app for Flatpak
         run: |
+          npm run build:renderer
           npx electron-builder --linux dir --arm64
+          rm -rf build-flatpak/staging/linux-unpacked
+          cp -a dist/linux-unpacked build-flatpak/staging/linux-unpacked
+          test -f build-flatpak/staging/linux-unpacked/tree-ide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          test -d build-flatpak/staging/linux-unpacked
           sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
 
