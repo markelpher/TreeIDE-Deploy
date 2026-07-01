@@ -9,7 +9,7 @@ import zlib from 'node:zlib';
 import { ipcMain, dialog, app } from 'electron';
 import log from 'electron-log';
 import { createExtractorFromData } from 'node-unrar-js';
-import zip7 from '7zip-min';
+import zip7 from '../project/zip7Client.js';
 import { mainT } from '../../shared/i18n.js';
 import { parseTreeContent } from '../project/treeParser.js';
 import { createStructure, inspectBuildOutput } from '../project/treeCreator.js';

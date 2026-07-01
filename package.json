@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.49",
+  "version": "2.0.50",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -175,6 +175,7 @@
     "node-unrar-js": "^2.0.2"
   },
   "allowScripts": {
-    "electron-winstaller@5.4.0": true
+    "electron-winstaller@5.4.0": true,
+    "electron": true
   }
 }

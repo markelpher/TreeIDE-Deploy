@@ -2,6 +2,18 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { collectZipEntries, buildZipBuffer, buildZipEntries, exportTreeZip, zipPasswordArg } from '../src/main/project/zipCreator.js';
+import { resolve7zaPath } from '../src/main/project/zip7Config.js';
+
+describe('resolve7zaPath', () => {
+    it('resolves an existing 7za binary on this platform', () => {
+        const binaryPath = resolve7zaPath();
+        if (process.env.USE_SYSTEM_7ZA === 'true') {
+            expect(binaryPath).toBe('7za');
+            return;
+        }
+        expect(fs.existsSync(binaryPath)).toBe(true);
+    });
+});
 
 describe('collectZipEntries', () => {
     it('collects files and folders', () => {

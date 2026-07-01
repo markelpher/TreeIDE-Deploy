@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { app } from 'electron';
-import zip7 from '7zip-min';
+import zip7 from './zip7Client.js';
 
 const require = createRequire(import.meta.url);
 

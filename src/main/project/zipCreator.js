@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import zip7 from '7zip-min';
+import zip7 from './zip7Client.js';
 import { getContentForPath, resolveTreePath, walkTree } from './treeCreator.js';
 
 /** @type {Uint32Array} */
