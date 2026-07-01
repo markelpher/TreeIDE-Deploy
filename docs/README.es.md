@@ -4,9 +4,9 @@
 
 Aplicación de escritorio ligera para diseñar estructuras de proyecto en texto simple, visualizarlas como un árbol interactivo y generar carpetas, archivos iniciales y archivos comprimidos mediante **Build Studio**.
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview-ES.png)
 
-Tree IDE v2 es una reescritura completa de la [aplicación original v1](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto, previsualizarlas en vivo y generar proyectos — con arquitectura modular Vite + Electron, herramientas más ricas y releases multiplataforma.
+Tree IDE v2 es una reescritura completa de la [aplicación original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto, previsualizarlas en vivo y generar proyectos — con arquitectura modular Vite + Electron, herramientas más ricas y releases multiplataforma.
 
 ## Funcionalidades
 

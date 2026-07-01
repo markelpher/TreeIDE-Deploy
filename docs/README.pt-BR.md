@@ -4,9 +4,9 @@
 
 Aplicativo desktop leve para projetar estruturas de projeto em texto simples, visualizá-las como uma árvore interativa e gerar pastas, arquivos iniciais e arquivos compactados pelo **Build Studio**.
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview-pt-BR.png)
 
-O Tree IDE v2 é uma reescrita completa do [app original v1](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). A mesma ideia central — desenhar estruturas de pastas em texto, visualizar ao vivo e gerar projetos — com arquitetura modular Vite + Electron, ferramentas mais ricas e releases multiplataforma.
+O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). A mesma ideia central — desenhar estruturas de pastas em texto, visualizar ao vivo e gerar projetos — com arquitetura modular Vite + Electron, ferramentas mais ricas e releases multiplataforma.
 
 ## Funcionalidades
 

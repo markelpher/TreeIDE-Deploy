@@ -102,6 +102,7 @@ Your output MUST be valid Markdown that preserves the source structure exactly:
 7. Markdown link syntax [text](url) is kept. Translate the link TEXT only.
 8. The H2 title "## What's new in v…" line should be translated EXCEPT for the version string itself.
 9. Do NOT add a "**Full Changelog**" footer — that link is GitHub-only and is not part of the source.
+10. Do NOT add locale navigation lines (e.g. links to changelogs/pt.md) — those are repo-only and are not part of the source.
 
 Output ONLY the translated markdown. No preamble, no explanation, no code-fence wrapper.`;
 

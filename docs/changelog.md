@@ -1,4 +1,6 @@
-## What's new in v2.0.76
+[Português](changelogs/pt.md) · [Español](changelogs/es.md)
+
+## What's new in v2.0.77
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -78,7 +80,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Localized release notes** in the update modal (English, Portuguese, and Spanish)
 - **Readable update changelog** — wider dialog, **What’s new** expanded by default, dedicated scroll area, clearer heading hierarchy, and action buttons pinned in the footer
 - **Manual `docs/changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
-- **Split release notes** — app update modal shows changelog text only; the GitHub compare link (`Full Changelog`) appears on the GitHub release page, not inside the app
+- **Split release notes** — app update modal shows changelog text only; locale navigation links appear in `docs/changelog.md` and on the GitHub release description (pointing to attached `pt.md` / `es.md` assets); the compare link (`Full Changelog`) is GitHub-only
 - **GitHub Models translation** — Portuguese and Spanish release notes are generated in CI via the `models.github.ai` API
 
 #### Keyboard shortcuts
@@ -119,6 +121,9 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Release notes routing** — `en.md`, `pt.md`, and `es.md` feed the in-app updater; `github-release.md` feeds the GitHub release body with the compare link
 - **Templates screen** — structure editor and tree preview use a 50/50 split in custom edit mode; preview label shortened to **Preview**; **Use template** action centered in the modal footer
 - **Custom template toasts** — open-in-editor hint now points to **From current project** instead of the removed per-template update action
+- **File preview tab bar** — file tabs scroll in a dedicated region beside the file-type badge and close button; removed the vertical divider; stable bar height with arrow scrolling only (no hover scrollbar expansion)
+- **File preview editor typography** — shared monospace sizing with the Templates and Build Studio file viewers
+- **README previews** — main screenshot lives under `assets/previews/`; Portuguese and Spanish READMEs use localized preview images
 
 ### Fixed
 
@@ -140,6 +145,11 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Encrypted export validation** — password and confirmation must match before creating protected ZIP or `.tree` files
 - **Update detection** — only versions strictly newer than the installed build are offered
 - **Release notes rendering** — HTML in update changelogs is sanitized before display
+- **File preview tab bar** — tabs no longer overlap the file-type label or disrupt the editor layout when many files are open
+- **File preview editor** — scrollbar and keyboard editing (Tab / Backspace) match the main structure editor; font weight and size now match the Templates file viewer
+- **Save / export naming** — `.tree` saves and exports use the resolved project name instead of a generic Untitled fallback
+- **Custom templates persistence** — custom templates autosave while the Templates modal is open and restore from IndexedDB after restart
+- **Windows NSIS installer build** — removed duplicate uninstall LangStrings that failed CI (`warning 6030`); clean-install and uninstall welcome text follow the selected installer language; Spanish strings cover both LCIDs `3082` and `1034` (NSIS `SpanishInternational.nlf`); uninstall welcome uses `MUI_WELCOMEPAGE_*` defines expected by MUI2
 
 ### Removed
 

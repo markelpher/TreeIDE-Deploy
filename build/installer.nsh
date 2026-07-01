@@ -1,27 +1,37 @@
 !include LogicLib.nsh
 !include nsDialogs.nsh
 
+; Language picker (1033=en_US, 1046=pt_BR, 3082/1034=es_ES — NSIS Spanish.nlf uses 1034)
+!macro SPANISH_LANGSTRING NAME VALUE
+  LangString ${NAME} 3082 "${VALUE}"
+  LangString ${NAME} 1034 "${VALUE}"
+!macroend
+
 LangString languagePageTitle 1033 "Installer Language"
 LangString languagePageTitle 1046 "Idioma do instalador"
-LangString languagePageTitle 1034 "Idioma del instalador"
+!insertmacro SPANISH_LANGSTRING languagePageTitle "Idioma del instalador"
 LangString languagePageIntro 1033 "Please select a language."
 LangString languagePageIntro 1046 "Selecione um idioma."
-LangString languagePageIntro 1034 "Seleccione un idioma."
-LangString languagePageNext 1033 "Next"
-LangString languagePageNext 1046 "Avançar"
-LangString languagePageNext 1034 "Siguiente"
-LangString languagePageCancel 1033 "Cancel"
-LangString languagePageCancel 1046 "Cancelar"
-LangString languagePageCancel 1034 "Cancelar"
+!insertmacro SPANISH_LANGSTRING languagePageIntro "Seleccione un idioma."
+
+; Clean installation page
 LangString cleanInstallIntro 1033 "Choose whether Tree IDE should keep your current settings or start fresh."
 LangString cleanInstallIntro 1046 "Escolha se o Tree IDE deve manter suas configurações atuais ou começar do zero."
-LangString cleanInstallIntro 1034 "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
+!insertmacro SPANISH_LANGSTRING cleanInstallIntro "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
 LangString cleanInstallOption 1033 "Clean installation: remove Tree IDE settings, cache, logs, and update data for this Windows user."
 LangString cleanInstallOption 1046 "Instalação limpa: remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-LangString cleanInstallOption 1034 "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
+!insertmacro SPANISH_LANGSTRING cleanInstallOption "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
 LangString cleanInstallDetails 1033 "Running clean installation. Removing Tree IDE user data."
 LangString cleanInstallDetails 1046 "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
-LangString cleanInstallDetails 1034 "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
+!insertmacro SPANISH_LANGSTRING cleanInstallDetails "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
+
+; Uninstaller welcome (MUI_WELCOMEPAGE_* — not MUI_UNWELCOMEPAGE_*)
+LangString uninstWelcomeTitle 1033 "Tree IDE Uninstall"
+LangString uninstWelcomeTitle 1046 "Desinstalação do Tree IDE"
+!insertmacro SPANISH_LANGSTRING uninstWelcomeTitle "Desinstalación de Tree IDE"
+LangString uninstWelcomeText 1033 "This wizard will guide you through uninstalling Tree IDE.$\r$\n$\r$\nClose Tree IDE if it is running before continuing."
+LangString uninstWelcomeText 1046 "Este assistente irá guiá-lo pela desinstalação do Tree IDE.$\r$\n$\r$\nFeche o Tree IDE se estiver em execução antes de continuar."
+!insertmacro SPANISH_LANGSTRING uninstWelcomeText "Este asistente le guiará en la desinstalación de Tree IDE.$\r$\n$\r$\nCierre Tree IDE si está en ejecución antes de continuar."
 
 !ifndef BUILD_UNINSTALLER
 Var CleanInstallCheckbox
@@ -36,19 +46,6 @@ Var CleanInstallRequested
   Page custom CleanInstallPageCreate CleanInstallPageLeave
 !macroend
 
-Function UpdateCleanInstallPageText
-  ${If} $LANGUAGE == 1046
-    ${NSD_SetText} $0 "Escolha se o Tree IDE deve manter suas configurações atuais ou começar do zero."
-    ${NSD_SetText} $CleanInstallCheckbox "Instalação limpa: remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-  ${ElseIf} $LANGUAGE == 1034
-    ${NSD_SetText} $0 "Elige si Tree IDE debe conservar tu configuración actual o empezar de cero."
-    ${NSD_SetText} $CleanInstallCheckbox "Instalación limpia: eliminar configuración, caché, registros y datos de actualización de Tree IDE para este usuario de Windows."
-  ${Else}
-    ${NSD_SetText} $0 "Choose whether Tree IDE should keep your current settings or start fresh."
-    ${NSD_SetText} $CleanInstallCheckbox "Clean installation: remove Tree IDE settings, cache, logs, and update data for this Windows user."
-  ${EndIf}
-FunctionEnd
-
 Function CleanInstallPageCreate
   nsDialogs::Create 1018
   Pop $0
@@ -57,12 +54,11 @@ Function CleanInstallPageCreate
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 0 100% 28u ""
+  ${NSD_CreateLabel} 0 0 100% 28u "$(cleanInstallIntro)"
   Pop $0
 
-  ${NSD_CreateCheckbox} 0 38u 100% 24u ""
+  ${NSD_CreateCheckbox} 0 38u 100% 24u "$(cleanInstallOption)"
   Pop $CleanInstallCheckbox
-  Call UpdateCleanInstallPageText
 
   ${If} $CleanInstallRequested == "1"
     ${NSD_Check} $CleanInstallCheckbox
@@ -83,13 +79,7 @@ Function CleanInstallPageLeave
 FunctionEnd
 
 Function RemoveTreeIdeUserData
-  ${If} $LANGUAGE == 1046
-    DetailPrint "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
-  ${ElseIf} $LANGUAGE == 1034
-    DetailPrint "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
-  ${Else}
-    DetailPrint "Running clean installation. Removing Tree IDE user data."
-  ${EndIf}
+  DetailPrint "$(cleanInstallDetails)"
 
   ReadEnvStr $0 "APPDATA"
   ReadEnvStr $1 "LOCALAPPDATA"
@@ -100,4 +90,12 @@ Function RemoveTreeIdeUserData
   RMDir /r "$1\tree-ide"
   RMDir /r "$1\tree-ide-updater"
 FunctionEnd
+!else
+!macro customUnWelcomePage
+  !define MUI_WELCOMEPAGE_TITLE "$(uninstWelcomeTitle)"
+  !define MUI_WELCOMEPAGE_TEXT "$(uninstWelcomeText)"
+  !insertmacro MUI_UNPAGE_WELCOME
+  !undef MUI_WELCOMEPAGE_TITLE
+  !undef MUI_WELCOMEPAGE_TEXT
+!macroend
 !endif

@@ -54,6 +54,29 @@ export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || '
     return `https://github.com/${repo}/compare/${current}`;
 }
 
+/** Non-English release assets attached to each GitHub release. */
+export const GITHUB_RELEASE_LOCALE_NAV = [
+    { label: 'Português', asset: 'pt.md' },
+    { label: 'Español', asset: 'es.md' },
+];
+
+/**
+ * @param {string} tag
+ * @param {string} [repo]
+ * @param {Array<{ label: string, asset: string }>} [locales]
+ * @returns {string}
+ */
+export function buildLocaleChangelogNav(
+    tag,
+    repo = env.GITHUB_REPOSITORY || 'markelpher/TreeIDE-Deploy',
+    locales = GITHUB_RELEASE_LOCALE_NAV,
+) {
+    const parts = locales.map(({ label, asset }) => (
+        `[${label}](https://github.com/${repo}/releases/download/${tag}/${asset})`
+    ));
+    return `${parts.join(' · ')}\n\n`;
+}
+
 /**
  * @param {string} content
  * @param {string} compareUrl
@@ -66,11 +89,25 @@ export function ensureFullChangelogLink(content, compareUrl) {
     return `${content.trimEnd()}\n\n**Full Changelog**: ${compareUrl}\n`;
 }
 
-/** Removes the GitHub compare footer — used for in-app update notes only. */
+/**
+ * @param {string} content - App notes (no locale nav, no compare link).
+ * @param {{ compareUrl: string, tag: string, repo?: string }} options
+ * @returns {string}
+ */
+export function ensureGithubReleaseNotes(content, { compareUrl, tag, repo }) {
+    const withNav = `${buildLocaleChangelogNav(tag, repo)}${String(content).trimStart()}`;
+    return ensureFullChangelogLink(withNav, compareUrl);
+}
+
+/** Locale changelog nav line at the top of docs/changelog.md (repo-only, not for the app). */
+export const LOCALE_CHANGELOG_NAV_RE = /^\[[^\]]+\]\(changelogs\/[^)]+\)(?:\s*[·•|]\s*\[[^\]]+\]\(changelogs\/[^)]+\))*\s*\n+/m;
+
+/** Removes repo-only navigation and the GitHub compare footer — used for in-app update notes only. */
 export function stripFullChangelogLink(content) {
     if (!content) { return content; }
     const stripped = String(content)
         .replace(/\r\n/g, '\n')
+        .replace(LOCALE_CHANGELOG_NAV_RE, '')
         .replace(/\n*\*\*Full Changelog\*\*:\s*\S+\s*/gi, '\n')
         .replace(/\n{3,}/g, '\n\n')
         .trimEnd();
@@ -80,13 +117,18 @@ export function stripFullChangelogLink(content) {
 /**
  * @param {string} outPath - Locale file for the app (no compare link).
  * @param {string} compareUrl
+ * @param {string} tag - Release tag (e.g. v2.0.77).
  * @returns {string} Path to GitHub release body markdown.
  */
-export async function writeGithubReleaseNotes(outPath, compareUrl) {
+export async function writeGithubReleaseNotes(outPath, compareUrl, tag) {
     const outDir = path.dirname(outPath);
     const githubReleasePath = path.join(outDir, 'github-release.md');
     const appNotes = await readFile(outPath, 'utf8');
-    await writeFile(githubReleasePath, ensureFullChangelogLink(appNotes, compareUrl), 'utf8');
+    await writeFile(
+        githubReleasePath,
+        ensureGithubReleaseNotes(appNotes, { compareUrl, tag }),
+        'utf8',
+    );
     return githubReleasePath;
 }
 
@@ -131,7 +173,7 @@ export async function writeEnglishNotes({ prev, current, outPath, manualPath = M
     if (manual) {
         const appNotes = stripFullChangelogLink(manual);
         await writeFile(outPath, appNotes, 'utf8');
-        await writeGithubReleaseNotes(outPath, compareUrl);
+        await writeGithubReleaseNotes(outPath, compareUrl, current);
         console.log(`[changelogs] Using manual changelog from ${manualPath}`);
         return 'manual';
     }
@@ -140,7 +182,7 @@ export async function writeEnglishNotes({ prev, current, outPath, manualPath = M
     await runNode('scripts/generate-changelog.mjs', [prev || '-', current, generatedPath]);
     const appNotes = stripFullChangelogLink(await readFile(generatedPath, 'utf8'));
     await writeFile(outPath, appNotes, 'utf8');
-    await writeGithubReleaseNotes(outPath, compareUrl);
+    await writeGithubReleaseNotes(outPath, compareUrl, current);
     console.log('[changelogs] docs/changelog.md empty or missing; generated English notes from git history');
     return 'git';
 }

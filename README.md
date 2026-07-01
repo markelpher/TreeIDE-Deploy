@@ -6,7 +6,7 @@ A lightweight desktop app for designing project structures in plain text, previe
 
 ![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview.png)
 
-Tree IDE v2 is a full rewrite of the [original v1 app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and multi-platform releases.
+Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and multi-platform releases.
 
 ## Features
 
