@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.79",
+  "version": "2.0.80",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -81,18 +81,22 @@
         "es_ES"
       ],
       "multiLanguageInstaller": true,
-      "displayLanguageSelector": true,
+      "displayLanguageSelector": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Tree IDE",
-      "deleteAppDataOnUninstall": true,
+      "deleteAppDataOnUninstall": false,
       "runAfterFinish": true
     },
     "portable": {
       "artifactName": "Tree-IDE-Portable-${version}-win-${arch}.${ext}"
     },
     "msi": {
-      "artifactName": "Tree-IDE-${version}-win-${arch}.${ext}"
+      "artifactName": "Tree-IDE-${version}-win-${arch}.${ext}",
+      "perMachine": true,
+      "additionalLightArgs": [
+        "-cultures:pt-br"
+      ]
     },
     "linux": {
       "target": [

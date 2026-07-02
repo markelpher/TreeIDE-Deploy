@@ -668,9 +668,9 @@ body.templates-active .drop-overlay {
 }
 
 .templates-modal-actions {
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
-    padding: 10px 24px 14px;
+    padding: 12px 24px;
     flex-shrink: 0;
 }
 

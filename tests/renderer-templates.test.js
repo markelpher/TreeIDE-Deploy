@@ -187,6 +187,41 @@ describe('template sources', () => {
         expect(templates.isCustomTemplate('custom-demo')).toBe(true);
         expect(templates.isCustomTemplate('vite')).toBe(false);
     });
+    it('opens with the first built-in template in alphabetical order selected', async () => {
+        templatesData.alpha = {
+            label: 'Alpha Starter',
+            tree: 'alpha/\n    index.js',
+            files: { 'alpha/index.js': 'export {}' }
+        };
+        localStorage.setItem('custom_templates', JSON.stringify({
+            'custom-demo': { label: 'Demo', tree: 'demo/', files: {} }
+        }));
+        document.body.innerHTML = `
+            <div id="templatesModal">
+                <div id="templatesList"></div>
+                <div id="templatesEmptyState" class="hidden"></div>
+                <div id="templateStructureBody"></div>
+                <textarea id="templateTreeEditor"></textarea>
+                <div id="templateTreePreview"></div>
+                <div id="templateFilePanel" class="template-file-panel">
+                    <span id="templateFileName"></span>
+                    <span id="templateFileMode"></span>
+                    <textarea id="templateFileEditor"></textarea>
+                </div>
+            </div>
+        `;
+
+        templates.setTemplateSource('custom');
+        templates.selectedTemplateName = 'custom-demo';
+        await templates.openTemplatesModal();
+
+        expect(templates.selectedTemplateSource).toBe('builtin');
+        expect(templates.selectedTemplateName).toBe('alpha');
+        expect(document.querySelector('.template-option.active')?.dataset.template).toBe('alpha');
+
+        templates.closeTemplatesModal();
+        delete templatesData.alpha;
+    });
 
     it('removes a custom template after confirmation', async () => {
         localStorage.setItem('custom_templates', JSON.stringify({
@@ -242,9 +277,8 @@ describe('template sources', () => {
         localStorage.setItem('custom_templates', JSON.stringify({
             'custom-demo': { label: 'Demo', tree: 'demo/\n    index.js', files: { 'demo/index.js': 'x' } }
         }));
-        templates.setTemplateSource('custom');
-        templates.selectedTemplateName = 'custom-demo';
         await templates.openTemplatesModal();
+        templates.setTemplateSource('custom');
         templates.bindTemplateModal();
 
         const treeEditor = document.getElementById('templateTreeEditor');
@@ -284,9 +318,8 @@ describe('template sources', () => {
         localStorage.setItem('custom_templates', JSON.stringify({
             'custom-demo': { label: 'Demo', tree: 'demo/\n    index.js', files: { 'demo/index.js': 'x' } }
         }));
-        templates.setTemplateSource('custom');
-        templates.selectedTemplateName = 'custom-demo';
         await templates.openTemplatesModal();
+        templates.setTemplateSource('custom');
         templates.bindTemplateModal();
 
         const treeEditor = document.getElementById('templateTreeEditor');
@@ -386,9 +419,8 @@ describe('template sources', () => {
                 files: { 'demo/index.js': 'original' }
             }
         }));
-        templates.setTemplateSource('custom');
-        templates.selectedTemplateName = 'custom-demo';
         await templates.openTemplatesModal();
+        templates.setTemplateSource('custom');
         templates.bindTemplateModal();
 
         const treeEditor = document.getElementById('templateTreeEditor');

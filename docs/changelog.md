@@ -1,6 +1,6 @@
 [Português](changelogs/pt.md) · [Español](changelogs/es.md)
 
-## What's new in v2.0.79
+## What's new in v2.0.80
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -149,7 +149,9 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **File preview editor** — scrollbar and keyboard editing (Tab / Backspace) match the main structure editor; font weight and size now match the Templates file viewer
 - **Save / export naming** — `.tree` saves and exports use the resolved project name instead of a generic Untitled fallback
 - **Custom templates persistence** — custom templates autosave while the Templates modal is open and restore from IndexedDB after restart
-- **Windows NSIS installer build** — removed duplicate uninstall LangStrings that failed CI (`warning 6030`); clean-install and uninstall welcome text follow the selected installer language; Spanish International keeps LCIDs `1034`/`3082` and shows as **Español** in the language picker (pre-defined `LANGFILE_SpanishInternational_*` before `addLangs`); uninstall welcome uses `MUI_WELCOMEPAGE_*` without redundant `!undef` (`warning 6155`)
+- **Windows NSIS installer build** — Spanish strings use LCID **3082** (`SpanishInternational`, matching electron-builder `es_ES`); removed redundant `Spanish-1034.nsh` and Portuguese `MUI_UNTEXT_*` overrides so `makensis -WX` no longer fails on duplicate or missing LangStrings
+- **Windows NSIS installer language** — in-wizard language picker (English, Portuguese, Spanish) without relaunch or temp helper files; **Next** advances immediately and directory, progress, finish, and custom pages apply translated titles, descriptions, and buttons at show time via `SendMessage`
+- **Windows NSIS uninstaller language** — same in-wizard language picker; progress and finish pages follow the selected language without relaunch
 
 ### Removed
 

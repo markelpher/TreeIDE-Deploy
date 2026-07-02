@@ -857,7 +857,9 @@ export function createTemplatesUi(app) {
         const modal = document.getElementById('templatesModal');
         bindTemplateModal();
 
-        selectedTemplateSource = isCustomTemplate(selectedTemplateName) ? 'custom' : 'builtin';
+        selectedTemplateSource = 'builtin';
+        selectedTemplateName = getSortedTemplateKeys(getBuiltInTemplates())[0] || '';
+        selectedTemplateFile = '';
 
         setTemplatesScreenActive(true);
         modal.style.display = 'flex';

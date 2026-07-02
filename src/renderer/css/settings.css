@@ -26,6 +26,19 @@
     z-index: 0;
 }
 
+#tab-general .settings-row {
+    margin-bottom: 20px;
+}
+
+#tab-general .folder-path-list {
+    margin-top: -2px;
+    margin-bottom: 22px;
+}
+
+#tab-general .settings-hint {
+    margin-top: -6px;
+}
+
 .settings-row:has(.custom-select.open) {
     z-index: 20;
 }
