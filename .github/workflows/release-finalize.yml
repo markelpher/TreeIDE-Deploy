@@ -102,7 +102,8 @@ jobs:
           node scripts/build-release-changelogs.mjs \
             "${{ steps.meta.outputs.prev }}" \
             "${{ steps.meta.outputs.tag }}" \
-            "$RUNNER_TEMP/changelogs"
+            "$RUNNER_TEMP/changelogs" \
+            --sync-docs
 
       - name: Download all platform build artifacts
         if: steps.published.outputs.already != 'true'
@@ -206,12 +207,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           tag="${{ steps.meta.outputs.tag }}"
-          gh release upload --clobber "$tag" \
-            "$RUNNER_TEMP/changelogs/changelog.md" \
-            "$RUNNER_TEMP/changelogs/en.md" \
-            "$RUNNER_TEMP/changelogs/pt.md" \
-            "$RUNNER_TEMP/changelogs/es.md"
+          mkdir -p "$RUNNER_TEMP/release-changelogs"
+          cp "$RUNNER_TEMP/changelogs/en.md" "$RUNNER_TEMP/release-changelogs/changelog-en.md"
+          cp "$RUNNER_TEMP/changelogs/pt.md" "$RUNNER_TEMP/release-changelogs/changelog-pt.md"
+          cp "$RUNNER_TEMP/changelogs/es.md" "$RUNNER_TEMP/release-changelogs/changelog-es.md"
+          cp "$RUNNER_TEMP/changelogs/changelog.md" "$RUNNER_TEMP/release-changelogs/changelog-all.md"
+          gh release upload --clobber "$tag" "$RUNNER_TEMP"/release-changelogs/*.md
 
       - name: Publish GitHub release
         if: steps.published.outputs.already != 'true'

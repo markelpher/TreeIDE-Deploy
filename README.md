@@ -137,6 +137,8 @@ Validate locale files:
 npm run i18n:validate
 ```
 
+Build:
+
 ### Windows (x64 + arm64)
 
 ```bash

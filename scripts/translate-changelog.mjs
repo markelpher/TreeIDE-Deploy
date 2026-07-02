@@ -23,9 +23,9 @@
  *       --output path/to/changelog.pt.md \
  *       --target pt
  *
- * If the API call fails the script falls back to copying the
- * input to the output unchanged and prints a warning, so the
- * release pipeline never blocks on a flaky translation service.
+ * If the API call fails, the script exits with an error by default
+ * so releases never ship untranslated localized changelogs. Pass
+ * --allow-source-fallback only for local/manual recovery runs.
  */
 
 import { readFile, writeFile, access } from 'node:fs/promises';
@@ -48,7 +48,7 @@ const LANG_NAMES = {
 };
 
 function parseArgs(args) {
-    const out = { model: DEFAULT_MODEL, maxRetries: 3, timeoutMs: 120000 };
+    const out = { model: DEFAULT_MODEL, maxRetries: 3, timeoutMs: 120000, allowSourceFallback: false };
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
         if (a === '--input' || a === '-i') {out.input = args[++i];}
@@ -58,6 +58,7 @@ function parseArgs(args) {
         else if (a === '--model') {out.model = args[++i];}
         else if (a === '--max-retries') {out.maxRetries = parseInt(args[++i], 10);}
         else if (a === '--timeout-ms') {out.timeoutMs = parseInt(args[++i], 10);}
+        else if (a === '--allow-source-fallback') {out.allowSourceFallback = true;}
         else if (a === '--help' || a === '-h') {
             printHelp();
             exit(0);
@@ -85,7 +86,9 @@ Options:
       --source <lang>     Source language code (default: en).
       --model <name>      Model to use (default: ${DEFAULT_MODEL}).
       --max-retries <n>   Number of API retries on transient failures (default: 3).
-      --timeout-ms <n>    Per-request timeout in ms (default: 60000).
+      --timeout-ms <n>    Per-request timeout in ms (default: 120000).
+      --allow-source-fallback
+                          Copy source text to output if translation fails.
   -h, --help              Show this help.`);
 }
 
@@ -227,8 +230,11 @@ async function main() {
             maxRetries: opts.maxRetries
         });
     } catch (err) {
-        console.warn(`[translate] FAILED after ${opts.maxRetries} attempts: ${err.message}`);
-        console.warn('[translate] Falling back to source (English) — release will still go through, just not translated.');
+        console.error(`[translate] FAILED after ${opts.maxRetries} attempts: ${err.message}`);
+        if (!opts.allowSourceFallback) {
+            throw err;
+        }
+        console.warn('[translate] Falling back to source because --allow-source-fallback was provided.');
         translated = source;
     }
 

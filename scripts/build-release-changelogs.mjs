@@ -8,12 +8,13 @@
  * - The app picks the matching locale at runtime (see src/shared/releaseNotes.js).
  *
  * Usage:
- *   node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir>
+ *   node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs]
  *
  * Output:
  *   <output_dir>/en.md - source changelog (GitHub release + fallback)
  *   <output_dir>/<locale>.md - full translation for each non-English locale
  *   <output_dir>/changelog.md - archive with every locale combined
+ *   --sync-docs also writes docs/changelogs/<locale>.md for non-English locales
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -26,6 +27,7 @@ import { combineChangelogs, stripFullChangelogLink, writeEnglishNotes } from './
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(__dirname);
 const LOCALES_PATH = path.join(root, 'docs', 'changelogs', 'locales.json');
+const DOCS_CHANGELOGS_DIR = path.join(root, 'docs', 'changelogs');
 
 function runNode(scriptRelative, args) {
     const scriptPath = path.join(root, scriptRelative);
@@ -52,11 +54,39 @@ async function loadLocales() {
 }
 
 function printHelp() {
-    console.log('Usage: node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir>');
+    console.log('Usage: node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs]');
+}
+
+function localizedDocsHeader(localeCode) {
+    if (localeCode === 'pt') {
+        return '<!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->';
+    }
+    if (localeCode === 'es') {
+        return '<!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->';
+    }
+    return '<!-- Generated automatically by Release Finalize — do not edit manually. Source: docs/changelog.md -->';
+}
+
+async function syncLocalizedDocs(locales, notesByLocale) {
+    await mkdir(DOCS_CHANGELOGS_DIR, { recursive: true });
+    for (const locale of locales) {
+        if (locale.source) { continue; }
+        const notes = notesByLocale.get(locale.code);
+        if (!notes?.trim()) { continue; }
+        const targetPath = path.join(DOCS_CHANGELOGS_DIR, `${locale.code}.md`);
+        const content = `${localizedDocsHeader(locale.code)}\n\n${notes.trimEnd()}\n`;
+        await writeFile(targetPath, content, 'utf8');
+        console.log(`[changelogs] Synced ${targetPath}`);
+    }
 }
 
 async function main() {
-    const [prev, current, outDir] = argv.slice(2);
+    const [prev, current, outDir, ...flags] = argv.slice(2);
+    const syncDocs = flags.includes('--sync-docs');
+    const unknownFlags = flags.filter((flag) => flag !== '--sync-docs');
+    if (unknownFlags.length) {
+        throw new Error(`Unknown argument(s): ${unknownFlags.join(', ')}`);
+    }
     if (!current || !outDir) {
         printHelp();
         exit(2);
@@ -89,6 +119,10 @@ async function main() {
         const localized = stripFullChangelogLink(await readFile(targetPath, 'utf8'));
         await writeFile(targetPath, localized, 'utf8');
         notesByLocale.set(locale.code, localized);
+    }
+
+    if (syncDocs) {
+        await syncLocalizedDocs(locales, notesByLocale);
     }
 
     const combinedPath = path.join(outDir, 'changelog.md');

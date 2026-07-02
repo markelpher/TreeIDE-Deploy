@@ -64,7 +64,7 @@ describe('stripFullChangelogLink', () => {
     });
 
     it('removes locale changelog navigation links', () => {
-        const input = '[Português](changelogs/pt.md) · [Español](changelogs/es.md)\n\n## What\'s new\n\n- item\n';
+        const input = '[Português](changelogs/changelog-pt.md) · [Español](changelogs/changelog-es.md)\n\n## What\'s new\n\n- item\n';
         expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
     });
 });
@@ -74,8 +74,8 @@ describe('buildLocaleChangelogNav', () => {
         const nav = buildLocaleChangelogNav('v2.0.55', 'owner/repo');
 
         expect(nav).toBe(
-            '[Português](https://github.com/owner/repo/releases/download/v2.0.55/pt.md) · '
-            + '[Español](https://github.com/owner/repo/releases/download/v2.0.55/es.md)\n\n',
+            '[Português](https://github.com/owner/repo/releases/download/v2.0.55/changelog-pt.md) · '
+            + '[Español](https://github.com/owner/repo/releases/download/v2.0.55/changelog-es.md)\n\n',
         );
     });
 });
@@ -88,7 +88,7 @@ describe('ensureGithubReleaseNotes', () => {
             repo: 'owner/repo',
         });
 
-        expect(result).toContain('[Português](https://github.com/owner/repo/releases/download/v2.0.55/pt.md)');
+        expect(result).toContain('[Português](https://github.com/owner/repo/releases/download/v2.0.55/changelog-pt.md)');
         expect(result).toContain('## Added');
         expect(result).toContain('**Full Changelog**: https://github.com/owner/repo/compare/v2.0.54...v2.0.55');
     });
@@ -151,7 +151,7 @@ describe('writeEnglishNotes', () => {
         const outPath = path.join(tempDir, 'en.md');
         await writeFile(
             manualPath,
-            '[Português](changelogs/pt.md) · [Español](changelogs/es.md)\n\n## Added\n\n- manual note',
+            '[Português](changelogs/changelog-pt.md) · [Español](changelogs/changelog-es.md)\n\n## Added\n\n- manual note',
             'utf8',
         );
 
@@ -171,7 +171,7 @@ describe('writeEnglishNotes', () => {
 
         const githubRelease = await readFile(path.join(tempDir, 'github-release.md'), 'utf8');
         expect(githubRelease).toContain(
-            '[Português](https://github.com/markelpher/TreeIDE-Deploy/releases/download/v2.0.55/pt.md)',
+            '[Português](https://github.com/markelpher/TreeIDE-Deploy/releases/download/v2.0.55/changelog-pt.md)',
         );
         expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/TreeIDE-Deploy/compare/v2.0.54...v2.0.55');
         expect(githubRelease).not.toContain('changelogs/pt.md');

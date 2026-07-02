@@ -137,6 +137,8 @@ Valida los archivos de idioma:
 npm run i18n:validate
 ```
 
+Compilación:
+
 ### Windows (x64 + arm64)
 
 ```bash
