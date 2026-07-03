@@ -67,6 +67,11 @@ describe('stripFullChangelogLink', () => {
         const input = '[Português](changelogs/pt.md) · [Español](changelogs/es.md)\n\n## What\'s new\n\n- item\n';
         expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
     });
+
+    it('removes absolute GitHub locale changelog navigation links', () => {
+        const input = '[Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/es.md)\n\n## What\'s new\n\n- item\n';
+        expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
+    });
 });
 
 describe('buildLocaleChangelogNav', () => {

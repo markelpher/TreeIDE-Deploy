@@ -3,6 +3,9 @@
  */
 
 import { createRequire } from 'node:module';
+import { spawn, spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { existsSync, readFileSync, unlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { ipcMain, app, shell } from 'electron';
 import log from 'electron-log';
 import {
@@ -21,6 +24,166 @@ const semver = require('semver');
 
 let autoUpdater = null;
 let lastDownloadPercent = 0;
+let lastDownloadedUpdateFile = '';
+let lastDownloadedUpdateVersion = '';
+const PENDING_UPDATE_INSTALL_FILE = 'pending-update-install.json';
+
+
+function getPendingUpdateInstallPath() {
+    return path.join(app.getPath('userData'), PENDING_UPDATE_INSTALL_FILE);
+}
+
+function normalizeSemver(value) {
+    return semver.coerce(value);
+}
+
+export function isInstalledUpdateVersion(currentVersion, targetVersion) {
+    const current = normalizeSemver(currentVersion);
+    const target = normalizeSemver(targetVersion);
+    if (!current || !target) { return false; }
+    return semver.gte(current, target);
+}
+
+function safeDeleteFile(filePath) {
+    if (!filePath || !existsSync(filePath)) { return false; }
+    try {
+        unlinkSync(filePath);
+        return true;
+    } catch (err) {
+        log.warn('Failed to delete update installer ' + filePath + ': ' + (err?.message || String(err)));
+        return false;
+    }
+}
+
+function safeDeleteEmptyDir(dirPath) {
+    if (!dirPath || !existsSync(dirPath)) { return; }
+    try {
+        rmSync(dirPath, { recursive: false });
+    } catch {
+        // Keep non-empty cache directories; only the installer file must be removed.
+    }
+}
+
+function writePendingUpdateInstall({ version, installerPath }) {
+    if (!version || !installerPath) { return; }
+    const payload = {
+        version,
+        installerPath,
+        platform: process.platform,
+        createdAt: new Date().toISOString(),
+    };
+    try {
+        writeFileSync(getPendingUpdateInstallPath(), JSON.stringify(payload, null, 2), 'utf8');
+    } catch (err) {
+        log.warn('Failed to persist pending update install state: ' + (err?.message || String(err)));
+    }
+}
+
+function clearPendingUpdateInstall() {
+    safeDeleteFile(getPendingUpdateInstallPath());
+}
+
+export function cleanupPendingUpdateInstall(currentVersion = app.getVersion()) {
+    const statePath = getPendingUpdateInstallPath();
+    if (!existsSync(statePath)) { return { checked: false }; }
+
+    let state;
+    try {
+        state = JSON.parse(readFileSync(statePath, 'utf8'));
+    } catch (err) {
+        log.warn('Failed to read pending update install state: ' + (err?.message || String(err)));
+        clearPendingUpdateInstall();
+        return { checked: true, ok: false, error: 'invalid-state' };
+    }
+
+    if (!state?.version) {
+        clearPendingUpdateInstall();
+        return { checked: true, ok: false, error: 'missing-version' };
+    }
+
+    if (isInstalledUpdateVersion(currentVersion, state.version)) {
+        const deleted = safeDeleteFile(state.installerPath);
+        safeDeleteEmptyDir(state.installerPath ? path.dirname(state.installerPath) : '');
+        clearPendingUpdateInstall();
+        log.info(`Update ${state.version} installed successfully; installer cleanup ${deleted ? 'completed' : 'skipped'}.`);
+        return { checked: true, ok: true, deleted };
+    }
+
+    if (!existsSync(state.installerPath || '')) {
+        clearPendingUpdateInstall();
+    }
+    log.warn(`Pending update ${state.version} was not installed; current version is ${currentVersion}.`);
+    return { checked: true, ok: false, error: 'not-installed', installerPath: state.installerPath };
+}
+function commandExists(command) {
+    const result = spawnSync('sh', ['-c', 'command -v ' + command], { stdio: 'ignore' });
+    return result.status === 0;
+}
+
+function getDownloadedUpdateFile() {
+    return lastDownloadedUpdateFile || autoUpdater?.downloadedUpdateHelper?.file || '';
+}
+
+function getElevatedCommand(command, args) {
+    if (typeof process.getuid === 'function' && process.getuid() === 0) {
+        return { command, args };
+    }
+    if (commandExists('pkexec')) {
+        return { command: 'pkexec', args: [command, ...args] };
+    }
+    if (commandExists('sudo')) {
+        return { command: 'sudo', args: [command, ...args] };
+    }
+    throw new Error('No graphical privilege escalation command found. Install pkexec or sudo.');
+}
+
+function spawnDetached(command, args) {
+    const child = spawn(command, args, {
+        detached: true,
+        stdio: 'ignore',
+    });
+    child.on('error', (err) => {
+        log.warn('Detached installer failed to start: ' + (err?.message || String(err)));
+    });
+    child.unref();
+}
+
+export function getLinuxPackageInstallCommand(installerPath, env = process.env) {
+    const ext = path.extname(installerPath).toLowerCase();
+    if (ext === '.snap') {
+        return { command: 'snap', args: ['install', '--dangerous', '--amend', installerPath], elevated: true };
+    }
+    if (ext === '.deb') {
+        return { command: 'apt-get', args: ['install', '-y', '--allow-downgrades', installerPath], elevated: true };
+    }
+    if (ext === '.appimage' && env.APPIMAGE) {
+        return {
+            command: 'sh',
+            args: ['-c', 'sleep 1; install -m 755 "$2" "$1" && "$1" >/dev/null 2>&1 &', 'tree-ide-appimage-update', env.APPIMAGE, installerPath],
+            elevated: false,
+        };
+    }
+    if (ext === '.flatpak') {
+        const args = ['install', '--reinstall', '-y', installerPath];
+        if (env.FLATPAK_ID && commandExists('flatpak-spawn')) {
+            return { command: 'flatpak-spawn', args: ['--host', 'flatpak', ...args], elevated: false };
+        }
+        return { command: 'flatpak', args, elevated: false };
+    }
+    return null;
+}
+
+function installLinuxDownloadedPackage(installerPath) {
+    const installCommand = getLinuxPackageInstallCommand(installerPath);
+    if (!installCommand) { return false; }
+    if (installCommand.elevated) {
+        const elevated = getElevatedCommand(installCommand.command, installCommand.args);
+        spawnDetached(elevated.command, elevated.args);
+    } else {
+        spawnDetached(installCommand.command, installCommand.args);
+    }
+    return true;
+}
 
 function resolveUpdateInstallMode() {
     return getUpdateInstallMode({
@@ -111,6 +274,7 @@ async function checkReleaseUpdate() {
 }
 
 export function registerUpdaterEvents(getMainWindow) {
+    cleanupPendingUpdateInstall();
     if (!autoUpdater) { return; }
 
     autoUpdater.on('update-available', (info) => {
@@ -155,6 +319,8 @@ export function registerUpdaterEvents(getMainWindow) {
     });
 
     autoUpdater.on('update-downloaded', (info) => {
+        lastDownloadedUpdateFile = info?.downloadedFile || autoUpdater?.downloadedUpdateHelper?.file || '';
+        lastDownloadedUpdateVersion = info?.version || '';
         log.info(`Update downloaded: ${info.version}`);
         getMainWindow()?.webContents.send('update-downloaded', {
             version: info.version,
@@ -206,7 +372,7 @@ export function registerUpdateIpc(isReadyToCloseRef) {
 
         const installMode = resolveUpdateInstallMode();
         if (!isInAppUpdateInstallSupported(installMode)) {
-            const installerPath = autoUpdater.downloadedUpdateHelper?.file;
+            const installerPath = getDownloadedUpdateFile();
             if (installerPath) {
                 shell.showItemInFolder(installerPath);
                 return { ok: true, manual: true };
@@ -214,10 +380,24 @@ export function registerUpdateIpc(isReadyToCloseRef) {
             return { ok: false, error: 'update_manual_install' };
         }
 
-        log.info('Installing update and restarting...');
-        isReadyToCloseRef.value = true;
-        autoUpdater.quitAndInstall(false, true);
-        return { ok: true };
+        try {
+            const installerPath = getDownloadedUpdateFile();
+            writePendingUpdateInstall({ version: lastDownloadedUpdateVersion, installerPath });
+            if (process.platform === 'linux' && installerPath && installLinuxDownloadedPackage(installerPath)) {
+                log.info(`Installing Linux update package: ${installerPath}`);
+                isReadyToCloseRef.value = true;
+                app.quit();
+                return { ok: true };
+            }
+
+            log.info('Installing update and restarting...');
+            isReadyToCloseRef.value = true;
+            autoUpdater.quitAndInstall(false, true);
+            return { ok: true };
+        } catch (err) {
+            log.warn(`Install error: ${err?.message || String(err)}`);
+            return { ok: false, error: getUpdateErrorMessage(err) };
+        }
     });
 
     ipcMain.handle('get-update-capabilities', () => {

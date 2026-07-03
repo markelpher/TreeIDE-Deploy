@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.85",
+  "version": "2.0.86",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -138,6 +138,7 @@
     },
     "deb": {
       "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "icon": "assets/icon-no-bg.png",
       "depends": [
         "libgtk-3-0",
         "libnotify4",

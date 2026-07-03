@@ -24,11 +24,7 @@ export function getUpdateInstallMode(ctx = {}) {
         return 'manual';
     }
 
-    if (env.SNAP || env.FLATPAK_ID) {
-        return 'manual';
-    }
-
-    if (env.APPIMAGE) {
+    if (env.SNAP || env.FLATPAK_ID || env.APPIMAGE) {
         return 'in-app';
     }
 
@@ -39,7 +35,7 @@ export function getUpdateInstallMode(ctx = {}) {
             if (existsSync(pkgTypePath)) {
                 const pkgType = readFileSync(pkgTypePath, 'utf8').trim();
                 if (pkgType === 'deb' || pkgType === 'rpm' || pkgType === 'pacman') {
-                    return 'manual';
+                    return 'in-app';
                 }
             }
         } catch {
@@ -47,7 +43,7 @@ export function getUpdateInstallMode(ctx = {}) {
         }
     }
 
-    return 'manual';
+    return 'in-app';
 }
 
 export function isInAppUpdateInstallSupported(mode) {

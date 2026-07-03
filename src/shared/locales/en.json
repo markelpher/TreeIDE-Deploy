@@ -196,7 +196,7 @@
   "theme_light": "Light",
   "update_available_title": "Update available",
   "update_available_msg": "A new Tree IDE version is available and ready to download.",
-  "update_download_release": "Download update",
+  "update_download_release": "Download and install",
   "update_downloading": "Downloading",
   "update_install_restart": "Install and restart",
   "update_show_installer": "Show downloaded installer",

@@ -28,7 +28,7 @@ modules:
         fi
       - install -Dm755 build-flatpak/flatpak/tree-ide.sh /app/bin/tree-ide
       - install -Dm644 build-flatpak/flatpak/com.treeide.treeide.desktop /app/share/applications/com.treeide.treeide.desktop
-      - for size in 16 32 48 64 128 256 512; do mkdir -p /app/share/icons/hicolor/${size}x${size}/apps; install -Dm644 assets/icon-no-bg.png /app/share/icons/hicolor/${size}x${size}/apps/com.treeide.treeide.png; done
+      - for size in 16 32 48 64 128 256 512; do install -Dm644 build/icons/${size}x${size}.png /app/share/icons/hicolor/${size}x${size}/apps/com.treeide.treeide.png; done
       - install -Dm644 build-flatpak/flatpak/com.treeide.treeide.appdata.xml /app/share/metainfo/com.treeide.treeide.appdata.xml
     sources:
       - type: dir

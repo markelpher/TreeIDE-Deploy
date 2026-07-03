@@ -100,7 +100,11 @@ export function ensureGithubReleaseNotes(content, { compareUrl, tag, repo }) {
 }
 
 /** Locale changelog nav line at the top of docs/changelog.md (repo-only, not for the app). */
-export const LOCALE_CHANGELOG_NAV_RE = /^\[[^\]]+\]\(changelogs\/[^)]+\)(?:\s*[·•|]\s*\[[^\]]+\]\(changelogs\/[^)]+\))*\s*\n+/m;
+const LOCALE_CHANGELOG_LINK_TARGET = '(?:changelogs\\/[^)]+|https:\\/\\/github\\.com\\/[^/\\s)]+\\/[^/\\s)]+\\/blob\\/[^/\\s)]+\\/docs\\/changelogs\\/[^)]+)';
+export const LOCALE_CHANGELOG_NAV_RE = new RegExp(
+    `^\\[[^\\]]+\\]\\(${LOCALE_CHANGELOG_LINK_TARGET}\\)(?:\\s*[·•|]\\s*\\[[^\\]]+\\]\\(${LOCALE_CHANGELOG_LINK_TARGET}\\))*\\s*\\n+`,
+    'm',
+);
 
 /** Removes repo-only navigation and the GitHub compare footer — used for in-app update notes only. */
 export function stripFullChangelogLink(content) {

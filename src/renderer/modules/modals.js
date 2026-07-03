@@ -39,6 +39,7 @@ export function createModals(app) {
     let isUpdateDownloaded = false;
     let maxDownloadPercent = 0;
     let currentUpdateInstallMode = 'in-app';
+    let shouldInstallAfterDownload = false;
 
     function applyUpdateDownloadLabel() {
         const downloadLabel = document.getElementById('updateDownloadLabel');
@@ -104,6 +105,7 @@ export function createModals(app) {
         isDownloadingUpdate = false;
         isUpdateDownloaded = false;
         maxDownloadPercent = 0;
+        shouldInstallAfterDownload = false;
     }
 
     function showReleaseUpdateModal(info) {
@@ -207,6 +209,7 @@ export function createModals(app) {
         if (app.electronAPI.onReleaseUpdateError) {
             app.electronAPI.onReleaseUpdateError((message) => {
                 isDownloadingUpdate = false;
+                shouldInstallAfterDownload = false;
                 resetReleaseUpdateButton();
                 __showToast(translateUpdateError(app.i18n, message), 4000);
             });
@@ -219,13 +222,23 @@ export function createModals(app) {
             });
         }
         if (app.electronAPI.onUpdateDownloaded) {
-            app.electronAPI.onUpdateDownloaded((_info) => {
+            app.electronAPI.onUpdateDownloaded(async (_info) => {
                 isDownloadingUpdate = false;
                 isUpdateDownloaded = true;
                 maxDownloadPercent = 100;
                 setReleaseUpdateActionsLocked(false);
                 setReleaseUpdateProgress(100, 'complete');
                 applyUpdateDownloadLabel();
+                if (shouldInstallAfterDownload) {
+                    shouldInstallAfterDownload = false;
+                    const result = await app.electronAPI.installUpdate();
+                    if (result?.manual) {
+                        __showToast(app.i18n.t('update_manual_install_hint'), 5000);
+                    } else if (result && !result.ok) {
+                        __showToast(translateUpdateError(app.i18n, result.error), 4000);
+                    }
+                    return;
+                }
                 if (currentUpdateInstallMode === 'manual') {
                     __showToast(app.i18n.t('update_manual_install_hint'), 5000);
                 }
@@ -577,6 +590,7 @@ export function createModals(app) {
 
             maxDownloadPercent = 0;
             isDownloadingUpdate = true;
+            shouldInstallAfterDownload = true;
             setReleaseUpdateActionsLocked(true);
             setReleaseUpdateProgress(0, 'downloading');
 
@@ -584,11 +598,13 @@ export function createModals(app) {
                 const result = await app.electronAPI.downloadUpdate();
                 if (result && !result.ok) {
                     isDownloadingUpdate = false;
+                    shouldInstallAfterDownload = false;
                     resetReleaseUpdateButton();
                     __showToast(translateUpdateError(app.i18n, result.error), 4000);
                 }
             } catch (err) {
                 isDownloadingUpdate = false;
+                shouldInstallAfterDownload = false;
                 resetReleaseUpdateButton();
                 __showToast(app.i18n.t('update_failed'), 4000);
             }

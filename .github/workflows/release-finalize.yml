@@ -261,5 +261,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/changelogs/pt.md docs/changelogs/es.md
-          git commit --signoff -m "docs: update localized changelogs for $tag"
+          git commit -m "docs: updated localized changelogs for $tag"
           git push origin "HEAD:$branch"

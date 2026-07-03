@@ -19,20 +19,20 @@ describe('getUpdateInstallMode', () => {
         })).toBe('in-app');
     });
 
-    it('returns manual for Linux deb and snap', () => {
+    it('returns in-app for Linux deb, snap, and other packaged builds', () => {
         expect(getUpdateInstallMode({
             isPackaged: true,
             platform: 'linux',
             env: { SNAP: 'tree-ide' },
             resourcesPath: '/usr/lib/tree-ide/resources',
-        })).toBe('manual');
+        })).toBe('in-app');
 
         expect(getUpdateInstallMode({
             isPackaged: true,
             platform: 'linux',
             env: {},
             resourcesPath: '/opt/Tree IDE/resources',
-        })).toBe('manual');
+        })).toBe('in-app');
     });
 });
 

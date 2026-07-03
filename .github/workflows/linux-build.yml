@@ -311,6 +311,8 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          RELEASE_DATE=$(date -u +%F)
+          sed -i "s/@VERSION@/${VERSION}/g; s/@DATE@/${RELEASE_DATE}/g" build-flatpak/flatpak/com.treeide.treeide.appdata.xml
           test -d build-flatpak/staging/linux-unpacked
           sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub --default-branch=stable .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-x86_64.flatpak" com.treeide.treeide stable
@@ -373,6 +375,8 @@ jobs:
       - name: Build Flatpak bundle
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          RELEASE_DATE=$(date -u +%F)
+          sed -i "s/@VERSION@/${VERSION}/g; s/@DATE@/${RELEASE_DATE}/g" build-flatpak/flatpak/com.treeide.treeide.appdata.xml
           test -d build-flatpak/staging/linux-unpacked
           sudo flatpak-builder --repo=repo --force-clean --install-deps-from=flathub --default-branch=stable .flatpak-build build-flatpak/flatpak/com.treeide.treeide.yml
           sudo flatpak build-bundle repo "dist/Tree-IDE-${VERSION}-aarch64.flatpak" com.treeide.treeide stable
