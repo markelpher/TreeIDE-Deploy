@@ -1,6 +1,6 @@
 <!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->
 
-## Novedades en v2.0.87
+## Novedades en v2.0.89
 
 Tree IDE v2 es una reescritura completa y expansión de la aplicación original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). La misma idea central: diseñar estructuras de carpetas en texto plano, previsualizarlas en vivo y generar proyectos, con una nueva arquitectura, herramientas más ricas y lanzamientos multiplataforma.
 
@@ -9,7 +9,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 #### Estudio de construcción y salida de proyectos
 - **Estudio de construcción** — flujo de construcción a pantalla completa con previsualización de árbol en vivo, previsualización de contenido por archivo, estadísticas y opciones de salida
 - **Tres modos de salida** — crear estructura de carpetas en disco, exportar solo un ZIP, o exportar solo un archivo de proyecto `.tree`
-- **Salidas combinadas** — exportar opcionalmente un ZIP junto con una construcción de carpeta, e incluir el archivo `.tree` dentro del archivo comprimido
+- **Salidas combinadas** — exportar opcionalmente un ZIP junto a una construcción de carpeta, e incluir el archivo `.tree` dentro del archivo comprimido
 - **Inspección previa a la construcción** — escanear la carpeta de destino en busca de estructuras existentes, archivos `.tree` o ZIP antes de escribir
 - **Manejo de conflictos** — elegir omitir o sobrescribir cuando los archivos o carpetas ya existen
 - **Contenido inicial predeterminado** para más de 68 tipos de archivos (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte, y más)
@@ -25,13 +25,13 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 
 #### Plantillas
 - **19 plantillas de inicio integradas** agrupadas por categoría:
-  - Frontend: HTML, HTML y CSS, HTML/CSS/JS, React, Vite + React
-  - Pilas: Node.js, MVC, Python, PHP
+  - Frontend: HTML, HTML & CSS, HTML/CSS/JS, React, Vite + React
+  - Stacks: Node.js, MVC, Python, PHP
   - Sistemas: Go, Java, Kotlin, Rust, Ruby, Swift, Dart
   - Nativo: C, C++, C#
 - **Pantalla de plantillas** — navegador de tres columnas a pantalla completa con pestañas integradas y personalizadas, edición de estructura en línea y previsualización de árbol en vivo
 - **Plantillas personalizadas** — crear en blanco, importar desde el proyecto actual, renombrar, editar el contenido del archivo en línea, abrir en el editor principal, exportar o eliminar sin salir de la pantalla
-- **Archivos `.tree-template`** — exportar e importar plantillas personalizables compartibles (JSON `treeide-template` v1) a través de diálogos de guardar/abrir nativos o exportación por fila en la lista personalizada
+- **Archivos `.tree-template`** — exportar e importar plantillas personalizadas compartibles (JSON `treeide-template` v1) a través de diálogos de guardar/abrir nativos o exportación por fila en la lista personalizada
 - **Pie de página de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Desde el proyecto actual**, y **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y importación de archivo
 - **Previsualización por archivo** — al hacer clic en un archivo en la previsualización de la estructura se abre un panel de editor monoespaciado de ancho completo con insignia de tipo de archivo (mismo diseño de un solo panel para plantillas integradas y personalizadas)
 
@@ -39,12 +39,12 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Panel de validación** — mala indentación, nombres inválidos, hermanos duplicados, rutas inseguras y estructuras vacías; haz clic en una advertencia para saltar a la línea
 - **Deshacer / rehacer** con hasta 100 estados de historial
 - **Pestañas de múltiples proyectos** con indicadores de modificación, una barra de pestañas desplazable y reordenamiento por arrastrar y soltar
-- **Pestañas de previsualización de archivos por proyecto** — editar el contenido de archivos de inicio antes de construir
+- **Pestañas de previsualización de archivos por proyecto** — editar el contenido del archivo de inicio antes de construir
 - **Previsualización en vivo de Markdown** para archivos `.md` en el panel de previsualización de archivos
 - **Carpetas colapsables** en la previsualización del árbol
 - **Navegación por teclado en el árbol** — teclas de flecha, Inicio, Fin y Enter
 - **Coincidencia inteligente de renombrado de archivos** cuando se editan líneas del árbol
-- **Indentación / desindentación de bloques** con Tab y Shift+Tab, además de retroceso inteligente para bloques de indentación
+- **Sangría de bloque / deshacer sangría** con Tab y Shift+Tab, además de retroceso inteligente para bloques de sangría
 - **Zoom del editor** — `Ctrl++`, `Ctrl+-`, y `Ctrl+0`
 - **Paneles redimensionables** (editor, árbol, previsualización de archivos) con diseño persistente a través de sesiones
 
@@ -71,7 +71,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 
 #### Persistencia de sesión
 - **Almacenamiento de sesión IndexedDB** con migración automática desde `localStorage` legado
-- **Guardado automático** de pestañas abiertas, contenidos de archivos y nombres de proyectos
+- **Guardado automático** de pestañas abiertas, contenido de archivos y nombres de proyectos
 - **Modos de sesión** — restaurar la última sesión al iniciar o siempre comenzar limpio
 
 #### Actualizador automático y notas de lanzamiento
@@ -89,7 +89,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 
 #### Plataformas y distribución
 - **Windows** — instalador NSIS, MSI y versiones portátiles para x64 y ARM64; instalador multilingüe (inglés, portugués y español) con título de selector de idioma localizado
-- **Linux** — AppImage, deb, rpm, tar.gz y snap para x64, además de AppImage, deb, rpm y tar.gz para ARM64; versiones Flatpak (x86_64 y aarch64, runtime 25.08) con lanzador `zypak-wrapper`
+- **Linux** — AppImage, deb, rpm, tar.gz y snap para x64 más AppImage, deb, rpm y tar.gz para ARM64; versiones de Flatpak (x86_64 y aarch64, runtime 25.08) con lanzador `zypak-wrapper`
 - **macOS** — DMG y ZIP para Apple Silicon (arm64)
 - **Lanzamientos de GitHub** publicados automáticamente en etiquetas de versión desde CI
 - **Construcción del renderizador antes de empaquetar** — `beforePack` ejecuta `vite build` y valida `dist/renderer/` para que cada instalador envíe el paquete de UI
@@ -104,4 +104,4 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **ESLint y Prettier** integrados en scripts de npm
 - **electron-reloader** para recarga en caliente del proceso principal durante el desarrollo
 - **Exportación de registro de errores** en caso de fallo para facilitar la depuración
-- **`semver`** como dependencia directa para una comparación de versiones confiable en la aplicación
+- **`semver`** como dependencia directa para comparación de versiones confiable en la aplicación

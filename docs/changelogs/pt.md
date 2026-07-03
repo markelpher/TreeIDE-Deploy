@@ -1,8 +1,8 @@
 <!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->
 
-## O que há de novo na v2.0.87
+## O que há de novo na v2.0.89
 
-Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos multi-plataforma.
+Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos multiplataforma.
 
 ### Adicionado
 
@@ -21,7 +21,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Importação de arquivos** via diálogo de arquivos ou arrastar e soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` e `.7z`
 - **Solicitações de senha** para arquivos ZIP criptografados e arquivos `.tree` criptografados
 - **Carregar pasta como estrutura** — escanear um diretório existente e transformá-lo em texto de árvore editável
-- **Fallback ARM64 do Windows** para 7-Zip quando os binários nativos não estão disponíveis
+- **Fallback ARM64 do Windows** para 7-Zip quando binários nativos não estão disponíveis
 
 #### Modelos
 - **19 modelos iniciais embutidos** agrupados por categoria:
@@ -32,7 +32,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Tela de modelos** — navegador em tela cheia com três colunas, abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
 - **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar o conteúdo do arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
 - **Arquivos `.tree-template`** — exportar e importar modelos personalizados compartilháveis (JSON `treeide-template` v1) via diálogos de salvar/abrir nativos ou exportação por linha na lista personalizada
-- **Rodapé de modelos personalizados** — quando existem modelos personalizados: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
+- **Rodapé de modelos personalizados** — quando modelos personalizados existem: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
 - **Visualização por arquivo** — clicar em um arquivo na visualização da estrutura abre um painel de editor monoespaçado em largura total com distintivo de tipo de arquivo (mesmo layout de painel único para modelos embutidos e personalizados)
 
 #### Editor, árvore & validação
@@ -67,7 +67,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Traduções de interface em inglês, português (pt-BR) e espanhol**
 - **Seleção de idioma na primeira execução** no fluxo de boas-vindas e configurações
 - **Traduções do processo principal** para diálogos nativos e mensagens de erro
-- **Script `npm run i18n:validate`** para manter os arquivos de localidade em sincronia
+- **Script `npm run i18n:validate`** para manter arquivos de localidade em sincronia
 
 #### Persistência de sessão
 - **Armazenamento de sessão IndexedDB** com migração automática do legado `localStorage`
@@ -80,8 +80,8 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Notas de lançamento localizadas** no modal de atualização (inglês, português e espanhol)
 - **Changelog de atualização legível** — diálogo mais amplo, **O que há de novo** expandido por padrão, área de rolagem dedicada, hierarquia de cabeçalhos mais clara e botões de ação fixos no rodapé
 - **Fluxo de trabalho manual `docs/changelog.md`** — editar notas de lançamento no repositório; CI as traduz para o aplicativo e publica em inglês no GitHub
-- **Notas de lançamento divididas** — o modal de atualização do aplicativo mostra apenas o texto do changelog; links de navegação de localidade aparecem em `docs/changelog.md` e na descrição do lançamento do GitHub (apontando para arquivos legíveis em `docs/changelogs/`); o link de comparação (`Full Changelog`) é exclusivo do GitHub
-- **Tradução de Modelos do GitHub** — notas de lançamento em português e espanhol são geradas em CI via API `models.github.ai`
+- **Notas de lançamento divididas** — modal de atualização do aplicativo mostra apenas o texto do changelog; links de navegação de localidade aparecem em `docs/changelog.md` e na descrição do lançamento do GitHub (apontando para arquivos legíveis em `docs/changelogs/`); o link de comparação (`Full Changelog`) é exclusivo do GitHub
+- **Tradução de Modelos do GitHub** — notas de lançamento em português e espanhol são geradas no CI via API `models.github.ai`
 
 #### Atalhos de teclado
 - **Atalhos totalmente configuráveis** com UI de captura e ação de restaurar padrões
@@ -91,7 +91,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Windows** — instalador NSIS, MSI e builds portáteis para x64 e ARM64; instalador multilíngue (inglês, português e espanhol) com título de seletor de idioma localizado
 - **Linux** — AppImage, deb, rpm, tar.gz e snap para x64, além de AppImage, deb, rpm e tar.gz para ARM64; builds Flatpak (x86_64 e aarch64, runtime 25.08) com lançador `zypak-wrapper`
 - **macOS** — DMG e ZIP para Apple Silicon (arm64)
-- **Lançamentos do GitHub** publicados automaticamente em tags de versão a partir do CI
+- **Lançamentos do GitHub** publicados automaticamente em tags de versão do CI
 - **Construção do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI
 
 #### Arquitetura, ferramentas de desenvolvimento & qualidade
