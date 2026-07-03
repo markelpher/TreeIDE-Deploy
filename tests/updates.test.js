@@ -2,7 +2,12 @@ import { mkdir, rm, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { constants as FS } from 'node:fs';
 import { app } from 'electron';
-import { cleanupPendingUpdateInstall, isInstalledUpdateVersion, isUpdateNewer } from '../src/main/ipc/updates.js';
+import {
+    cleanupPendingUpdateInstall,
+    cleanupSupersededPendingUpdate,
+    isInstalledUpdateVersion,
+    isUpdateNewer,
+} from '../src/main/ipc/updates.js';
 
 describe('isUpdateNewer', () => {
     it('returns true only when latest is strictly greater', () => {
@@ -61,7 +66,7 @@ describe('cleanupPendingUpdateInstall', () => {
         await expect(access(pendingPath, FS.F_OK)).rejects.toThrow();
     });
 
-    it('keeps the installer when the target version was not installed', async () => {
+    it('keeps the installer and pending state when the target version was not installed', async () => {
         await writeFile(installerPath, 'installer', 'utf8');
         await writeFile(pendingPath, JSON.stringify({
             version: '2.0.84',
@@ -70,7 +75,28 @@ describe('cleanupPendingUpdateInstall', () => {
 
         const result = cleanupPendingUpdateInstall('2.0.83');
 
-        expect(result.ok).toBe(false);
+        expect(result).toEqual({
+            checked: true,
+            ok: false,
+            error: 'not-installed',
+            installerPath,
+            installerKept: true,
+        });
         await expect(access(installerPath, FS.F_OK)).resolves.toBeUndefined();
+        await expect(access(pendingPath, FS.F_OK)).resolves.toBeUndefined();
+    });
+
+    it('deletes a downloaded installer when a newer update is available', async () => {
+        await writeFile(installerPath, 'installer', 'utf8');
+        await writeFile(pendingPath, JSON.stringify({
+            version: '2.0.84',
+            installerPath,
+        }), 'utf8');
+
+        const result = cleanupSupersededPendingUpdate('2.0.85');
+
+        expect(result).toEqual({ checked: true, deleted: true, version: '2.0.84' });
+        await expect(access(installerPath, FS.F_OK)).rejects.toThrow();
+        await expect(access(pendingPath, FS.F_OK)).rejects.toThrow();
     });
 });

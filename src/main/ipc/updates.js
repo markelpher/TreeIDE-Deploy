@@ -30,11 +30,22 @@ const GITHUB_OWNER = 'markelpher';
 const GITHUB_REPO = 'TreeIDE-Deploy';
 
 let lastAvailableUpdateInfo = null;
-let updateReadyToCloseRef = null;
 
 
 function getPendingUpdateInstallPath() {
     return path.join(app.getPath('userData'), PENDING_UPDATE_INSTALL_FILE);
+}
+
+function readPendingUpdateInstall() {
+    const statePath = getPendingUpdateInstallPath();
+    if (!existsSync(statePath)) { return null; }
+    try {
+        return JSON.parse(readFileSync(statePath, 'utf8'));
+    } catch (err) {
+        log.warn('Failed to read pending update install state: ' + (err?.message || String(err)));
+        clearPendingUpdateInstall();
+        return null;
+    }
 }
 
 function normalizeSemver(value) {
@@ -87,18 +98,50 @@ function clearPendingUpdateInstall() {
     safeDeleteFile(getPendingUpdateInstallPath());
 }
 
+function getDownloadedUpdateFile() {
+    return lastDownloadedUpdateFile || autoUpdater?.downloadedUpdateHelper?.file || '';
+}
+
+function rememberDownloadedUpdate(state) {
+    if (!state?.version || !state?.installerPath || !existsSync(state.installerPath)) { return false; }
+    lastDownloadedUpdateVersion = state.version;
+    lastDownloadedUpdateFile = state.installerPath;
+    return true;
+}
+
+function getPendingDownloadedUpdate(version, currentVersion = app.getVersion()) {
+    const state = readPendingUpdateInstall();
+    if (!state?.version || !state?.installerPath) { return null; }
+    if (version && normalizeSemver(state.version)?.version !== normalizeSemver(version)?.version) { return null; }
+    if (isInstalledUpdateVersion(currentVersion, state.version)) { return null; }
+    return rememberDownloadedUpdate(state) ? state : null;
+}
+
+export function cleanupSupersededPendingUpdate(latestVersion) {
+    const state = readPendingUpdateInstall();
+    if (!state?.version || !latestVersion) { return { checked: false }; }
+    const pending = normalizeSemver(state.version);
+    const latest = normalizeSemver(latestVersion);
+    if (!pending || !latest || !semver.gt(latest, pending)) { return { checked: true, deleted: false }; }
+
+    const deleted = safeDeleteFile(state.installerPath);
+    if (state.installerPath) { safeDeleteEmptyDir(path.dirname(state.installerPath)); }
+    clearPendingUpdateInstall();
+    if (lastDownloadedUpdateVersion === state.version) {
+        lastDownloadedUpdateVersion = '';
+        lastDownloadedUpdateFile = '';
+    }
+    log.info(`Removed superseded update installer ${state.version}; latest available is ${latestVersion}.`);
+    return { checked: true, deleted, version: state.version };
+}
+
+
 export function cleanupPendingUpdateInstall(currentVersion = app.getVersion()) {
     const statePath = getPendingUpdateInstallPath();
     if (!existsSync(statePath)) { return { checked: false }; }
 
-    let state;
-    try {
-        state = JSON.parse(readFileSync(statePath, 'utf8'));
-    } catch (err) {
-        log.warn('Failed to read pending update install state: ' + (err?.message || String(err)));
-        clearPendingUpdateInstall();
-        return { checked: true, ok: false, error: 'invalid-state' };
-    }
+    const state = readPendingUpdateInstall();
+    if (!state) { return { checked: true, ok: false, error: 'invalid-state' }; }
 
     if (!state?.version) {
         clearPendingUpdateInstall();
@@ -133,11 +176,16 @@ export function cleanupPendingUpdateInstall(currentVersion = app.getVersion()) {
         return { checked: true, ok: true, deleted };
     }
 
-    if (!existsSync(state.installerPath || '')) {
-        clearPendingUpdateInstall();
-    }
-    log.warn(`Pending update ${state.version} was not installed; current version is ${currentVersion}.`);
-    return { checked: true, ok: false, error: 'not-installed', installerPath: state.installerPath };
+    const installerStillAvailable = rememberDownloadedUpdate(state);
+    if (!installerStillAvailable) { clearPendingUpdateInstall(); }
+    log.warn(`Pending update ${state.version} was not installed; current version is ${currentVersion}. Keeping current app version.`);
+    return {
+        checked: true,
+        ok: false,
+        error: 'not-installed',
+        installerPath: installerStillAvailable ? state.installerPath : '',
+        installerKept: installerStillAvailable,
+    };
 }
 async function revealDownloadedInstaller(installerPath) {
     if (!installerPath) { return false; }
@@ -186,9 +234,9 @@ export function isUpdateNewer(latestVersion, currentVersion) {
 try {
     const updater = require('electron-updater');
     autoUpdater = updater.autoUpdater;
-    autoUpdater.autoDownload = true;
+    autoUpdater.autoDownload = false;
     autoUpdater.allowPrerelease = false;
-    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.autoRunAppAfterInstall = true;
     // Ensure downloaded updates are applied immediately on Windows (NSIS)
     try {
@@ -235,6 +283,8 @@ async function checkReleaseUpdate() {
     const latestVersion = info?.version;
     const updateAvailable = shouldOfferUpdate(info, currentVersion);
     if (updateAvailable) { lastAvailableUpdateInfo = info; }
+    if (updateAvailable) { cleanupSupersededPendingUpdate(latestVersion); }
+    const downloadedUpdate = updateAvailable ? getPendingDownloadedUpdate(latestVersion, currentVersion) : null;
 
     if (latestVersion && !updateAvailable) {
         log.info(`No newer update: current=${currentVersion}, latest=${latestVersion}`);
@@ -248,6 +298,8 @@ async function checkReleaseUpdate() {
         releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
         releaseNotes: updateAvailable ? normalizeReleaseNotesEntries(info?.releaseNotes) : [],
         assetName: updateAvailable ? (info?.files?.[0]?.url || '') : '',
+        downloaded: !!downloadedUpdate,
+        downloadedInstallerPath: downloadedUpdate?.installerPath || '',
     });
 }
 
@@ -265,6 +317,8 @@ export function registerUpdaterEvents(getMainWindow) {
             }
             return;
         }
+        cleanupSupersededPendingUpdate(info.version);
+        const downloadedUpdate = getPendingDownloadedUpdate(info.version, currentVersion);
         log.info(`Update available: ${info.version}`);
         getMainWindow()?.webContents.send('release-update-available', buildUpdatePayload({
             ok: true,
@@ -274,6 +328,8 @@ export function registerUpdaterEvents(getMainWindow) {
             releaseName: normalizeReleaseName(info.releaseName, info.version),
             releaseNotes: normalizeReleaseNotesEntries(info.releaseNotes),
             assetName: info?.files?.[0]?.url || '',
+            downloaded: !!downloadedUpdate,
+            downloadedInstallerPath: downloadedUpdate?.installerPath || '',
         }));
     });
 
@@ -303,25 +359,13 @@ export function registerUpdaterEvents(getMainWindow) {
         getMainWindow()?.webContents.send('update-downloaded', {
             version: info.version,
             releaseName: normalizeReleaseName(info.releaseName, info.version),
-            autoInstall: true
+            autoInstall: false
         });
 
-        // Persist pending update state immediately so cleanup runs even if install is interrupted
         writePendingUpdateInstall({
             version: lastDownloadedUpdateVersion,
             installerPath: lastDownloadedUpdateFile
         });
-
-        setTimeout(() => {
-            try {
-                log.info('Installing downloaded Windows update automatically and restarting...');
-                if (updateReadyToCloseRef) { updateReadyToCloseRef.value = true; }
-                // forceRunAfter: true ensures the app restarts after update installation
-                autoUpdater.quitAndInstall(true, true);
-            } catch (err) {
-                log.warn(`Automatic update install failed: ${err?.message || String(err)}`);
-            }
-        }, 3000);
     });
 
     autoUpdater.on('error', (err) => {
@@ -331,7 +375,6 @@ export function registerUpdaterEvents(getMainWindow) {
 }
 
 export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null) {
-    updateReadyToCloseRef = isReadyToCloseRef;
     ipcMain.handle('set-update-channel', (event, channel) => {
         if (!autoUpdater) { return; }
         const isBeta = channel === 'beta';
@@ -354,6 +397,7 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
         try {
             lastDownloadPercent = 0;
             const installMode = resolveUpdateInstallMode();
+            if (lastAvailableUpdateInfo?.version) { cleanupSupersededPendingUpdate(lastAvailableUpdateInfo.version); }
             log.info('Starting update download...');
             await autoUpdater.downloadUpdate();
             return { ok: true, installMode };
@@ -401,7 +445,6 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
         };
     });
 }
-
 
 
 

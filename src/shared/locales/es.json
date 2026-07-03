@@ -196,7 +196,7 @@
   "theme_light": "Claro",
   "update_available_title": "Actualización disponible",
   "update_available_msg": "Hay una nueva versión de Tree IDE disponible y lista para descargar.",
-  "update_download_release": "Descargar e instalar",
+  "update_download_release": "Descargar actualización",
   "update_download_installer": "Descargar instalador",
   "update_downloading": "Descargando",
   "update_install_restart": "Instalar y reiniciar",
