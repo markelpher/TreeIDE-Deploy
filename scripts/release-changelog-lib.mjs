@@ -56,8 +56,8 @@ export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || '
 
 /** Non-English release assets attached to each GitHub release. */
 export const GITHUB_RELEASE_LOCALE_NAV = [
-    { label: 'Português', asset: 'changelog-pt.md' },
-    { label: 'Español', asset: 'changelog-es.md' },
+    { label: 'Português', asset: 'pt.md' },
+    { label: 'Español', asset: 'es.md' },
 ];
 
 /**

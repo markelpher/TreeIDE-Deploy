@@ -209,12 +209,11 @@ jobs:
         run: |
           set -euo pipefail
           tag="${{ steps.meta.outputs.tag }}"
-          mkdir -p "$RUNNER_TEMP/release-changelogs"
-          cp "$RUNNER_TEMP/changelogs/en.md" "$RUNNER_TEMP/release-changelogs/changelog-en.md"
-          cp "$RUNNER_TEMP/changelogs/pt.md" "$RUNNER_TEMP/release-changelogs/changelog-pt.md"
-          cp "$RUNNER_TEMP/changelogs/es.md" "$RUNNER_TEMP/release-changelogs/changelog-es.md"
-          cp "$RUNNER_TEMP/changelogs/changelog.md" "$RUNNER_TEMP/release-changelogs/changelog-all.md"
-          gh release upload --clobber "$tag" "$RUNNER_TEMP"/release-changelogs/*.md
+          gh release upload --clobber "$tag" \
+            "$RUNNER_TEMP/changelogs/changelog.md" \
+            "$RUNNER_TEMP/changelogs/en.md" \
+            "$RUNNER_TEMP/changelogs/pt.md" \
+            "$RUNNER_TEMP/changelogs/es.md"
 
       - name: Publish GitHub release
         if: steps.published.outputs.already != 'true'
@@ -237,3 +236,30 @@ jobs:
           fi
           gh "${edit_args[@]}"
           echo "[finalize] Release $tag published with localized notes and all platform artifacts."
+
+      - name: Commit localized changelog docs
+        if: steps.published.outputs.already != 'true'
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          branch="${{ github.event.repository.default_branch }}"
+
+          cp docs/changelogs/pt.md "$RUNNER_TEMP/changelog-pt-doc.md"
+          cp docs/changelogs/es.md "$RUNNER_TEMP/changelog-es-doc.md"
+
+          git fetch origin "$branch"
+          git switch "$branch"
+
+          cp "$RUNNER_TEMP/changelog-pt-doc.md" docs/changelogs/pt.md
+          cp "$RUNNER_TEMP/changelog-es-doc.md" docs/changelogs/es.md
+
+          if git diff --quiet -- docs/changelogs/pt.md docs/changelogs/es.md; then
+            echo "[finalize] Localized changelog docs are already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/changelogs/pt.md docs/changelogs/es.md
+          git commit --signoff -m "docs: update localized changelogs for $tag [skip ci]"
+          git push origin "HEAD:$branch"
