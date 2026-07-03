@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.92",
+  "version": "2.0.93",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -51,18 +51,9 @@
     },
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "msi",
-          "arch": ["x64", "arm64"]
-        }
+        "nsis",
+        "portable",
+        "msi"
       ],
       "executableName": "Tree IDE",
       "icon": "assets/icon-no-bg.ico",

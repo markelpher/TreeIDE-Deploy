@@ -28,7 +28,7 @@ function patchNsisTemplates() {
     // before oneClick declares its pages. This prevents "Call un." errors in non-uninstall
     // sections when BUILD_UNINSTALLER pass emits MUI_PAGE_INSTFILES.
     const patchedOneClick = patchTextFile(oneClick, [
-      ['!ifndef BUILD_UNINSTALLER', '!ifndef BUILD_UNINSTALLER\n  !undef MUI_PAGE_CUSTOMFUNCTION_PRE\n  !undef MUI_PAGE_CUSTOMFUNCTION_SHOW', 'clearedCustomFunctionsInOneClick']
+      ['!ifndef BUILD_UNINSTALLER', '!ifndef BUILD_UNINSTALLER\n  !ifdef MUI_PAGE_CUSTOMFUNCTION_PRE\n    !undef MUI_PAGE_CUSTOMFUNCTION_PRE\n  !endif\n  !ifdef MUI_PAGE_CUSTOMFUNCTION_SHOW\n    !undef MUI_PAGE_CUSTOMFUNCTION_SHOW\n  !endif', 'clearedCustomFunctionsInOneClick']
     ]);
     if (patchedOneClick) {
       console.log('[beforePack] Patched oneClick.nsh: cleared MUI custom function defines');
