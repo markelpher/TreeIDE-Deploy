@@ -1,8 +1,8 @@
 <!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->
 
-## O que há de novo na v2.0.86
+## O que há de novo na v2.0.87
 
-Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos multiplataforma.
+Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos multi-plataforma.
 
 ### Adicionado
 
@@ -24,12 +24,12 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Fallback ARM64 do Windows** para 7-Zip quando os binários nativos não estão disponíveis
 
 #### Modelos
-- **19 modelos de início embutidos** agrupados por categoria:
+- **19 modelos iniciais embutidos** agrupados por categoria:
   - Frontend: HTML, HTML & CSS, HTML/CSS/JS, React, Vite + React
   - Pilhas: Node.js, MVC, Python, PHP
   - Sistemas: Go, Java, Kotlin, Rust, Ruby, Swift, Dart
   - Nativo: C, C++, C#
-- **Tela de modelos** — navegador em tela cheia com três colunas, com abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
+- **Tela de modelos** — navegador em tela cheia com três colunas, abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
 - **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar o conteúdo do arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
 - **Arquivos `.tree-template`** — exportar e importar modelos personalizados compartilháveis (JSON `treeide-template` v1) via diálogos de salvar/abrir nativos ou exportação por linha na lista personalizada
 - **Rodapé de modelos personalizados** — quando existem modelos personalizados: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
@@ -43,7 +43,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Visualização ao vivo de Markdown** para arquivos `.md` no painel de visualização de arquivos
 - **Pastas colapsáveis** na visualização da árvore
 - **Navegação por teclado na árvore** — teclas de seta, Início, Fim e Enter
-- **Correspondência inteligente de renomeação de arquivos** quando as linhas da árvore são editadas
+- **Correspondência inteligente de renomeação de arquivos** quando linhas da árvore são editadas
 - **Indentação / desindentação de bloco** com Tab e Shift+Tab, além de Backspace inteligente para blocos de indentação
 - **Zoom do editor** — `Ctrl++`, `Ctrl+-` e `Ctrl+0`
 - **Painéis redimensionáveis** (editor, árvore, visualização de arquivos) com layout persistido entre sessões
@@ -58,7 +58,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Barra de menu** — Arquivo, Editar, Exibir, Janela e Sobre
 - **Modal de boas-vindas** na primeira execução — layout redesenhado com cabeçalho hero, cartões de configuração agrupados (Geral, Aparência, Sessão) e um botão **Começar** fixo
 - **Modal de configurações** com abas: Geral, Aparência, Atalhos e Atualizações
-- **Modal Sobre** com versão ao vivo do aplicativo (evoluído da tela de créditos da v1)
+- **Modal Sobre** com versão do aplicativo ao vivo (evoluído da tela de créditos da v1)
 - **Diálogo de alterações não salvas** ao fechar com projetos modificados
 - **Sobreposição de arrastar e soltar** para arquivos `.tree` e arquivos compactados
 - **Fontes agrupadas** — Inter e JetBrains Mono
@@ -70,7 +70,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Script `npm run i18n:validate`** para manter os arquivos de localidade em sincronia
 
 #### Persistência de sessão
-- **Armazenamento de sessão IndexedDB** com migração automática do `localStorage` legado
+- **Armazenamento de sessão IndexedDB** com migração automática do legado `localStorage`
 - **Salvar automaticamente** abas abertas, conteúdos de arquivos e nomes de projetos
 - **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
 
