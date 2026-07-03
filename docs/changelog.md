@@ -1,6 +1,6 @@
 [Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/es.md)
 
-## What's new in v2.0.83
+## What's new in v2.0.84
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -105,56 +105,3 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **electron-reloader** for main-process hot reload during development
 - **Error log export** on crash for easier debugging
 - **`semver`** as a direct dependency for reliable in-app version comparison
-
-### Changed
-
-- **Complete rewrite** from the v1 monolith (`main.js`, `renderer.js`, `styles.css`) to a modular Vite + Electron architecture
-- **Build flow** — the toolbar **Build** button now opens **Build Studio** instead of writing files immediately
-- **Themes** — light and dark modes plus a **System** option that follows the OS color scheme
-- **Credits screen** renamed to **About Tree IDE** with dynamic version info
-- **Save / load** — unified loader for `.tree` projects, archives, and folders; supports encrypted projects and imported file-content maps
-- **Tree preview** — ASCII connectors, Lucide icons, fold buttons, and active-file highlighting replace the basic v1 tree view
-- **Session storage** moved from `localStorage` to **IndexedDB** to support larger autosave payloads (tabs + file contents)
-- **Distribution** expanded from Windows MSI-only (v1) to multi-OS CI with ARM64 support, Flatpak, and macOS packages
-- **Electron** upgraded from v26 (v1) to v42 (v2)
-- **Release versioning** moved to semantic v2.x releases with automated multilingual changelog generation
-- **Release notes routing** — `en.md`, `pt.md`, and `es.md` feed the in-app updater; `github-release.md` feeds the GitHub release body with the compare link
-- **Templates screen** — structure editor and tree preview use a 50/50 split in custom edit mode; preview label shortened to **Preview**; **Use template** action centered in the modal footer
-- **Custom template toasts** — open-in-editor hint now points to **From current project** instead of the removed per-template update action
-- **File preview tab bar** — file tabs scroll in a dedicated region beside the file-type badge and close button; removed the vertical divider; stable bar height with arrow scrolling only (no hover scrollbar expansion)
-- **File preview editor typography** — shared monospace sizing with the Templates and Build Studio file viewers
-- **README previews** — main screenshot lives under `assets/previews/`; Portuguese and Spanish READMEs use localized preview images
-
-### Fixed
-
-- **Templates custom row icons** — rename, open-in-editor, export, and delete actions use bundled Lucide icons (`type`, `file-code`, `download`, `trash-2`) instead of falling back to the generic file glyph
-- **Templates file preview** — file contents render in a full-width monospace editor panel (not plain text), matching built-in template behavior; the file panel clears when the structure editor is emptied
-- **Templates structure editor** — Tab indents in the structure and file textareas instead of jumping focus to other controls; tree preview updates live while typing; built-in template list no longer leaves a gap below the last item when the custom footer is hidden
-- **Templates modal bindings** — structure/file editor listeners reattach after list re-renders so inline edits keep working
-- **Blank / black screen after install** — packaged builds could ship without `dist/renderer/` because the UI output is gitignored; `electron-before-pack` now builds and verifies the renderer before every `electron-builder` pack
-- **Update check failures** — clearer localized errors for network issues, missing `latest*.yml`, and inaccessible releases; duplicate error toasts removed; unknown updater errors fall back to a translated message instead of raw English
-- **Update dialog release name** — `Tree IDE v${version}` template from electron-builder is normalized to the real version string in the app
-- **Release CI (translation job)** — migrated to `models.github.ai`; `latest*.yml` injection runs in the single `Release Finalize` workflow without `npm install`
-- **Release finalize gate** — platform builds publish draft releases; each platform CI job checks whether Windows, Linux, and macOS have all succeeded and only then dispatches `Release Finalize` once (the dispatch job treats its own workflow as done even while GitHub still marks it `in_progress`); finalize publishes localized `latest*.yml`, Snap, and Flatpak assets; the app ignores updates until English, Portuguese, and Spanish release notes are present
-- **Flatpak packaging** — corrected Electron staging path, manifest sources, ARM64 unpacked directory, `zypak-wrapper` entrypoint, and desktop filename patching
-- **GitHub Actions cache cleanup** — fixed `jq` comparing numeric cache IDs to strings, which could delete the cache entry meant to be kept
-- **Linux snap CI** — snap artifacts build with `--publish never` so CI does not require Snap Store credentials; the `.snap` file is attached to the GitHub release during `Release Finalize` (x64 only)
-- **Path safety** — tree parser and creator reject traversal and other unsafe paths before writing to disk
-- **Indentation validation** — mixed tabs and spaces are detected and reported in the validation panel
-- **Duplicate names** — sibling files and folders with the same name are flagged before build
-- **Encrypted export validation** — password and confirmation must match before creating protected ZIP or `.tree` files
-- **Update detection** — only versions strictly newer than the installed build are offered
-- **Release notes rendering** — HTML in update changelogs is sanitized before display
-- **File preview tab bar** — tabs no longer overlap the file-type label or disrupt the editor layout when many files are open
-- **File preview editor** — scrollbar and keyboard editing (Tab / Backspace) match the main structure editor; font weight and size now match the Templates file viewer
-- **Save / export naming** — `.tree` saves and exports use the resolved project name instead of a generic Untitled fallback
-- **Custom templates persistence** — custom templates autosave while the Templates modal is open and restore from IndexedDB after restart
-- **Windows NSIS installer build** — Spanish strings use LCID **3082** (`SpanishInternational`, matching electron-builder `es_ES`); removed redundant `Spanish-1034.nsh` and Portuguese `MUI_UNTEXT_*` overrides so `makensis -WX` no longer fails on duplicate or missing LangStrings
-- **Windows NSIS installer language** — in-wizard language picker (English, Portuguese, Spanish) without relaunch or temp helper files; **Next** advances immediately and directory, progress, finish, and custom pages apply translated titles, descriptions, and buttons at show time via `SendMessage`
-- **Windows NSIS uninstaller language** — same in-wizard language picker; progress and finish pages follow the selected language without relaunch
-
-### Removed
-
-- **Monolithic single-file layout** from v1 — replaced by the modular `src/` structure (functionality preserved and expanded)
-- **One-step build UI** — superseded by Build Studio; direct folder creation is still available inside the studio
-- **Windows MSI-only packaging** as the sole distribution format — replaced by NSIS, MSI, portable, and Linux/macOS artifacts

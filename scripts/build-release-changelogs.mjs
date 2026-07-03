@@ -8,13 +8,14 @@
  * - The app picks the matching locale at runtime (see src/shared/releaseNotes.js).
  *
  * Usage:
- *   node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs]
+ *   node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs] [--strict-translations]
  *
  * Output:
  *   <output_dir>/en.md - source changelog (GitHub release + fallback)
  *   <output_dir>/<locale>.md - full translation for each non-English locale
  *   <output_dir>/changelog.md - archive with every locale combined
  *   --sync-docs also writes docs/changelogs/<locale>.md for non-English locales
+ *   By default, translation API failures fall back to English source notes so releases can continue.
  */
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -54,7 +55,7 @@ async function loadLocales() {
 }
 
 function printHelp() {
-    console.log('Usage: node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs]');
+    console.log('Usage: node scripts/build-release-changelogs.mjs <previous_tag|-> <current_tag> <output_dir> [--sync-docs] [--strict-translations]');
 }
 
 function localizedDocsHeader(localeCode) {
@@ -83,7 +84,8 @@ async function syncLocalizedDocs(locales, notesByLocale) {
 async function main() {
     const [prev, current, outDir, ...flags] = argv.slice(2);
     const syncDocs = flags.includes('--sync-docs');
-    const unknownFlags = flags.filter((flag) => flag !== '--sync-docs');
+    const strictTranslations = flags.includes('--strict-translations');
+    const unknownFlags = flags.filter((flag) => flag !== '--sync-docs' && flag !== '--strict-translations');
     if (unknownFlags.length) {
         throw new Error(`Unknown argument(s): ${unknownFlags.join(', ')}`);
     }
@@ -110,12 +112,16 @@ async function main() {
         if (locale.source || locale.code === sourceLocale.code) { continue; }
 
         const targetPath = path.join(outDir, `${locale.code}.md`);
-        await runNode('scripts/translate-changelog.mjs', [
+        const translateArgs = [
             '--input', sourcePath,
             '--output', targetPath,
             '--target', locale.code,
             '--source', locale.translateFrom || sourceLocale.code,
-        ]);
+        ];
+        if (!strictTranslations) {
+            translateArgs.push('--allow-source-fallback');
+        }
+        await runNode('scripts/translate-changelog.mjs', translateArgs);
         const localized = stripFullChangelogLink(await readFile(targetPath, 'utf8'));
         await writeFile(targetPath, localized, 'utf8');
         notesByLocale.set(locale.code, localized);
