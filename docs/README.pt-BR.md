@@ -152,18 +152,18 @@ npm run build:win
 npm run build:win:arm64
 ```
 
-O Tree IDE é exclusivo para Windows. Ele fornece o instalador NSIS para x64 e ARM64, além de Portable e MSI para x64. O instalador NSIS suporta instalação por usuário e atualizações automáticas silenciosas sem solicitação de administrador.
+O Tree IDE é exclusivo para Windows. Ele fornece o instalador NSIS, Portable e MSI para x64 e ARM64. O instalador NSIS suporta instalação por usuário e atualizações automáticas silenciosas sem solicitação de administrador.
 
 | Identificador Windows | Valor |
 | --- | --- |
 | Application ID | `com.treeide.treeide` |
 | Nome do executável | `Tree IDE` |
-| Tipos de instalador | Setup NSIS (x64 + ARM64), Portable (x64), MSI (x64) |
+| Tipos de instalador | Setup NSIS (x64 + ARM64), Portable (x64 + ARM64), MSI (x64 + ARM64) |
 | Idiomas do instalador | Inglês (`en_US`), Português (`pt_BR`), Espanhol (`es_ES`) |
 | Metadados do atualizador | `latest.yml` (x64), `latest-arm64.yml` (ARM64) |
 | Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
 | Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Arquivos de release | `Tree-IDE-Setup-{version}-win-{arch}.exe` (x64/ARM64), `Tree-IDE-Portable-{version}-win-x64.exe`, `Tree-IDE-{version}-win-x64.msi` |
+| Arquivos de release | `Tree-IDE-Setup-{version}-win-{arch}.exe`, `Tree-IDE-Portable-{version}-win-{arch}.exe`, `Tree-IDE-{version}-win-{arch}.msi` (x64/ARM64) |
 
 ## Estrutura do Projeto
 
@@ -201,7 +201,7 @@ docs/
 |       installation.es.md      # Guia de instalação em espanhol
 scripts/                        # Scripts de build, changelog e CI
 .github/workflows/
-|   windows-build.yml           # Build Windows (x64 + ARM64)
+|   windows-build.yml           # Build Windows (x64 + ARM64: NSIS + Portable + MSI)
 |   release-finalize.yml        # Traduzir changelogs e publicar release
 ```
 

@@ -134,7 +134,7 @@ jobs:
           if-no-files-found: error
 
   build-windows-arm:
-    name: Build Windows arm64 (NSIS)
+    name: Build Windows arm64 (NSIS + Portable + MSI)
     runs-on: windows-11-arm
 
     steps:
@@ -185,7 +185,7 @@ jobs:
 
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host "electron-builder attempt $attempt of $maxAttempts"
-            npx electron-builder --win nsis --arm64 --publish $publishMode
+            npx electron-builder --win --arm64 --publish $publishMode
 
             if ($LASTEXITCODE -eq 0) {
               exit 0
@@ -247,6 +247,7 @@ jobs:
           name: tree-ide-windows-arm64
           path: |
             dist/*.exe
+            dist/*.msi
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error

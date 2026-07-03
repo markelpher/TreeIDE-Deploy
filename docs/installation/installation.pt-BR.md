@@ -2,7 +2,7 @@
 
 [English](installation.md) · [Español](installation.es.md) · [README principal](../README.pt-BR.md)
 
-O Tree IDE publica pacotes oficiais para Windows x64 e Windows ARM64. É um aplicativo exclusivo para Windows. O instalador NSIS está disponível para ambas as arquiteturas; Portable e MSI são somente x64.
+O Tree IDE publica pacotes oficiais para Windows x64 e Windows ARM64. É um aplicativo exclusivo para Windows. NSIS, Portable e MSI estão disponíveis para ambas as arquiteturas.
 
 ## Escolha o download correto
 
@@ -19,11 +19,13 @@ Escolha um destes arquivos:
 | Windows x64 | `Tree-IDE-Setup-{version}-win-x64.exe` | Recomendado (NSIS, suporta atualizações automáticas) |
 | Windows x64 Portable | `Tree-IDE-Portable-{version}-win-x64.exe` | Não instala, executa diretamente |
 | Windows x64 MSI | `Tree-IDE-{version}-win-x64.msi` | Instalador alternativo |
-| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | Instalador NSIS para dispositivos ARM |
+| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | NSIS para dispositivos ARM |
+| Windows ARM64 Portable | `Tree-IDE-Portable-{version}-win-arm64.exe` | Não instala, executa diretamente |
+| Windows ARM64 MSI | `Tree-IDE-{version}-win-arm64.msi` | Instalador alternativo |
 
 ## Instalar no Windows
 
-1. Baixe o arquivo correto para o seu processador: `Tree-IDE-Setup-{version}-win-x64.exe` (recomendado), o NSIS para ARM64 ou um dos pacotes Portable/MSI x64.
+1. Baixe o arquivo correto para o seu processador (x64 ou ARM64) para NSIS (recomendado, suporta atualizações automáticas), Portable ou MSI.
 2. Dê dois cliques no instalador (Setup ou MSI) ou execute diretamente o Portable .exe.
 3. Se o Windows SmartScreen aparecer, clique em **Mais informações** e depois em **Executar assim mesmo** somente se o arquivo veio da release oficial.
 4. Aguarde a instalação terminar (ou apenas inicie o Portable).
@@ -49,7 +51,7 @@ Use **Configurações -> Aplicativos -> Aplicativos instalados -> Tree IDE -> De
 
 ### O Windows pede permissão de administrador
 
-Instale a build `Tree-IDE-Setup` mais recente para a sua arquitetura. As builds atuais estão configuradas como instalação por usuário e não devem pedir administrador durante instalação/update normal.
+Instale a build `Tree-IDE-Setup-{version}-win-{arch}.exe` mais recente para a sua arquitetura. As builds atuais estão configuradas como instalação por usuário e não devem pedir administrador durante instalação/update normal.
 
 Se uma versão antiga instalada para todos os usuários já estava na máquina, desinstale-a primeiro pelas Configurações do Windows e depois instale o novo setup por usuário.
 

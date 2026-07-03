@@ -144,6 +144,8 @@ LangString treeIdeUninstallDataTitle 3082 "Datos de usuario"
 
 Var TreeIdeIsFinishPage
 !ifndef BUILD_UNINSTALLER
+  !undef MUI_PAGE_CUSTOMFUNCTION_PRE
+  !undef MUI_PAGE_CUSTOMFUNCTION_SHOW
 
 Var TreeIdeDirInput
 Var TreeIdeSpaceRequiredLabel
@@ -495,8 +497,8 @@ Function RemoveTreeIdeUserData
 FunctionEnd
 
 !else
-
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW un.TreeIdeOnPageShow
+  !undef MUI_PAGE_CUSTOMFUNCTION_PRE
+  !undef MUI_PAGE_CUSTOMFUNCTION_SHOW
 
 Function un.TreeIdeInitSystemLanguage
   System::Call 'kernel32::GetUserDefaultUILanguage()i .r0'

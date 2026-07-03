@@ -88,8 +88,8 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - Los nuevos valores predeterminados incluyen `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (construir), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (guardar todo), y atajos de zoom del editor
 
 #### Plataformas y distribución
-- **Windows** — instalador NSIS (x64 + ARM64), MSI y versiones portátiles para x64; instalador multilingüe (inglés, portugués y español) con título de selector de idioma localizado
-- **Windows (x64 + ARM64)** — Instalador NSIS para x64 y ARM64, Portable y MSI para x64; instalador multilingüe (inglés, portugués y español)
+- **Windows** — NSIS, MSI y versiones portátiles para x64 + ARM64; instalador multilingüe (inglés, portugués y español) con título de selector de idioma localizado
+- **Windows (x64 + ARM64)** — NSIS, Portable y MSI para x64 y ARM64; instalador multilingüe (inglés, portugués y español)
 - **Lanzamientos de GitHub** publicados automáticamente en etiquetas de versión desde CI
 - **Construcción del renderizador antes de empaquetar** — `beforePack` ejecuta `vite build` y valida `dist/renderer/` para que cada instalador envíe el paquete de UI
 

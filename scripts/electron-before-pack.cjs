@@ -23,6 +23,17 @@ function patchTextFile(filePath, replacements) {
 function patchNsisTemplates() {
     const nsisDir = path.join(__dirname, '..', 'node_modules', 'app-builder-lib', 'templates', 'nsis');
 
+    const oneClick = path.join(nsisDir, 'oneClick.nsh');
+    // Clear any MUI custom function defines that may have been set by user includes
+    // before oneClick declares its pages. This prevents "Call un." errors in non-uninstall
+    // sections when BUILD_UNINSTALLER pass emits MUI_PAGE_INSTFILES.
+    const patchedOneClick = patchTextFile(oneClick, [
+      ['!ifndef BUILD_UNINSTALLER', '!ifndef BUILD_UNINSTALLER\n  !undef MUI_PAGE_CUSTOMFUNCTION_PRE\n  !undef MUI_PAGE_CUSTOMFUNCTION_SHOW', 'clearedCustomFunctionsInOneClick']
+    ]);
+    if (patchedOneClick) {
+      console.log('[beforePack] Patched oneClick.nsh: cleared MUI custom function defines');
+    }
+
     const assistedInstaller = path.join(nsisDir, 'assistedInstaller.nsh');
     const directoryPageDefines = [
         '!insertmacro customInstallDirectoryPage',

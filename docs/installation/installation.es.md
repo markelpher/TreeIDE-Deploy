@@ -2,7 +2,7 @@
 
 [English](installation.md) · [Português](installation.pt-BR.md) · [README principal](../README.es.md)
 
-Tree IDE publica paquetes oficiales para Windows x64 y Windows ARM64. Es una aplicación exclusiva para Windows. El instalador NSIS está disponible para ambas arquitecturas; Portable y MSI son solo para x64.
+Tree IDE publica paquetes oficiales para Windows x64 y Windows ARM64. Es una aplicación exclusiva para Windows. NSIS, Portable y MSI están disponibles para ambas arquitecturas.
 
 ## Elige la descarga correcta
 
@@ -19,11 +19,13 @@ Elige uno de estos archivos:
 | Windows x64 | `Tree-IDE-Setup-{version}-win-x64.exe` | Recomendado (NSIS, soporta actualizaciones automáticas) |
 | Windows x64 Portable | `Tree-IDE-Portable-{version}-win-x64.exe` | No instala, se ejecuta directamente |
 | Windows x64 MSI | `Tree-IDE-{version}-win-x64.msi` | Instalador alternativo |
-| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | Instalador NSIS para dispositivos ARM |
+| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | NSIS para dispositivos ARM |
+| Windows ARM64 Portable | `Tree-IDE-Portable-{version}-win-arm64.exe` | No instala, se ejecuta directamente |
+| Windows ARM64 MSI | `Tree-IDE-{version}-win-arm64.msi` | Instalador alternativo |
 
 ## Instalar en Windows
 
-1. Descarga el archivo correcto para tu procesador: `Tree-IDE-Setup-{version}-win-x64.exe` (recomendado), el NSIS para ARM64 o uno de los paquetes Portable/MSI x64.
+1. Descarga el archivo correcto para tu procesador (x64 o ARM64) para NSIS (recomendado, soporta actualizaciones automáticas), Portable o MSI.
 2. Haz doble clic en el instalador (Setup o MSI) o ejecuta directamente el Portable .exe.
 3. Si aparece Windows SmartScreen, elige **Más información** y luego **Ejecutar de todas formas** solo si el archivo viene de la release oficial.
 4. Espera a que termine la instalación (o simplemente inicia el Portable).
@@ -49,7 +51,7 @@ Usa **Configuración -> Aplicaciones -> Aplicaciones instaladas -> Tree IDE -> D
 
 ### Windows pide permisos de administrador
 
-Instala la build `Tree-IDE-Setup` más reciente para tu arquitectura. Las builds actuales están configuradas como instalación por usuario y no deberían pedir administrador durante la instalación/actualización normal.
+Instala la build `Tree-IDE-Setup-{version}-win-{arch}.exe` más reciente para tu arquitectura. Las builds actuales están configuradas como instalación por usuario y no deberían pedir administrador durante la instalación/actualización normal.
 
 Si ya había una versión antigua instalada para todos los usuarios, desinstálala primero desde Configuración de Windows y luego instala el nuevo setup por usuario.
 

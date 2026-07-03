@@ -2,7 +2,7 @@
 
 [Português](installation.pt-BR.md) · [Español](installation.es.md) · [Main README](../../README.md)
 
-Tree IDE ships official packages for Windows x64 and Windows ARM64. It is a Windows-only application. NSIS setup is available for both architectures; Portable and MSI are x64 only.
+Tree IDE ships official packages for Windows x64 and Windows ARM64. It is a Windows-only application. NSIS, Portable and MSI are available for both architectures.
 
 ## Choose Your Download
 
@@ -19,11 +19,13 @@ Choose one of these files:
 | Windows x64 | `Tree-IDE-Setup-{version}-win-x64.exe` | Recommended (NSIS, supports auto-updates) |
 | Windows x64 Portable | `Tree-IDE-Portable-{version}-win-x64.exe` | No installation, runs directly |
 | Windows x64 MSI | `Tree-IDE-{version}-win-x64.msi` | Alternative installer |
-| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | NSIS installer for ARM devices |
+| Windows ARM64 | `Tree-IDE-Setup-{version}-win-arm64.exe` | NSIS for ARM devices |
+| Windows ARM64 Portable | `Tree-IDE-Portable-{version}-win-arm64.exe` | No installation, runs directly |
+| Windows ARM64 MSI | `Tree-IDE-{version}-win-arm64.msi` | Alternative installer |
 
 ## Install on Windows
 
-1. Download the correct file for your CPU: `Tree-IDE-Setup-{version}-win-x64.exe` (recommended for most users), the ARM64 NSIS for ARM devices, or one of the x64 Portable/MSI packages.
+1. Download the correct file for your CPU (x64 or ARM64) for NSIS (recommended, supports auto-updates), Portable, or MSI.
 2. Double-click the installer (for Setup or MSI) or run the Portable .exe directly.
 3. If Windows SmartScreen appears, choose **More info** and then **Run anyway** only if the file came from the official release page.
 4. Wait for the installer to finish (or just launch Portable).
@@ -49,7 +51,7 @@ Use **Settings -> Apps -> Installed apps -> Tree IDE -> Uninstall**, or run the 
 
 ### Windows asks for administrator permission
 
-Install the latest `Tree-IDE-Setup` build for your architecture. Current builds are configured as per-user installs and should not request administrator permission during normal install/update.
+Install the latest `Tree-IDE-Setup-{version}-win-{arch}.exe` build for your architecture. Current builds are configured as per-user installs and should not request administrator permission during normal install/update.
 
 If an older machine-wide version was installed before this change, uninstall it first from Windows Settings, then install the new per-user setup.
 
