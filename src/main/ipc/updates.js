@@ -106,8 +106,28 @@ export function cleanupPendingUpdateInstall(currentVersion = app.getVersion()) {
     }
 
     if (isInstalledUpdateVersion(currentVersion, state.version)) {
+        // Delete the old installer file
         const deleted = safeDeleteFile(state.installerPath);
-        safeDeleteEmptyDir(state.installerPath ? path.dirname(state.installerPath) : '');
+        // Also try to delete the parent cache directory if it becomes empty after deleting the installer
+        if (state.installerPath) {
+            const parentDir = path.dirname(state.installerPath);
+            safeDeleteEmptyDir(parentDir);
+            // Also attempt to delete known electron-updater cache subdirectories (squirrel-windows, etc.)
+            try {
+                const grandparent = path.dirname(parentDir);
+                if (grandparent && existsSync(grandparent)) {
+                    const entries = require('node:fs').readdirSync(grandparent);
+                    for (const entry of entries) {
+                        const full = path.join(grandparent, entry);
+                        try {
+                            if (require('node:fs').statSync(full).isDirectory()) {
+                                safeDeleteEmptyDir(full);
+                            }
+                        } catch { /* ignore */ }
+                    }
+                }
+            } catch { /* ignore */ }
+        }
         clearPendingUpdateInstall();
         log.info(`Update ${state.version} installed successfully; installer cleanup ${deleted ? 'completed' : 'skipped'}.`);
         return { checked: true, ok: true, deleted };
@@ -170,6 +190,12 @@ try {
     autoUpdater.allowPrerelease = false;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.autoRunAppAfterInstall = true;
+    // Ensure downloaded updates are applied immediately on Windows (NSIS)
+    try {
+        if (autoUpdater.updateConfigPath) {
+            log.info('electron-updater config path: ' + autoUpdater.updateConfigPath);
+        }
+    } catch { /* ignore */ }
     autoUpdater.disableDifferentialDownload = true;
     autoUpdater.disableWebInstaller = true;
     autoUpdater.logger = log;
@@ -279,16 +305,23 @@ export function registerUpdaterEvents(getMainWindow) {
             releaseName: normalizeReleaseName(info.releaseName, info.version),
             autoInstall: true
         });
+
+        // Persist pending update state immediately so cleanup runs even if install is interrupted
+        writePendingUpdateInstall({
+            version: lastDownloadedUpdateVersion,
+            installerPath: lastDownloadedUpdateFile
+        });
+
         setTimeout(() => {
             try {
                 log.info('Installing downloaded Windows update automatically and restarting...');
                 if (updateReadyToCloseRef) { updateReadyToCloseRef.value = true; }
-                writePendingUpdateInstall({ version: lastDownloadedUpdateVersion, installerPath: getDownloadedUpdateFile() });
+                // forceRunAfter: true ensures the app restarts after update installation
                 autoUpdater.quitAndInstall(true, true);
             } catch (err) {
                 log.warn(`Automatic update install failed: ${err?.message || String(err)}`);
             }
-        }, 1500);
+        }, 3000);
     });
 
     autoUpdater.on('error', (err) => {
@@ -350,10 +383,12 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
             writePendingUpdateInstall({ version: lastDownloadedUpdateVersion, installerPath });
             log.info('Installing update and restarting...');
             isReadyToCloseRef.value = true;
+            // Ensure the update file won't be deleted by safeDeleteFile until after install succeeds
             autoUpdater.quitAndInstall(true, true);
             return { ok: true };
         } catch (err) {
             log.warn(`Install error: ${err?.message || String(err)}`);
+            clearPendingUpdateInstall();
             return { ok: false, error: getUpdateErrorMessage(err) };
         }
     });
