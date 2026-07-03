@@ -17,8 +17,9 @@ function applyAsarUnpack(binaryPath) {
 }
 
 /**
- * Resolves the 7za binary path, including Windows ARM64 fallback to x64.
- * 7zip-bin ships win/x64 and win/ia32 only; ARM64 Windows runs the x64 build.
+ * Resolves the 7za binary path.
+ * Includes defensive fallback for Windows on ARM64 (uses x64 binary).
+ * 7zip-bin primarily ships win/x64 (and ia32); the fallback covers edge cases.
  * @returns {string}
  */
 export function resolve7zaPath() {

@@ -3,9 +3,6 @@
  */
 
 import { createRequire } from 'node:module';
-import { spawn, spawnSync } from 'node:child_process';
-import { createWriteStream, mkdirSync } from 'node:fs';
-import https from 'node:https';
 import path from 'node:path';
 import { existsSync, readFileSync, unlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { ipcMain, app, shell } from 'electron';
@@ -33,6 +30,7 @@ const GITHUB_OWNER = 'markelpher';
 const GITHUB_REPO = 'TreeIDE-Deploy';
 
 let lastAvailableUpdateInfo = null;
+let updateReadyToCloseRef = null;
 
 
 function getPendingUpdateInstallPath() {
@@ -121,257 +119,6 @@ export function cleanupPendingUpdateInstall(currentVersion = app.getVersion()) {
     log.warn(`Pending update ${state.version} was not installed; current version is ${currentVersion}.`);
     return { checked: true, ok: false, error: 'not-installed', installerPath: state.installerPath };
 }
-function commandExists(command) {
-    const result = spawnSync('sh', ['-c', 'command -v ' + command], { stdio: 'ignore' });
-    return result.status === 0;
-}
-
-function getDownloadedUpdateFile() {
-    return lastDownloadedUpdateFile || autoUpdater?.downloadedUpdateHelper?.file || '';
-}
-
-function readPackagedLinuxPackageType(resourcesPath = process.resourcesPath) {
-    if (!resourcesPath) { return ''; }
-    try {
-        const pkgTypePath = path.join(resourcesPath, 'package-type');
-        if (existsSync(pkgTypePath)) {
-            return readFileSync(pkgTypePath, 'utf8').trim().toLowerCase();
-        }
-    } catch {
-        // fall through
-    }
-    return '';
-}
-
-export function getCurrentLinuxSystemPackageKind(env = process.env, resourcesPath = process.resourcesPath) {
-    if (env.SNAP) { return 'snap'; }
-    if (env.FLATPAK_ID) { return 'flatpak'; }
-
-    const packageType = readPackagedLinuxPackageType(resourcesPath);
-    if (packageType === 'deb') { return 'deb'; }
-    if (packageType === 'rpm') { return 'rpm'; }
-
-    if (process.platform === 'linux') {
-        if (commandExists('dpkg-query')) { return 'deb'; }
-        if (commandExists('rpm')) { return 'rpm'; }
-    }
-    return '';
-}
-export function getLinuxReleaseArch(arch = process.arch) {
-    if (arch === 'x64') { return 'x64'; }
-    if (arch === 'arm64') { return 'arm64'; }
-    return arch;
-}
-
-export function selectLinuxPackageAsset(assets = [], packageKind = '', version = '', arch = process.arch) {
-    const releaseArch = getLinuxReleaseArch(arch).toLowerCase();
-    const normalizedVersion = String(version || '').replace(/^v/i, '').toLowerCase();
-    const normalizedKind = String(packageKind || '').toLowerCase();
-    const extension = normalizedKind === 'tar.gz' ? '.tar.gz' : `.${normalizedKind}`;
-    if (!normalizedKind) { return null; }
-
-    return assets.find((asset) => {
-        const name = String(asset?.name || '').toLowerCase();
-        return name.endsWith(extension)
-            && name.includes(releaseArch)
-            && (!normalizedVersion || name.includes(normalizedVersion));
-    }) || assets.find((asset) => {
-        const name = String(asset?.name || '').toLowerCase();
-        return name.endsWith(extension) && name.includes(releaseArch);
-    }) || null;
-}
-function requestJson(url) {
-    return new Promise((resolve, reject) => {
-        const req = https.get(url, {
-            headers: {
-                'Accept': 'application/vnd.github+json',
-                'User-Agent': 'TreeIDE-Updater',
-            },
-        }, (res) => {
-            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                res.resume();
-                requestJson(res.headers.location).then(resolve, reject);
-                return;
-            }
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-                res.resume();
-                reject(new Error(`GitHub request failed with HTTP ${res.statusCode}`));
-                return;
-            }
-            let body = '';
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => { body += chunk; });
-            res.on('end', () => {
-                try {
-                    resolve(JSON.parse(body));
-                } catch (err) {
-                    reject(err);
-                }
-            });
-        });
-        req.on('error', reject);
-    });
-}
-
-function downloadFile(url, destination, onProgress) {
-    return new Promise((resolve, reject) => {
-        const req = https.get(url, { headers: { 'User-Agent': 'TreeIDE-Updater' } }, (res) => {
-            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                res.resume();
-                downloadFile(res.headers.location, destination, onProgress).then(resolve, reject);
-                return;
-            }
-            if (res.statusCode < 200 || res.statusCode >= 300) {
-                res.resume();
-                reject(new Error(`Download failed with HTTP ${res.statusCode}`));
-                return;
-            }
-
-            const total = Number(res.headers['content-length']) || 0;
-            let transferred = 0;
-            const file = createWriteStream(destination);
-            res.on('data', (chunk) => {
-                transferred += chunk.length;
-                onProgress?.({ transferred, total, percent: total ? (transferred / total) * 100 : 0 });
-            });
-            res.pipe(file);
-            file.on('finish', () => file.close(resolve));
-            file.on('error', reject);
-            res.on('error', reject);
-        });
-        req.on('error', reject);
-    });
-}
-
-async function downloadGitHubReleaseAsset({ updateInfo, getMainWindow, packageKind, cacheDirName, missingAssetMessage }) {
-    const version = updateInfo?.version || lastAvailableUpdateInfo?.version;
-    if (!version) { throw new Error('Missing update version.'); }
-
-    const releaseUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tags/v${String(version).replace(/^v/i, '')}`;
-    const release = await requestJson(releaseUrl);
-    const asset = selectLinuxPackageAsset(release?.assets || [], packageKind, version, process.arch);
-    if (!asset?.browser_download_url || !asset?.name) {
-        throw new Error(missingAssetMessage || `No ${packageKind} update asset found.`);
-    }
-
-    const updatesDir = path.join(app.getPath('userData'), cacheDirName);
-    mkdirSync(updatesDir, { recursive: true });
-    const destination = path.join(updatesDir, asset.name);
-    await downloadFile(asset.browser_download_url, destination, (progress) => {
-        lastDownloadPercent = normalizeDownloadPercent(lastDownloadPercent, progress);
-        getMainWindow()?.webContents.send('update-download-progress', {
-            ...progress,
-            percent: lastDownloadPercent,
-        });
-    });
-
-    lastDownloadedUpdateFile = destination;
-    lastDownloadedUpdateVersion = String(version).replace(/^v/i, '');
-    getMainWindow()?.webContents.send('update-downloaded', {
-        version: lastDownloadedUpdateVersion,
-        releaseName: normalizeReleaseName(updateInfo?.releaseName || release?.name, lastDownloadedUpdateVersion),
-    });
-    return destination;
-}
-
-async function downloadSystemPackageUpdate(updateInfo, getMainWindow) {
-    const packageKind = getCurrentLinuxSystemPackageKind();
-    if (!packageKind) { throw new Error('Unable to detect Linux package type for update.'); }
-    return downloadGitHubReleaseAsset({
-        updateInfo,
-        getMainWindow,
-        packageKind,
-        cacheDirName: 'system-updates',
-        missingAssetMessage: `No ${packageKind} update asset found.`,
-    });
-}
-async function downloadLauncherUpdate(updateInfo, getMainWindow) {
-    return downloadGitHubReleaseAsset({
-        updateInfo,
-        getMainWindow,
-        packageKind: 'tar.gz',
-        cacheDirName: 'launcher-updates',
-        missingAssetMessage: 'No launcher tar.gz update asset found.',
-    });
-}
-function getElevatedCommand(command, args) {
-    if (typeof process.getuid === 'function' && process.getuid() === 0) {
-        return { command, args };
-    }
-    if (commandExists('pkexec')) {
-        return { command: 'pkexec', args: [command, ...args] };
-    }
-    if (commandExists('sudo')) {
-        return { command: 'sudo', args: [command, ...args] };
-    }
-    throw new Error('No graphical privilege escalation command found. Install pkexec or sudo.');
-}
-
-function spawnDetached(command, args) {
-    const child = spawn(command, args, {
-        detached: true,
-        stdio: 'ignore',
-    });
-    child.on('error', (err) => {
-        log.warn('Detached installer failed to start: ' + (err?.message || String(err)));
-    });
-    child.unref();
-}
-
-export function getLinuxPackageKind(installerPath) {
-    const lowerPath = String(installerPath || '').toLowerCase();
-    if (lowerPath.endsWith('.tar.gz') || lowerPath.endsWith('.tgz')) { return 'tar.gz'; }
-    const ext = path.extname(lowerPath);
-    return ext.startsWith('.') ? ext.slice(1) : ext;
-}
-
-export function getLinuxPackageInstallCommand(installerPath, env = process.env, version = '') {
-    const ext = getLinuxPackageKind(installerPath);
-    if (ext === 'snap') {
-        return { command: 'snap', args: ['install', '--dangerous', '--amend', installerPath], elevated: true };
-    }
-    if (ext === 'deb') {
-        return { command: 'apt-get', args: ['install', '-y', '--allow-downgrades', installerPath], elevated: true };
-    }
-    if (ext === 'rpm') {
-        return { command: 'rpm', args: ['-Uvh', '--replacepkgs', installerPath], elevated: true };
-    }
-    if (ext === 'tar.gz' && env.TREEIDE_LAUNCHER === '1' && env.TREEIDE_LAUNCHER_BIN && version) {
-        return {
-            command: 'sh',
-            args: [env.TREEIDE_LAUNCHER_BIN, '--install-update', installerPath, version],
-            elevated: false,
-        };
-    }
-    if (ext === 'appimage' && env.APPIMAGE) {
-        return {
-            command: 'sh',
-            args: ['-c', 'sleep 1; install -m 755 "$2" "$1" && "$1" >/dev/null 2>&1 &', 'tree-ide-appimage-update', env.APPIMAGE, installerPath],
-            elevated: false,
-        };
-    }
-    if (ext === 'flatpak') {
-        const args = ['install', '--reinstall', '-y', installerPath];
-        if (env.FLATPAK_ID && commandExists('flatpak-spawn')) {
-            return { command: 'flatpak-spawn', args: ['--host', 'flatpak', ...args], elevated: false };
-        }
-        return { command: 'flatpak', args, elevated: false };
-    }
-    return null;
-}
-
-function installLinuxDownloadedPackage(installerPath, version = '') {
-    const installCommand = getLinuxPackageInstallCommand(installerPath, process.env, version);
-    if (!installCommand) { return false; }
-    if (installCommand.elevated) {
-        const elevated = getElevatedCommand(installCommand.command, installCommand.args);
-        spawnDetached(elevated.command, elevated.args);
-    } else {
-        spawnDetached(installCommand.command, installCommand.args);
-    }
-    return true;
-}
-
 async function revealDownloadedInstaller(installerPath) {
     if (!installerPath) { return false; }
     try {
@@ -419,9 +166,9 @@ export function isUpdateNewer(latestVersion, currentVersion) {
 try {
     const updater = require('electron-updater');
     autoUpdater = updater.autoUpdater;
-    autoUpdater.autoDownload = false;
+    autoUpdater.autoDownload = true;
     autoUpdater.allowPrerelease = false;
-    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.autoRunAppAfterInstall = true;
     autoUpdater.disableDifferentialDownload = true;
     autoUpdater.disableWebInstaller = true;
@@ -529,8 +276,19 @@ export function registerUpdaterEvents(getMainWindow) {
         log.info(`Update downloaded: ${info.version}`);
         getMainWindow()?.webContents.send('update-downloaded', {
             version: info.version,
-            releaseName: normalizeReleaseName(info.releaseName, info.version)
+            releaseName: normalizeReleaseName(info.releaseName, info.version),
+            autoInstall: true
         });
+        setTimeout(() => {
+            try {
+                log.info('Installing downloaded Windows update automatically and restarting...');
+                if (updateReadyToCloseRef) { updateReadyToCloseRef.value = true; }
+                writePendingUpdateInstall({ version: lastDownloadedUpdateVersion, installerPath: getDownloadedUpdateFile() });
+                autoUpdater.quitAndInstall(true, true);
+            } catch (err) {
+                log.warn(`Automatic update install failed: ${err?.message || String(err)}`);
+            }
+        }, 1500);
     });
 
     autoUpdater.on('error', (err) => {
@@ -540,6 +298,7 @@ export function registerUpdaterEvents(getMainWindow) {
 }
 
 export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null) {
+    updateReadyToCloseRef = isReadyToCloseRef;
     ipcMain.handle('set-update-channel', (event, channel) => {
         if (!autoUpdater) { return; }
         const isBeta = channel === 'beta';
@@ -563,14 +322,6 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
             lastDownloadPercent = 0;
             const installMode = resolveUpdateInstallMode();
             log.info('Starting update download...');
-            if (installMode === 'launcher') {
-                await downloadLauncherUpdate(lastAvailableUpdateInfo, getMainWindow);
-                return { ok: true, installMode };
-            }
-            if (installMode === 'system') {
-                await downloadSystemPackageUpdate(lastAvailableUpdateInfo, getMainWindow);
-                return { ok: true, installMode };
-            }
             await autoUpdater.downloadUpdate();
             return { ok: true, installMode };
         } catch (err) {
@@ -597,19 +348,9 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
         try {
             const installerPath = getDownloadedUpdateFile();
             writePendingUpdateInstall({ version: lastDownloadedUpdateVersion, installerPath });
-            if (process.platform === 'linux' && installerPath && installLinuxDownloadedPackage(installerPath, lastDownloadedUpdateVersion)) {
-                log.info(`Installing Linux update package: ${installerPath}`);
-                if (installMode === 'system') {
-                    return { ok: true, system: true };
-                }
-                isReadyToCloseRef.value = true;
-                app.quit();
-                return { ok: true };
-            }
-
             log.info('Installing update and restarting...');
             isReadyToCloseRef.value = true;
-            autoUpdater.quitAndInstall(false, true);
+            autoUpdater.quitAndInstall(true, true);
             return { ok: true };
         } catch (err) {
             log.warn(`Install error: ${err?.message || String(err)}`);
@@ -625,4 +366,9 @@ export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null)
         };
     });
 }
+
+
+
+
+
 

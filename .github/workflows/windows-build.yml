@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-windows-x64:
-    name: Build MSI, EXE and Portable (x64)
+    name: Build Windows x64 (NSIS + Portable + MSI)
     runs-on: windows-latest
 
     steps:
@@ -66,7 +66,7 @@ jobs:
 
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host "electron-builder attempt $attempt of $maxAttempts"
-            npx electron-builder --win nsis msi portable --x64 --publish $publishMode
+            npx electron-builder --win --x64 --publish $publishMode
 
             if ($LASTEXITCODE -eq 0) {
               exit 0
@@ -134,7 +134,7 @@ jobs:
           if-no-files-found: error
 
   build-windows-arm:
-    name: Build MSI, EXE and Portable (arm64)
+    name: Build Windows arm64 (NSIS)
     runs-on: windows-11-arm
 
     steps:
@@ -162,6 +162,18 @@ jobs:
       - name: Setup Node app
         uses: ./.github/actions/setup-node-app
 
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+
+          if ($packageVersion -ne $tagVersion) {
+            Write-Error "Release tag ${{ github.ref_name }} does not match package.json version $packageVersion."
+            exit 1
+          }
+
       - name: Run tests
         run: npm test
 
@@ -173,7 +185,7 @@ jobs:
 
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host "electron-builder attempt $attempt of $maxAttempts"
-            npx electron-builder --win nsis msi portable --arm64 --publish $publishMode
+            npx electron-builder --win nsis --arm64 --publish $publishMode
 
             if ($LASTEXITCODE -eq 0) {
               exit 0
@@ -235,7 +247,6 @@ jobs:
           name: tree-ide-windows-arm64
           path: |
             dist/*.exe
-            dist/*.msi
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error
@@ -273,5 +284,7 @@ jobs:
       sha: ${{ github.sha }}
       tag: ${{ github.ref_name }}
     secrets: inherit
+
+
 
 

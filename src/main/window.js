@@ -13,10 +13,7 @@ const APP_NAME = 'Tree IDE';
 
 function getAppIconPath() {
     const assetsDir = path.join(__dirname, '..', '..', 'assets');
-    if (process.platform === 'win32') {
-        return path.join(assetsDir, 'icon-no-bg.ico');
-    }
-    return path.join(assetsDir, 'icon-no-bg.png');
+    return path.join(assetsDir, 'icon-no-bg.ico');
 }
 
 function getWindowIcon() {
@@ -44,10 +41,6 @@ function createWindow({ app, isReadyToCloseRef }) {
     const windowIcon = getWindowIcon();
     let closeFallbackTimer = null;
     let closeRequestPending = false;
-
-    if (process.platform === 'linux') {
-        app.commandLine.appendSwitch('icon', iconPath);
-    }
 
     const mainWindow = new BrowserWindow({
         width: 1200,

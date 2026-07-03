@@ -2,7 +2,7 @@
 
 ## O que há de novo na v2.0.90
 
-Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos multi-plataforma.
+Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
 
 ### Adicionado
 
@@ -88,9 +88,8 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - Novos padrões incluem `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (construir), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (salvar tudo) e atalhos de zoom do editor
 
 #### Plataformas & distribuição
-- **Windows** — instalador NSIS, MSI e builds portáteis para x64 e ARM64; instalador multilíngue (inglês, português e espanhol) com título de seletor de idioma localizado
-- **Linux** — AppImage, deb, rpm, tar.gz e snap para x64, além de AppImage, deb, rpm e tar.gz para ARM64; builds Flatpak (x86_64 e aarch64, runtime 25.08) com lançador `zypak-wrapper`
-- **macOS** — DMG e ZIP para Apple Silicon (arm64)
+- **Windows** — instalador NSIS (x64 + ARM64), MSI e builds portáteis para x64; instalador multilíngue (inglês, português e espanhol) com título de seletor de idioma localizado
+- **Windows (x64 + ARM64)** — Instalador NSIS para x64 e ARM64, Portable e MSI para x64; instalador multilíngue (inglês, português e espanhol)
 - **Lançamentos do GitHub** publicados automaticamente em tags de versão a partir do CI
 - **Construção do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI
 

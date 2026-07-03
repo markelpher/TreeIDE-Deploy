@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.90",
+  "version": "2.0.91",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -13,13 +13,11 @@
   },
   "type": "module",
   "main": "src/main/main.js",
-  "desktopName": "com.treeide.treeide.desktop",
   "scripts": {
     "start": "vite build && node scripts/start-electron.cjs",
     "dev": "node scripts/dev.cjs",
     "build:renderer": "vite build",
-    "build": "vite build && electron-builder",
-    "build:mac": "vite build && electron-builder --mac dmg zip --arm64",
+    "build": "vite build && electron-builder --win --x64",
     "postinstall": "node scripts/ensure-electron.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -28,7 +26,9 @@
     "lint": "eslint . --ext .js,.mjs",
     "lint:fix": "eslint . --ext .js,.mjs --fix",
     "format": "prettier --check \"src/**/*.js\" \"src/**/*.css\" \"tests/**/*.js\"",
-    "format:fix": "prettier --write \"src/**/*.js\" \"src/**/*.css\" \"tests/**/*.js\""
+    "format:fix": "prettier --write \"src/**/*.js\" \"src/**/*.css\" \"tests/**/*.js\"",
+    "build:win": "vite build && electron-builder --win --x64",
+    "build:win:arm64": "vite build && electron-builder --win nsis --arm64"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -46,15 +46,23 @@
     "appId": "com.treeide.treeide",
     "productName": "Tree IDE",
     "beforePack": "scripts/electron-before-pack.cjs",
-    "afterPack": "scripts/electron-after-pack.cjs",
     "releaseInfo": {
       "releaseName": "Tree IDE v${version}"
     },
     "win": {
       "target": [
-        "nsis",
-        "msi",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "msi",
+          "arch": ["x64"]
+        }
       ],
       "executableName": "Tree IDE",
       "icon": "assets/icon-no-bg.ico",
@@ -70,10 +78,10 @@
     "nsis": {
       "include": "build/installer.nsh",
       "artifactName": "Tree-IDE-Setup-${version}-win-${arch}.${ext}",
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "perMachine": true,
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "allowElevation": false,
+      "perMachine": false,
       "installerIcon": "assets/icon-no-bg.ico",
       "uninstallerIcon": "assets/icon-no-bg.ico",
       "installerLanguages": [
@@ -90,82 +98,10 @@
       "runAfterFinish": true
     },
     "portable": {
-      "artifactName": "Tree-IDE-Portable-${version}-win-${arch}.${ext}"
+      "artifactName": "Tree-IDE-Portable-${version}-win-x64.${ext}"
     },
     "msi": {
-      "artifactName": "Tree-IDE-${version}-win-${arch}.${ext}",
-      "perMachine": true,
-      "additionalLightArgs": [
-        "-cultures:pt-br"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb",
-        "rpm",
-        "tar.gz",
-        "snap"
-      ],
-      "icon": "assets/icon-no-bg.png",
-      "category": "Development",
-      "publish": [
-        {
-          "provider": "github",
-          "owner": "markelpher",
-          "repo": "TreeIDE-Deploy",
-          "releaseType": "draft"
-        }
-      ]
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "icon": "assets/icon-no-bg.png",
-      "category": "public.app-category.developer-tools",
-      "artifactName": "Tree-IDE-${version}-macOS-${arch}.${ext}",
-      "publish": [
-        {
-          "provider": "github",
-          "owner": "markelpher",
-          "repo": "TreeIDE-Deploy",
-          "releaseType": "draft"
-        }
-      ]
-    },
-    "dmg": {
-      "artifactName": "Tree-IDE-${version}-macOS-${arch}.${ext}",
-      "title": "Tree IDE ${version}"
-    },
-    "deb": {
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
-      "icon": "assets/icon-no-bg.png",
-      "depends": [
-        "libgtk-3-0",
-        "libnotify4",
-        "libnss3",
-        "libxss1",
-        "libxtst6",
-        "xdg-utils",
-        "libatspi2.0-0",
-        "libuuid1",
-        "libsecret-1-0"
-      ]
-    },
-    "snap": {
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
-      "confinement": "strict",
-      "summary": "A lightweight project structure editor",
-      "grade": "stable",
-      "plugs": [
-        "default",
-        "removable-media"
-      ],
-      "environment": {
-        "TMPDIR": "$XDG_RUNTIME_DIR"
-      }
+      "artifactName": "Tree-IDE-${version}-win-x64.${ext}"
     },
     "files": [
       "src/main/**/*",
@@ -179,11 +115,7 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/7zip-bin/**/*"
-    ],
-    "rpm": {
-      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
-      "icon": "assets/icon-no-bg.png"
-    }
+    ]
   },
   "dependencies": {
     "semver": "^7.7.3",

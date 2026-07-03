@@ -2,7 +2,7 @@
 /**
  * TreeIDE - Localized release-notes injector
  *
- * Electron-updater reads `latest.yml` (or `latest-linux.yml`, etc.)
+ * Electron-updater reads `latest.yml` (Windows only).
  * to discover available updates. The `releaseNotes` field can be:
  *
  *   - a plain string               → single-locale

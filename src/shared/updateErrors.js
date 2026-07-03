@@ -24,10 +24,6 @@ export function getUpdateErrorMessage(err) {
         || message.includes('channel_file_not_found')
         || message.includes('cannot find latest')
         || message.includes('latest.yml')
-        || message.includes('latest-mac.yml')
-        || message.includes('latest-linux.yml')
-        || message.includes('latest-linux-arm64.yml')
-        || message.includes('latest-arm64.yml')
     ) {
         return 'update_metadata_missing';
     }

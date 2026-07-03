@@ -2,7 +2,7 @@
 
 ## Novedades en v2.0.90
 
-Tree IDE v2 es una reescritura completa y expansión de la aplicación original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). La misma idea central: diseñar estructuras de carpetas en texto plano, previsualizarlas en vivo y generar proyectos, con una nueva arquitectura, herramientas más ricas y lanzamientos multiplataforma.
+Tree IDE v2 es una reescritura completa y expansión de la aplicación original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). La misma idea central: diseñar estructuras de carpetas en texto plano, previsualizarlas en vivo y generar proyectos, con una nueva arquitectura, herramientas más ricas y lanzamientos solo para Windows.
 
 ### Agregado
 
@@ -88,9 +88,8 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - Los nuevos valores predeterminados incluyen `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (construir), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (guardar todo), y atajos de zoom del editor
 
 #### Plataformas y distribución
-- **Windows** — instalador NSIS, MSI y versiones portátiles para x64 y ARM64; instalador multilingüe (inglés, portugués y español) con título de selector de idioma localizado
-- **Linux** — AppImage, deb, rpm, tar.gz y snap para x64 más AppImage, deb, rpm y tar.gz para ARM64; versiones Flatpak (x86_64 y aarch64, runtime 25.08) con lanzador `zypak-wrapper`
-- **macOS** — DMG y ZIP para Apple Silicon (arm64)
+- **Windows** — instalador NSIS (x64 + ARM64), MSI y versiones portátiles para x64; instalador multilingüe (inglés, portugués y español) con título de selector de idioma localizado
+- **Windows (x64 + ARM64)** — Instalador NSIS para x64 y ARM64, Portable y MSI para x64; instalador multilingüe (inglés, portugués y español)
 - **Lanzamientos de GitHub** publicados automáticamente en etiquetas de versión desde CI
 - **Construcción del renderizador antes de empaquetar** — `beforePack` ejecuta `vite build` y valida `dist/renderer/` para que cada instalador envíe el paquete de UI
 

@@ -60,9 +60,7 @@ function createReloadModuleObject() {
 
 const APP_ID = 'com.treeide.treeide';
 
-if (process.platform === 'win32') {
-    app.setAppUserModelId(APP_ID);
-}
+app.setAppUserModelId(APP_ID);
 app.setName(APP_NAME);
 process.title = APP_NAME;
 
@@ -122,14 +120,6 @@ if (gotSingleInstanceLock) {
     });
 
     app.on('window-all-closed', () => {
-        if (process.platform !== 'darwin') { app.quit(); }
-    });
-
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            mainWindow = createWindow({ app, isReadyToCloseRef });
-        } else {
-            focusMainWindow();
-        }
+        app.quit();
     });
 }

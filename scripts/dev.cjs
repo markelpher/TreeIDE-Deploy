@@ -30,10 +30,10 @@ function waitForServer(url, timeoutMs = 30000) {
     });
 }
 
-const vite = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['vite', '--port', String(port)], {
+const vite = spawn('npx.cmd', ['vite', '--port', String(port)], {
     cwd: root,
     stdio: 'inherit',
-    shell: process.platform === 'win32'
+    shell: true
 });
 
 let electronChild = null;

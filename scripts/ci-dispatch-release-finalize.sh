@@ -31,8 +31,6 @@ fi
 
 required_workflows=(
   "Build Windows"
-  "Build Linux"
-  "Build macOS"
 )
 
 pending=0
@@ -117,3 +115,4 @@ done
 
 echo "All platform builds finished — running Release Finalize inline for $tag."
 write_output run_finalize true
+

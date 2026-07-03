@@ -106,34 +106,6 @@ function patchNsisTemplates() {
 }
 
 
-function patchMsiTemplate() {
-    const templatePath = path.join(__dirname, '..', 'node_modules', 'app-builder-lib', 'templates', 'msi', 'template.xml');
-    const patched = patchTextFile(templatePath, [
-        [
-            'Language="1033" Codepage="65001"',
-            'Language="1046" Codepage="65001"',
-            'Language="1046" Codepage="65001"'
-        ],
-        [
-            '<Condition Message="Windows 7 and above is required"><![CDATA[Installed OR VersionNT >= 601]]></Condition>',
-            '<Condition Message="É necessário Windows 7 ou superior"><![CDATA[Installed OR VersionNT >= 601]]></Condition>',
-            'É necessário Windows 7 ou superior'
-        ],
-        [
-            '<MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage=\'A newer version of "[ProductName]" is already installed.\'/>',
-            '<MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage=\'Uma versão mais recente do "[ProductName]" já está instalada.\'/>',
-            'Uma versão mais recente do "[ProductName]" já está instalada.'
-        ],
-        [
-            '<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Run ${productName}"/>',
-            '<Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Executar ${productName}"/>',
-            'Executar ${productName}'
-        ]
-    ]);
-    if (patched) {
-        console.log('[beforePack] Patched MSI template: pt-BR WiX UI defaults');
-    }
-}
 exports.default = async function beforePack() {
     execSync('npm run build:renderer', { stdio: 'inherit' });
 
@@ -148,8 +120,8 @@ exports.default = async function beforePack() {
     }
 
     patchNsisTemplates();
-    patchMsiTemplate();
 };
+
 
 
 

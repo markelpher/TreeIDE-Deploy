@@ -6,7 +6,7 @@ Aplicación de escritorio ligera para diseñar estructuras de proyecto en texto 
 
 ![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview-ES.png)
 
-Tree IDE v2 es una reescritura completa de la [aplicación original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto, previsualizarlas en vivo y generar proyectos — con arquitectura modular Vite + Electron, herramientas más ricas y releases multiplataforma.
+Tree IDE v2 es una reescritura completa de la [aplicación original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto, previsualizarlas en vivo y generar proyectos — con arquitectura modular Vite + Electron, herramientas más ricas y releases enfocadas en Windows.
 
 ## Funcionalidades
 
@@ -139,61 +139,31 @@ npm run i18n:validate
 
 Compilación:
 
-### Windows (x64 + arm64)
+### Windows (x64 + ARM64)
 
 ```bash
 npm run build
 ```
-> [!NOTE]
-> En equipos arm64, agrega `--arm64` para generar paquetes ARM64: `vite build && electron-builder --win nsis msi portable --arm64`.
+
+Para builds explícitas por arquitectura:
+
+```bash
+npm run build:win
+npm run build:win:arm64
+```
+
+Tree IDE es solo para Windows. Proporciona el instalador NSIS para x64 y ARM64, además de Portable y MSI para x64. El instalador NSIS soporta instalación por usuario y actualizaciones automáticas silenciosas sin pedir administrador.
 
 | Identificador Windows | Valor |
 | --- | --- |
-| ID de aplicación | `com.treeide.treeide` |
+| Application ID | `com.treeide.treeide` |
 | Nombre del ejecutable | `Tree IDE` |
-| Idiomas del instalador | Inglés (`en_US`), portugués (`pt_BR`), español (`es_ES`) |
-| Metadatos del actualizador | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
+| Tipos de instalador | Setup NSIS (x64 + ARM64), Portable (x64), MSI (x64) |
+| Idiomas del instalador | Inglés (`en_US`), Portugués (`pt_BR`), Español (`es_ES`) |
+| Metadatos del actualizador | `latest.yml` (x64), `latest-arm64.yml` (ARM64) |
 | Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
 | Nombres de artefactos en CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Archivos de release (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
-
-### macOS (Apple Silicon / arm64)
-
-```bash
-npm run build:mac
-```
-
-> [!WARNING]
-> Los Mac con Intel no son compatibles.
-
-| Identificador macOS | Valor |
-| --- | --- |
-| Bundle ID | `com.treeide.treeide` |
-| Categoría de la app | `public.app-category.developer-tools` |
-| Metadatos del actualizador | `latest-mac.yml` |
-| Workflow de CI | `Build macOS` — `.github/workflows/macos-build.yml` |
-| Nombre del artefacto en CI | `tree-ide-macos-arm64` |
-| Archivos de release | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
-
-### Linux (x64 + arm64)
-
-```bash
-vite build && electron-builder --linux AppImage deb rpm tar.gz snap
-```
-
-> [!NOTE]
-> En equipos arm64, agrega `--arm64` para generar paquetes ARM64. Los bundles Flatpak se construyen por separado en la CI.
-
-| Identificador Linux | Valor |
-| --- | --- |
-| ID de aplicación | `com.treeide.treeide` |
-| Entrada de escritorio | `com.treeide.treeide.desktop` |
-| Categoría de la app | `Development` |
-| Metadatos del actualizador | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
-| Workflow de CI | `Build Linux` — `.github/workflows/linux-build.yml` |
-| Nombres de artefactos en CI | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
-| Archivos de release (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
-| Archivos de release (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
+| Archivos de release | `Tree-IDE-Setup-{version}-win-{arch}.exe` (x64/ARM64), `Tree-IDE-Portable-{version}-win-x64.exe`, `Tree-IDE-{version}-win-x64.msi` |
 
 ## Estructura del proyecto
 
@@ -217,7 +187,6 @@ assets/
 |   icon-no-bg.ico
 tests/                          # Pruebas Vitest
 build/                          # Configuración del instalador NSIS
-build-flatpak/                  # Empaquetado Flatpak
 docs/
 |   changelog.md                # Notas de release en inglés (editar antes del tag)
 |   changelogs/
@@ -232,9 +201,7 @@ docs/
 |       installation.es.md      # Guía de instalación en español
 scripts/                        # Scripts de build, changelog y CI
 .github/workflows/
-|   windows-build.yml           # Build Windows (x64 + arm64)
-|   linux-build.yml             # Build Linux (x64 + arm64 + Flatpak)
-|   macos-build.yml             # Build macOS (arm64 DMG + ZIP)
+|   windows-build.yml           # Build Windows (x64 + ARM64)
 |   release-finalize.yml        # Traducir changelogs y publicar release
 ```
 

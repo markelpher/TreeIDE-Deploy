@@ -6,7 +6,7 @@ A lightweight desktop app for designing project structures in plain text, previe
 
 ![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview.png)
 
-Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and multi-platform releases.
+Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and Windows-focused releases.
 
 ## Features
 
@@ -139,62 +139,31 @@ npm run i18n:validate
 
 Build:
 
-### Windows (x64 + arm64)
+### Windows (x64 + ARM64)
 
 ```bash
 npm run build
 ```
 
-> [!NOTE]
-> On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-builder --win nsis msi portable --arm64`.
+For explicit architecture builds:
+
+```bash
+npm run build:win
+npm run build:win:arm64
+```
+
+Tree IDE is Windows-only. It provides NSIS setup for both x64 and ARM64, plus Portable and MSI for x64. The NSIS installer supports per-user installation and silent automatic updates without administrator prompts.
 
 | Windows identifier | Value |
 | --- | --- |
 | Application ID | `com.treeide.treeide` |
 | Executable name | `Tree IDE` |
+| Installer types | NSIS setup (x64 + ARM64), Portable (x64), MSI (x64) |
 | Installer languages | English (`en_US`), Portuguese (`pt_BR`), Spanish (`es_ES`) |
-| Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (arm64) |
+| Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (ARM64) |
 | CI workflow | `Build Windows` — `.github/workflows/windows-build.yml` |
 | CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Release files (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
-
-### macOS (Apple Silicon / arm64)
-
-```bash
-npm run build:mac
-```
-
-> [!WARNING]
-> Intel Macs are not supported.
-
-| macOS identifier | Value |
-| --- | --- |
-| Bundle ID | `com.treeide.treeide` |
-| App category | `public.app-category.developer-tools` |
-| Updater metadata | `latest-mac.yml` |
-| CI workflow | `Build macOS` — `.github/workflows/macos-build.yml` |
-| CI artifact name | `tree-ide-macos-arm64` |
-| Release files | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
-
-### Linux (x64 + arm64)
-
-```bash
-vite build && electron-builder --linux AppImage deb rpm tar.gz snap
-```
-
-> [!NOTE]
-> On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built separately in CI.
-
-| Linux identifier | Value |
-| --- | --- |
-| Application ID | `com.treeide.treeide` |
-| Desktop entry | `com.treeide.treeide.desktop` |
-| App category | `Development` |
-| Updater metadata | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
-| CI workflow | `Build Linux` — `.github/workflows/linux-build.yml` |
-| CI artifact names | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
-| Release files (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
-| Release files (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
+| Release files | `Tree-IDE-Setup-{version}-win-{arch}.exe` (x64/ARM64), `Tree-IDE-Portable-{version}-win-x64.exe`, `Tree-IDE-{version}-win-x64.msi` |
 
 ## Project Structure
 
@@ -218,7 +187,6 @@ assets/
 |   icon-no-bg.ico
 tests/                          # Vitest test files
 build/                          # NSIS installer configuration
-build-flatpak/                  # Flatpak packaging
 docs/
 |   changelog.md                # Manual English release notes (edit before tagging)
 |   changelogs/
@@ -233,9 +201,7 @@ docs/
 |       installation.es.md      # Installation guide (Spanish)
 scripts/                        # Build, changelog, and CI helper scripts
 .github/workflows/
-|   windows-build.yml           # Build Windows (x64 + arm64)
-|   linux-build.yml             # Build Linux (x64 + arm64 + Flatpak)
-|   macos-build.yml             # Build macOS (arm64 DMG + ZIP)
+|   windows-build.yml           # Build Windows (x64 + ARM64)
 |   release-finalize.yml        # Translate changelogs and publish release
 ```
 

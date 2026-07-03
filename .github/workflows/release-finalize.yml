@@ -114,7 +114,7 @@ jobs:
           sha="${{ steps.meta.outputs.sha }}"
           mkdir -p dist
 
-          for workflow in "Build Windows" "Build Linux" "Build macOS"; do
+          for workflow in "Build Windows"; do
             run_id=$(gh run list \
               --workflow "$workflow" \
               --commit "$sha" \
@@ -159,46 +159,6 @@ jobs:
 
           for f in "${yml_files[@]}"; do
             echo "[finalize] Uploading $(basename "$f") (clobber)"
-            gh release upload --clobber "$tag" "$f"
-          done
-
-      - name: Upload Snap packages to release
-        if: steps.published.outputs.already != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          tag="${{ steps.meta.outputs.tag }}"
-          shopt -s globstar nullglob
-          snaps=(dist/**/*.snap)
-
-          if [ "${#snaps[@]}" -eq 0 ]; then
-            echo "::warning::No Snap packages found in artifacts."
-            exit 0
-          fi
-
-          for f in "${snaps[@]}"; do
-            echo "[finalize] Uploading $(basename "$f")"
-            gh release upload --clobber "$tag" "$f"
-          done
-
-      - name: Upload Flatpak bundles to release
-        if: steps.published.outputs.already != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          tag="${{ steps.meta.outputs.tag }}"
-          shopt -s globstar nullglob
-          flatpaks=(dist/**/*.flatpak)
-
-          if [ "${#flatpaks[@]}" -eq 0 ]; then
-            echo "::warning::No Flatpak bundles found in artifacts."
-            exit 0
-          fi
-
-          for f in "${flatpaks[@]}"; do
-            echo "[finalize] Uploading $(basename "$f")"
             gh release upload --clobber "$tag" "$f"
           done
 
@@ -313,3 +273,4 @@ jobs:
           fi
 
           echo "[finalize] Verified GitHub commit created: $commit_url"
+
