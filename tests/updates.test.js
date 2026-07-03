@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { constants as FS } from 'node:fs';
 import { app } from 'electron';
-import { cleanupPendingUpdateInstall, getLinuxPackageInstallCommand, isInstalledUpdateVersion, isUpdateNewer } from '../src/main/ipc/updates.js';
+import { cleanupPendingUpdateInstall, getLinuxPackageInstallCommand, getLinuxPackageKind, isInstalledUpdateVersion, isUpdateNewer, selectLinuxPackageAsset } from '../src/main/ipc/updates.js';
 
 describe('isUpdateNewer', () => {
     it('returns true only when latest is strictly greater', () => {
@@ -45,6 +45,52 @@ describe('getLinuxPackageInstallCommand', () => {
             args: ['install', '-y', '--allow-downgrades', '/tmp/Tree-IDE.deb'],
             elevated: true,
         });
+    });
+
+    it('uses local rpm upgrade for rpm packages', () => {
+        expect(getLinuxPackageInstallCommand('/tmp/Tree-IDE.rpm')).toEqual({
+            command: 'rpm',
+            args: ['-Uvh', '--replacepkgs', '/tmp/Tree-IDE.rpm'],
+            elevated: true,
+        });
+    });
+
+    it('detects tar.gz and tgz archives as launcher updates', () => {
+        expect(getLinuxPackageKind('/tmp/Tree-IDE.tar.gz')).toBe('tar.gz');
+        expect(getLinuxPackageKind('/tmp/Tree-IDE.tgz')).toBe('tar.gz');
+    });
+
+    it('delegates tar.gz update installs to the Linux launcher', () => {
+        expect(getLinuxPackageInstallCommand('/tmp/Tree-IDE.tar.gz', {
+            TREEIDE_LAUNCHER: '1',
+            TREEIDE_LAUNCHER_BIN: '/opt/Tree IDE/tree-ide-launcher',
+        }, '2.0.88')).toEqual({
+            command: 'sh',
+            args: ['/opt/Tree IDE/tree-ide-launcher', '--install-update', '/tmp/Tree-IDE.tar.gz', '2.0.88'],
+            elevated: false,
+        });
+    });
+
+    it('selects the matching launcher tar.gz release asset', () => {
+        const assets = [
+            { name: 'Tree-IDE-2.0.88-x64.AppImage' },
+            { name: 'Tree-IDE-2.0.88-arm64.tar.gz', browser_download_url: 'arm' },
+            { name: 'Tree-IDE-2.0.88-x64.tar.gz', browser_download_url: 'x64' },
+        ];
+
+        expect(selectLinuxPackageAsset(assets, 'tar.gz', '2.0.88', 'x64')?.browser_download_url).toBe('x64');
+        expect(selectLinuxPackageAsset(assets, 'tar.gz', '2.0.88', 'arm64')?.browser_download_url).toBe('arm');
+    });
+
+    it('selects deb assets instead of AppImage for Ubuntu package updates', () => {
+        const assets = [
+            { name: 'Tree-IDE-2.0.88-x64.AppImage', browser_download_url: 'appimage' },
+            { name: 'Tree-IDE-2.0.88-x64.deb', browser_download_url: 'deb' },
+            { name: 'Tree-IDE-2.0.88-x64.rpm', browser_download_url: 'rpm' },
+        ];
+
+        expect(selectLinuxPackageAsset(assets, 'deb', '2.0.88', 'x64')?.browser_download_url).toBe('deb');
+        expect(selectLinuxPackageAsset(assets, 'rpm', '2.0.88', 'x64')?.browser_download_url).toBe('rpm');
     });
 
     it('replaces the current AppImage when running from AppImage', () => {

@@ -160,7 +160,7 @@ On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-b
 ### Linux (x64 + arm64)
 
 ```bash
-vite build && electron-builder --linux AppImage deb snap
+vite build && electron-builder --linux AppImage deb rpm tar.gz snap
 ```
 
 On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built separately in CI.
@@ -173,8 +173,8 @@ On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built
 | Updater metadata | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
 | CI workflow | `Build Linux` — `.github/workflows/linux-build.yml` |
 | CI artifact names | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
-| Release files (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
-| Release files (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `Tree-IDE-{version}-aarch64.flatpak` |
+| Release files (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
+| Release files (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
 
 ### macOS (Apple Silicon / arm64)
 

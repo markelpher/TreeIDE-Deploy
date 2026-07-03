@@ -69,7 +69,11 @@ export class BrowserWindow {
     static getAllWindows() { return []; }
 }
 
-export const shell = { openExternal: async () => {} };
+export const shell = {
+    openExternal: async () => {},
+    openPath: async () => '',
+    showItemInFolder: noop,
+};
 
 export const nativeImage = {
     createFromPath: () => ({ isEmpty: () => true }),

@@ -89,7 +89,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 
 #### Plataformas & distribuição
 - **Windows** — instalador NSIS, MSI e builds portáteis para x64 e ARM64; instalador multilíngue (inglês, português e espanhol) com título de seletor de idioma localizado
-- **Linux** — AppImage, deb e snap para x64 e ARM64; builds Flatpak (x86_64 e aarch64, runtime 25.08) com lançador `zypak-wrapper`
+- **Linux** — AppImage, deb, rpm, tar.gz e snap para x64, além de AppImage, deb, rpm e tar.gz para ARM64; builds Flatpak (x86_64 e aarch64, runtime 25.08) com lançador `zypak-wrapper`
 - **macOS** — DMG e ZIP para Apple Silicon (arm64)
 - **Lançamentos do GitHub** publicados automaticamente em tags de versão a partir do CI
 - **Construção do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI

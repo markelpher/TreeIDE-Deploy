@@ -160,7 +160,7 @@ En equipos arm64, agrega `--arm64` para generar paquetes ARM64: `vite build && e
 ### Linux (x64 + arm64)
 
 ```bash
-vite build && electron-builder --linux AppImage deb snap
+vite build && electron-builder --linux AppImage deb rpm tar.gz snap
 ```
 
 En equipos arm64, agrega `--arm64` para generar paquetes ARM64. Los bundles Flatpak se construyen por separado en la CI.
@@ -173,8 +173,8 @@ En equipos arm64, agrega `--arm64` para generar paquetes ARM64. Los bundles Flat
 | Metadatos del actualizador | `latest-linux.yml` (x64), `latest-linux-arm64.yml` (arm64) |
 | Workflow de CI | `Build Linux` — `.github/workflows/linux-build.yml` |
 | Nombres de artefactos en CI | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
-| Archivos de release (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
-| Archivos de release (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `Tree-IDE-{version}-aarch64.flatpak` |
+| Archivos de release (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
+| Archivos de release (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
 
 ### macOS (Apple Silicon / arm64)
 

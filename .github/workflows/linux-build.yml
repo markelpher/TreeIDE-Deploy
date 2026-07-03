@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-linux-x64:
-    name: Build AppImage, DEB and Snap (x64)
+    name: Build AppImage, DEB, RPM, tar.gz and Snap (x64)
     runs-on: ubuntu-latest
 
     steps:
@@ -64,7 +64,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Linux x64 artifacts (AppImage + DEB + Snap)
+      - name: Build Linux x64 artifacts (AppImage + DEB + RPM + tar.gz + Snap)
         run: |
           MAX_ATTEMPTS=3
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -75,7 +75,7 @@ jobs:
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
-            npx electron-builder --linux AppImage deb --x64 --publish "$PUBLISH_MODE" \
+            npx electron-builder --linux AppImage deb rpm tar.gz --x64 --publish "$PUBLISH_MODE" \
               && npx electron-builder --linux snap --x64 --publish never --prepackaged dist/linux-unpacked \
               && break
 
@@ -137,13 +137,15 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
             dist/*.snap
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error
 
   build-linux-arm:
-    name: Build AppImage and DEB (arm64)
+    name: Build AppImage, DEB, RPM and tar.gz (arm64)
     runs-on: ubuntu-24.04-arm
 
     steps:
@@ -185,7 +187,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Linux arm64 artifacts (AppImage + DEB)
+      - name: Build Linux arm64 artifacts (AppImage + DEB + RPM + tar.gz)
         run: |
           MAX_ATTEMPTS=3
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -196,7 +198,7 @@ jobs:
 
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "electron-builder attempt $attempt of $MAX_ATTEMPTS"
-            npx electron-builder --linux AppImage deb --arm64 --publish "$PUBLISH_MODE" && break
+            npx electron-builder --linux AppImage deb rpm tar.gz --arm64 --publish "$PUBLISH_MODE" && break
 
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
               DELAY=$((20 * attempt))
@@ -256,6 +258,8 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
             dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error

@@ -115,7 +115,7 @@ if (!gotSingleInstanceLock) {
 if (gotSingleInstanceLock) {
     app.whenReady().then(() => {
         registerUpdaterEvents(getMainWindow);
-        registerUpdateIpc(isReadyToCloseRef);
+        registerUpdateIpc(isReadyToCloseRef, getMainWindow);
         registerProjectIpc(lastSaveDirectoryRef);
         registerAppIpc(getMainWindow, isReadyToCloseRef);
         mainWindow = createWindow({ app, isReadyToCloseRef });

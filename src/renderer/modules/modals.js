@@ -45,12 +45,18 @@ export function createModals(app) {
         const downloadLabel = document.getElementById('updateDownloadLabel');
         if (!downloadLabel) { return; }
         if (isUpdateDownloaded) {
-            downloadLabel.textContent = currentUpdateInstallMode === 'in-app'
-                ? app.i18n.t('update_install_restart')
-                : app.i18n.t('update_show_installer');
+            if (currentUpdateInstallMode === 'manual') {
+                downloadLabel.textContent = app.i18n.t('update_show_installer');
+            } else if (currentUpdateInstallMode === 'system') {
+                downloadLabel.textContent = app.i18n.t('update_install_package');
+            } else {
+                downloadLabel.textContent = app.i18n.t('update_install_restart');
+            }
             return;
         }
-        downloadLabel.textContent = app.i18n.t('update_download_release');
+        downloadLabel.textContent = currentUpdateInstallMode === 'manual'
+            ? app.i18n.t('update_download_installer')
+            : app.i18n.t('update_download_release');
     }
 
     function setReleaseUpdateProgress(percent, state = 'idle') {
@@ -110,7 +116,9 @@ export function createModals(app) {
 
     function showReleaseUpdateModal(info) {
         latestReleaseUpdate = info;
-        currentUpdateInstallMode = info?.installMode === 'manual' ? 'manual' : 'in-app';
+        currentUpdateInstallMode = ['manual', 'system', 'launcher', 'in-app'].includes(info?.installMode)
+            ? info.installMode
+            : 'in-app';
         const currentVer = document.getElementById('releaseUpdateCurrent');
         const latestVer = document.getElementById('releaseUpdateLatest');
         if (currentVer) {currentVer.textContent = `v${info.currentVersion || '---'}`;}
@@ -233,10 +241,12 @@ export function createModals(app) {
                     shouldInstallAfterDownload = false;
                     const result = await app.electronAPI.installUpdate();
                     if (result?.manual) {
-                        __showToast(app.i18n.t('update_manual_install_hint'), 5000);
-                    } else if (result && !result.ok) {
-                        __showToast(translateUpdateError(app.i18n, result.error), 4000);
-                    }
+                    __showToast(app.i18n.t('update_manual_install_hint'), 5000);
+                } else if (result?.system) {
+                    __showToast(app.i18n.t('update_system_install_started'), 5000);
+                } else if (result && !result.ok) {
+                    __showToast(translateUpdateError(app.i18n, result.error), 4000);
+                }
                     return;
                 }
                 if (currentUpdateInstallMode === 'manual') {
@@ -581,6 +591,8 @@ export function createModals(app) {
                 const result = await app.electronAPI.installUpdate();
                 if (result?.manual) {
                     __showToast(app.i18n.t('update_manual_install_hint'), 5000);
+                } else if (result?.system) {
+                    __showToast(app.i18n.t('update_system_install_started'), 5000);
                 } else if (result && !result.ok) {
                     __showToast(translateUpdateError(app.i18n, result.error), 4000);
                 }

@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.87",
+  "version": "2.0.88",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -46,6 +46,7 @@
     "appId": "com.treeide.treeide",
     "productName": "Tree IDE",
     "beforePack": "scripts/electron-before-pack.cjs",
+    "afterPack": "scripts/electron-after-pack.cjs",
     "releaseInfo": {
       "releaseName": "Tree IDE v${version}"
     },
@@ -102,6 +103,8 @@
       "target": [
         "AppImage",
         "deb",
+        "rpm",
+        "tar.gz",
         "snap"
       ],
       "icon": "assets/icon-no-bg.png",
@@ -176,7 +179,14 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/7zip-bin/**/*"
-    ]
+    ],
+    "rpm": {
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}",
+      "icon": "assets/icon-no-bg.png"
+    },
+    "tar": {
+      "artifactName": "Tree-IDE-${version}-${arch}.${ext}"
+    }
   },
   "dependencies": {
     "semver": "^7.7.3",

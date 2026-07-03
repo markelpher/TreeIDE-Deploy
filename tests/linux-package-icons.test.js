@@ -8,7 +8,20 @@ describe('Linux package icons', () => {
         const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 
         expect(pkg.build.linux.icon).toBe('assets/icon-no-bg.png');
+        expect(pkg.build.linux.target).toEqual(['AppImage', 'deb', 'rpm', 'tar.gz', 'snap']);
+        expect(pkg.build.afterPack).toBe('scripts/electron-after-pack.cjs');
         expect(pkg.build.deb.icon).toBe('assets/icon-no-bg.png');
+        expect(pkg.build.rpm.icon).toBe('assets/icon-no-bg.png');
+        expect(pkg.build.tar.artifactName).toBe('Tree-IDE-${version}-${arch}.${ext}');
+    });
+
+    it('ships the Linux launcher script used by tar.gz self-updates', async () => {
+        const launcher = await readFile('build/linux/tree-ide-launcher.sh', 'utf8');
+
+        expect(launcher).toContain('--install-update');
+        expect(launcher).toContain('TREEIDE_LAUNCHER=1');
+        expect(launcher).toContain('versions');
+        expect(launcher).toContain('current');
     });
 
     it('ships hicolor PNGs for Linux app stores and launchers', async () => {
