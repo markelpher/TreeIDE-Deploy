@@ -1,10 +1,10 @@
 # Tree IDE
 
-[Inglês](../README.md) · [Espanhol](README.es.md)
+[Inglês](../README.md) · [Espanhol](README.es.md) · [Guia de instalação](installation/installation.pt-BR.md)
 
 Aplicativo desktop leve para projetar estruturas de projeto em texto simples, visualizá-las como uma árvore interativa e gerar pastas, arquivos iniciais e arquivos compactados pelo **Build Studio**.
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview-pt-BR.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview-pt-BR.png)
 
 O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). A mesma ideia central — desenhar estruturas de pastas em texto, visualizar ao vivo e gerar projetos — com arquitetura modular Vite + Electron, ferramentas mais ricas e releases multiplataforma.
 
@@ -144,8 +144,8 @@ Compilação:
 ```bash
 npm run build
 ```
-
-Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && electron-builder --win nsis msi portable --arm64`.
+> [!NOTE]
+> Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && electron-builder --win nsis msi portable --arm64`.
 
 | Identificador Windows | Valor |
 | --- | --- |
@@ -157,13 +157,32 @@ Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64: `vite build && elec
 | Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
 | Arquivos de release (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
 
+### macOS (Apple Silicon / arm64)
+
+```bash
+npm run build:mac
+```
+
+> [!WARNING]
+> Macs Intel não são suportados.
+
+| Identificador macOS | Valor |
+| --- | --- |
+| Bundle ID | `com.treeide.treeide` |
+| Categoria do app | `public.app-category.developer-tools` |
+| Metadados do atualizador | `latest-mac.yml` |
+| Workflow de CI | `Build macOS` — `.github/workflows/macos-build.yml` |
+| Nome do artefato na CI | `tree-ide-macos-arm64` |
+| Arquivos de release | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
+
 ### Linux (x64 + arm64)
 
 ```bash
 vite build && electron-builder --linux AppImage deb rpm tar.gz snap
 ```
 
-Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64. Bundles Flatpak são construídos separadamente na CI.
+> [!NOTE]
+> Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64. Bundles Flatpak são construídos separadamente na CI.
 
 | Identificador Linux | Valor |
 | --- | --- |
@@ -175,23 +194,6 @@ Em hosts arm64, adicione `--arm64` para gerar pacotes ARM64. Bundles Flatpak sã
 | Nomes dos artefatos na CI | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
 | Arquivos de release (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
 | Arquivos de release (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
-
-### macOS (Apple Silicon / arm64)
-
-```bash
-npm run build:mac
-```
-
-Macs Intel não são suportados.
-
-| Identificador macOS | Valor |
-| --- | --- |
-| Bundle ID | `com.treeide.treeide` |
-| Categoria do app | `public.app-category.developer-tools` |
-| Metadados do atualizador | `latest-mac.yml` |
-| Workflow de CI | `Build macOS` — `.github/workflows/macos-build.yml` |
-| Nome do artefato na CI | `tree-ide-macos-arm64` |
-| Arquivos de release | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
 
 ## Estrutura do Projeto
 
@@ -224,6 +226,10 @@ docs/
 |       es.md                   # Notas em espanhol (sobrescritas pelo Release Finalize)
 |   README.pt-BR.md             # READMEs traduzidos
 |   README.es.md
+|   installation/
+|       installation.md         # Guia de instalação em inglês
+|       installation.pt-BR.md   # Guia de instalação em português
+|       installation.es.md      # Guia de instalação em espanhol
 scripts/                        # Scripts de build, changelog e CI
 .github/workflows/
 |   windows-build.yml           # Build Windows (x64 + arm64)

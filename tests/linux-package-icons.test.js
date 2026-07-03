@@ -12,7 +12,7 @@ describe('Linux package icons', () => {
         expect(pkg.build.afterPack).toBe('scripts/electron-after-pack.cjs');
         expect(pkg.build.deb.icon).toBe('assets/icon-no-bg.png');
         expect(pkg.build.rpm.icon).toBe('assets/icon-no-bg.png');
-        expect(pkg.build.tar.artifactName).toBe('Tree-IDE-${version}-${arch}.${ext}');
+        expect(pkg.build.tar).toBeUndefined();
     });
 
     it('ships the Linux launcher script used by tar.gz self-updates', async () => {

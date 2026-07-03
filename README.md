@@ -1,10 +1,10 @@
 # Tree IDE
 
-[Português](docs/README.pt-BR.md) · [Español](docs/README.es.md)
+[Português](docs/README.pt-BR.md) · [Español](docs/README.es.md) · [Installation guide](docs/installation/installation.md)
 
 A lightweight desktop app for designing project structures in plain text, previewing them as a visual tree, and generating folders, starter files, and archives through **Build Studio**.
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/preview/preview.png)
+![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview.png)
 
 Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and multi-platform releases.
 
@@ -145,7 +145,8 @@ Build:
 npm run build
 ```
 
-On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-builder --win nsis msi portable --arm64`.
+> [!NOTE]
+> On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-builder --win nsis msi portable --arm64`.
 
 | Windows identifier | Value |
 | --- | --- |
@@ -157,13 +158,32 @@ On arm64 hosts, add `--arm64` to build ARM64 packages: `vite build && electron-b
 | CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
 | Release files (x64 / arm64) | `Tree-IDE-Setup-{version}-win-{arch}.exe` (NSIS), `Tree-IDE-{version}-win-{arch}.msi`, `Tree-IDE-Portable-{version}-win-{arch}.exe` |
 
+### macOS (Apple Silicon / arm64)
+
+```bash
+npm run build:mac
+```
+
+> [!WARNING]
+> Intel Macs are not supported.
+
+| macOS identifier | Value |
+| --- | --- |
+| Bundle ID | `com.treeide.treeide` |
+| App category | `public.app-category.developer-tools` |
+| Updater metadata | `latest-mac.yml` |
+| CI workflow | `Build macOS` — `.github/workflows/macos-build.yml` |
+| CI artifact name | `tree-ide-macos-arm64` |
+| Release files | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
+
 ### Linux (x64 + arm64)
 
 ```bash
 vite build && electron-builder --linux AppImage deb rpm tar.gz snap
 ```
 
-On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built separately in CI.
+> [!NOTE]
+> On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built separately in CI.
 
 | Linux identifier | Value |
 | --- | --- |
@@ -175,23 +195,6 @@ On arm64 hosts, add `--arm64` to build ARM64 packages. Flatpak bundles are built
 | CI artifact names | `tree-ide-linux-x64`, `tree-ide-linux-arm64`, `tree-ide-linux-flatpak-x64`, `tree-ide-linux-flatpak-arm64` |
 | Release files (x64) | `Tree-IDE-{version}-x64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `.snap`, `Tree-IDE-{version}-x86_64.flatpak` |
 | Release files (arm64) | `Tree-IDE-{version}-arm64.AppImage`, `.deb`, `.rpm`, `.tar.gz`, `Tree-IDE-{version}-aarch64.flatpak` |
-
-### macOS (Apple Silicon / arm64)
-
-```bash
-npm run build:mac
-```
-
-Intel Macs are not supported.
-
-| macOS identifier | Value |
-| --- | --- |
-| Bundle ID | `com.treeide.treeide` |
-| App category | `public.app-category.developer-tools` |
-| Updater metadata | `latest-mac.yml` |
-| CI workflow | `Build macOS` — `.github/workflows/macos-build.yml` |
-| CI artifact name | `tree-ide-macos-arm64` |
-| Release files | `Tree-IDE-{version}-macOS-arm64.dmg`, `Tree-IDE-{version}-macOS-arm64.zip` |
 
 ## Project Structure
 
@@ -224,6 +227,10 @@ docs/
 |       es.md                   # Spanish release notes (overwritten by Release Finalize)
 |   README.pt-BR.md             # Translated READMEs
 |   README.es.md
+|   installation/
+|       installation.md         # Installation guide (English)
+|       installation.pt-BR.md   # Installation guide (Portuguese)
+|       installation.es.md      # Installation guide (Spanish)
 scripts/                        # Build, changelog, and CI helper scripts
 .github/workflows/
 |   windows-build.yml           # Build Windows (x64 + arm64)
