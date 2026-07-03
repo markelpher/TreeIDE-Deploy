@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.93",
+  "version": "2.0.94",
   "description": "Tree IDE, a lightweight, open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -86,7 +86,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Tree IDE",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "warningsAsErrors": false
     },
     "portable": {
       "artifactName": "Tree-IDE-Portable-${version}-win-${arch}.${ext}"

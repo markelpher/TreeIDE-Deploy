@@ -583,9 +583,11 @@ Function un.TreeIdeUpdateWindowTitle
   SendMessage $HWNDPARENT ${WM_SETTEXT} 0 "STR:$(treeIdeUninstallWindowTitle)"
 FunctionEnd
 
+!ifndef BUILD_UNINSTALLER
 Function un.TreeIdeFinishPagePre
   StrCpy $TreeIdeIsFinishPage "1"
 FunctionEnd
+!endif
 
 Function un.TreeIdeFinishPageShow
   Call un.TreeIdeUpdateWindowTitle
@@ -690,7 +692,9 @@ FunctionEnd
   !define MUI_FINISHPAGE_TITLE "$(treeIdeUninstallFinishTitle)"
   !define MUI_FINISHPAGE_TEXT "$(treeIdeUninstallFinishText)"
   !define MUI_FINISHPAGE_BUTTON "$(treeIdeFinishButton)"
-  !define MUI_PAGE_CUSTOMFUNCTION_PRE un.TreeIdeFinishPagePre
+  !ifndef BUILD_UNINSTALLER
+    !define MUI_PAGE_CUSTOMFUNCTION_PRE un.TreeIdeFinishPagePre
+  !endif
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW un.TreeIdeFinishPageShow
 !macroend
 
