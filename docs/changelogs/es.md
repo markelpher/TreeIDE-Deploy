@@ -1,6 +1,6 @@
 <!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->
 
-## Novedades en v2.0.99
+## Novedades en v2.0.100
 
 Tree IDE v2 es una reescritura completa y expansión de la aplicación original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). La misma idea central: diseñar estructuras de carpetas en texto plano, previsualizarlas en vivo y generar proyectos, con una nueva arquitectura, herramientas más ricas y lanzamientos solo para Windows.
 
@@ -9,17 +9,17 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 #### Estudio de construcción y salida de proyectos
 - **Estudio de construcción** — flujo de construcción a pantalla completa con previsualización de árbol en vivo, previsualización de contenido por archivo, estadísticas y opciones de salida
 - **Tres modos de salida** — crear estructura de carpetas en disco, exportar solo un ZIP, o exportar solo un archivo de proyecto `.tree`
-- **Salidas combinadas** — exportar opcionalmente un ZIP junto con una construcción de carpeta, e incluir el archivo `.tree` dentro del archivo comprimido
+- **Salidas combinadas** — opcionalmente exportar un ZIP junto a una construcción de carpeta, e incluir el archivo `.tree` dentro del archivo comprimido
 - **Inspección previa a la construcción** — escanear la carpeta de destino en busca de estructuras existentes, archivos `.tree` o ZIP antes de escribir
 - **Manejo de conflictos** — elegir omitir o sobrescribir cuando los archivos o carpetas ya existen
 - **Contenido inicial predeterminado** para más de 68 tipos de archivos (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte, y más)
 - **Marcadores de posición i18n** en archivos generados (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
-#### Archivos y cifrado
+#### Archivos y encriptación
 - **Exportación a ZIP** con protección por contraseña AES-256 opcional a través de 7-Zip
-- **Proyectos `.tree` cifrados** (formato TREEIDE1 / TREEIDE2, AES-256-GCM + scrypt)
+- **Proyectos `.tree` encriptados** (formato TREEIDE1 / TREEIDE2, AES-256-GCM + scrypt)
 - **Importación de archivos** a través de diálogo de archivos o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, y `.7z`
-- **Solicitudes de contraseña** para archivos ZIP cifrados y archivos `.tree` cifrados
+- **Solicitudes de contraseña** para archivos ZIP encriptados y archivos `.tree` encriptados
 - **Cargar carpeta como estructura** — escanear un directorio existente y convertirlo en texto de árbol editable
 - **Fallback para Windows ARM64** para 7-Zip cuando los binarios nativos no están disponibles
 
@@ -32,11 +32,11 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Pantalla de plantillas** — navegador de tres columnas a pantalla completa con pestañas integradas y personalizadas, edición de estructura en línea y previsualización de árbol en vivo
 - **Plantillas personalizadas** — crear en blanco, importar desde el proyecto actual, renombrar, editar el contenido del archivo en línea, abrir en el editor principal, exportar o eliminar sin salir de la pantalla
 - **Archivos `.tree-template`** — exportar e importar plantillas personalizables compartibles (JSON `treeide-template` v1) a través de diálogos de guardar/abrir nativos o exportación por fila en la lista personalizada
-- **Pie de página de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Desde el proyecto actual**, y **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y importación de archivos
-- **Previsualización por archivo** — al hacer clic en un archivo en la previsualización de la estructura se abre un panel de editor monoespaciado de ancho completo con insignia de tipo de archivo (mismo diseño de un solo panel para plantillas integradas y personalizadas)
+- **Pie de página de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Desde el proyecto actual**, y **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y importación de archivo
+- **Previsualización por archivo** — hacer clic en un archivo en la previsualización de la estructura abre un panel de editor de ancho completo con insignia de tipo de archivo (mismo diseño de un solo panel para plantillas integradas y personalizadas)
 
 #### Editor, árbol y validación
-- **Panel de validación** — mala indentación, nombres inválidos, hermanos duplicados, rutas inseguras y estructuras vacías; haz clic en una advertencia para saltar a la línea
+- **Panel de validación** — mala indentación, nombres inválidos, hermanos duplicados, rutas inseguras y estructuras vacías; hacer clic en una advertencia para saltar a la línea
 - **Deshacer / rehacer** con hasta 100 estados de historial
 - **Pestañas de múltiples proyectos** con indicadores de modificación, una barra de pestañas desplazable y reordenamiento por arrastrar y soltar
 - **Pestañas de previsualización de archivos por proyecto** — editar el contenido del archivo de inicio antes de construir
@@ -48,7 +48,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Zoom del editor** — `Ctrl++`, `Ctrl+-`, y `Ctrl+0`
 - **Paneles redimensionables** (editor, árbol, previsualización de archivos) con diseño persistente a través de sesiones
 
-#### Iconos y tipos de archivos
+#### Iconos y tipos de archivo
 - **Iconos Lucide** empaquetados localmente (sin dependencia de CDN)
 - **Iconos contextuales** para carpetas comunes, lenguajes de programación, Docker, archivos de configuración, archivos comprimidos y medios
 - **Más de 100 etiquetas de extensión de archivo** en el mapa de tipos de archivo
@@ -70,7 +70,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Script `npm run i18n:validate`** para mantener los archivos de localización sincronizados
 
 #### Persistencia de sesión
-- **Almacenamiento de sesión IndexedDB** con migración automática desde `localStorage` legado
+- **Almacenamiento de sesión IndexedDB** con migración automática desde el `localStorage` legado
 - **Guardado automático** de pestañas abiertas, contenidos de archivos y nombres de proyectos
 - **Modos de sesión** — restaurar la última sesión al iniciar o siempre comenzar limpio
 
@@ -102,4 +102,4 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **ESLint y Prettier** integrados en scripts de npm
 - **electron-reloader** para recarga en caliente del proceso principal durante el desarrollo
 - **Exportación de registro de errores** en caso de fallo para facilitar la depuración
-- **`semver`** como una dependencia directa para comparación de versiones confiable en la aplicación
+- **`semver`** como dependencia directa para comparación de versiones confiable en la aplicación

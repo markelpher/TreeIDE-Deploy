@@ -1,6 +1,6 @@
 <!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->
 
-## O que há de novo na v2.0.99
+## O que há de novo na v2.0.100
 
 Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
 
@@ -21,7 +21,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Importação de arquivos** via diálogo de arquivos ou arrastar e soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` e `.7z`
 - **Solicitações de senha** para arquivos ZIP criptografados e arquivos `.tree` criptografados
 - **Carregar pasta como estrutura** — escanear um diretório existente e transformá-lo em texto de árvore editável
-- **Fallback ARM64 do Windows** para 7-Zip quando binários nativos não estão disponíveis
+- **Fallback para Windows ARM64** para 7-Zip quando binários nativos não estão disponíveis
 
 #### Modelos
 - **19 modelos iniciais embutidos** agrupados por categoria:
@@ -32,14 +32,14 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Tela de modelos** — navegador em tela cheia com três colunas, abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
 - **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar o conteúdo do arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
 - **Arquivos `.tree-template`** — exportar e importar modelos personalizados compartilháveis (JSON `treeide-template` v1) via diálogos de salvar/abrir nativos ou exportação por linha na lista personalizada
-- **Rodapé de modelos personalizados** — quando existem modelos personalizados: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
+- **Rodapé de modelos personalizados** — quando modelos personalizados existem: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
 - **Visualização por arquivo** — clicar em um arquivo na visualização da estrutura abre um painel de editor monoespaçado em largura total com distintivo de tipo de arquivo (mesmo layout de painel único para modelos embutidos e personalizados)
 
 #### Editor, árvore & validação
 - **Painel de validação** — má indentação, nomes inválidos, irmãos duplicados, caminhos inseguros e estruturas vazias; clique em um aviso para pular para a linha
 - **Desfazer / refazer** com até 100 estados de histórico
 - **Abas de múltiplos projetos** com indicadores de modificação, uma barra de abas rolável e reordenação por arrastar e soltar
-- **Abas de visualização de arquivos por projeto** — editar o conteúdo do arquivo inicial antes de construir
+- **Abas de visualização de arquivos por projeto** — editar conteúdos de arquivos iniciais antes de construir
 - **Visualização ao vivo de Markdown** para arquivos `.md` no painel de visualização de arquivos
 - **Pastas colapsáveis** na visualização da árvore
 - **Navegação por teclado na árvore** — teclas de seta, Início, Fim e Enter
@@ -48,7 +48,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Zoom do editor** — `Ctrl++`, `Ctrl+-` e `Ctrl+0`
 - **Painéis redimensionáveis** (editor, árvore, visualização de arquivos) com layout persistido entre sessões
 
-#### Ícones & tipos de arquivos
+#### Ícones & tipos de arquivo
 - **Ícones Lucide** agrupados localmente (sem dependência de CDN)
 - **Ícones contextuais** para pastas comuns, linguagens de programação, Docker, arquivos de configuração, arquivos compactados e mídia
 - **Mais de 100 rótulos de extensão de arquivo** no mapa de tipos de arquivo
@@ -58,7 +58,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Barra de menu** — Arquivo, Editar, Exibir, Janela e Sobre
 - **Modal de boas-vindas** na primeira execução — layout redesenhado com cabeçalho hero, cartões de configuração agrupados (Geral, Aparência, Sessão) e um botão **Começar** fixo
 - **Modal de configurações** com abas: Geral, Aparência, Atalhos e Atualizações
-- **Modal Sobre** com versão do aplicativo ao vivo (evoluído da tela de créditos v1)
+- **Modal Sobre** com versão do aplicativo ao vivo (evoluído da tela de créditos da v1)
 - **Diálogo de alterações não salvas** ao fechar com projetos modificados
 - **Sobreposição de arrastar e soltar** para arquivos `.tree` e arquivos compactados
 - **Fontes agrupadas** — Inter e JetBrains Mono
@@ -67,10 +67,10 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Traduções de interface em inglês, português (pt-BR) e espanhol**
 - **Seleção de idioma na primeira execução** no fluxo de boas-vindas e configurações
 - **Traduções do processo principal** para diálogos nativos e mensagens de erro
-- **Script `npm run i18n:validate`** para manter os arquivos de localidade em sincronia
+- **Script `npm run i18n:validate`** para manter arquivos de localidade em sincronia
 
 #### Persistência de sessão
-- **Armazenamento de sessão IndexedDB** com migração automática do legado `localStorage`
+- **Armazenamento de sessão IndexedDB** com migração automática do `localStorage` legado
 - **Salvar automaticamente** abas abertas, conteúdos de arquivos e nomes de projetos
 - **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
 
@@ -99,7 +99,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Manipuladores IPC divididos** para projeto, atualizações e ciclo de vida do aplicativo
 - **API de pré-carregamento `contextBridge`** para uma fronteira de renderizador reforçada
 - **Conjunto de testes Vitest** com simulações do Electron para execuções amigáveis ao CI; helpers de erro de changelog e atualizador cobertos por testes dedicados
-- **ESLint e Prettier** integrados aos scripts npm
+- **ESLint e Prettier** integrados em scripts npm
 - **electron-reloader** para recarregamento quente do processo principal durante o desenvolvimento
-- **Exportação de log de erros** em caso de falha para facilitar a depuração
+- **Exportação de log de erro** em caso de falha para facilitar a depuração
 - **`semver`** como uma dependência direta para comparação de versão confiável no aplicativo
