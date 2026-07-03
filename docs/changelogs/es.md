@@ -1,6 +1,6 @@
 <!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->
 
-## Novedades en v2.0.97
+## Novedades en v2.0.98
 
 Tree IDE v2 es una reescritura completa y expansión de la aplicación original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). La misma idea central: diseñar estructuras de carpetas en texto plano, previsualizarlas en vivo y generar proyectos, con una nueva arquitectura, herramientas más ricas y lanzamientos solo para Windows.
 
@@ -16,12 +16,12 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Marcadores de posición i18n** en archivos generados (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
 #### Archivos y encriptación
-- **Exportación ZIP** con protección por contraseña AES-256 opcional a través de 7-Zip
+- **Exportación a ZIP** con protección por contraseña AES-256 opcional a través de 7-Zip
 - **Proyectos `.tree` encriptados** (formato TREEIDE1 / TREEIDE2, AES-256-GCM + scrypt)
 - **Importación de archivos** a través de diálogo de archivos o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, y `.7z`
 - **Solicitudes de contraseña** para archivos ZIP encriptados y archivos `.tree` encriptados
 - **Cargar carpeta como estructura** — escanear un directorio existente y convertirlo en texto de árbol editable
-- **Fallback para Windows ARM64** para 7-Zip cuando los binarios nativos no están disponibles
+- **Fallback de Windows ARM64** para 7-Zip cuando los binarios nativos no están disponibles
 
 #### Plantillas
 - **19 plantillas de inicio integradas** agrupadas por categoría:
@@ -32,7 +32,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Pantalla de plantillas** — navegador de tres columnas a pantalla completa con pestañas integradas y personalizadas, edición de estructura en línea y previsualización de árbol en vivo
 - **Plantillas personalizadas** — crear en blanco, importar desde el proyecto actual, renombrar, editar el contenido del archivo en línea, abrir en el editor principal, exportar o eliminar sin salir de la pantalla
 - **Archivos `.tree-template`** — exportar e importar plantillas personalizables compartibles (JSON `treeide-template` v1) a través de diálogos de guardar/abrir nativos o exportación por fila en la lista personalizada
-- **Pie de página de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Desde el proyecto actual**, y **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y importación de archivos
+- **Pie de página de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Desde el proyecto actual**, y **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y importación de archivo
 - **Previsualización por archivo** — al hacer clic en un archivo en la previsualización de la estructura se abre un panel de editor monoespaciado de ancho completo con insignia de tipo de archivo (mismo diseño de un solo panel para plantillas integradas y personalizadas)
 
 #### Editor, árbol y validación
@@ -48,7 +48,7 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Zoom del editor** — `Ctrl++`, `Ctrl+-`, y `Ctrl+0`
 - **Paneles redimensionables** (editor, árbol, previsualización de archivos) con diseño persistente a través de sesiones
 
-#### Iconos y tipos de archivos
+#### Iconos y tipos de archivo
 - **Iconos Lucide** empaquetados localmente (sin dependencia de CDN)
 - **Iconos contextuales** para carpetas comunes, lenguajes de programación, Docker, archivos de configuración, archivos comprimidos y medios
 - **Más de 100 etiquetas de extensión de archivo** en el mapa de tipos de archivo
@@ -78,9 +78,9 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Actualizador automático en la aplicación** — verificar lanzamientos de GitHub, descargar con progreso y reiniciar para instalar
 - **Canales de actualización estables y beta**
 - **Notas de lanzamiento localizadas** en el modal de actualización (inglés, portugués y español)
-- **Registro de cambios de actualización legible** — diálogo más amplio, **Novedades** expandido por defecto, área de desplazamiento dedicada, jerarquía de encabezados más clara y botones de acción fijados en el pie de página
+- **Changelog de actualización legible** — diálogo más amplio, **Novedades** expandido por defecto, área de desplazamiento dedicada, jerarquía de encabezados más clara y botones de acción fijados en el pie de página
 - **Flujo de trabajo manual `docs/changelog.md`** — editar notas de lanzamiento en el repositorio; CI las traduce para la aplicación y publica en inglés en GitHub
-- **Notas de lanzamiento divididas** — el modal de actualización de la aplicación muestra solo el texto del registro de cambios; los enlaces de navegación de localización aparecen en `docs/changelog.md` y en la descripción de lanzamiento de GitHub (apuntando a archivos legibles en `docs/changelogs/`); el enlace de comparación (`Full Changelog`) es solo de GitHub
+- **Notas de lanzamiento divididas** — el modal de actualización de la aplicación muestra solo el texto del changelog; los enlaces de navegación de localización aparecen en `docs/changelog.md` y en la descripción de lanzamiento de GitHub (apuntando a archivos legibles en `docs/changelogs/`); el enlace de comparación (`Full Changelog`) es solo de GitHub
 - **Traducción de modelos de GitHub** — las notas de lanzamiento en portugués y español se generan en CI a través de la API `models.github.ai`
 
 #### Atajos de teclado
@@ -96,10 +96,10 @@ Tree IDE v2 es una reescritura completa y expansión de la aplicación original 
 - **Construcción del renderizador Vite** con reemplazo de módulo en caliente en desarrollo
 - **Código modular** — `src/main/`, `src/preload/`, `src/renderer/modules/`, `src/shared/`, y 20 módulos CSS
 - **Módulos ES**, Node.js 24+, Electron 42
-- **Controladores IPC divididos** para proyecto, actualizaciones y ciclo de vida de la aplicación
+- **Manejadores IPC divididos** para proyecto, actualizaciones y ciclo de vida de la aplicación
 - **API de precarga `contextBridge`** para un límite de renderizador endurecido
-- **Suite de pruebas Vitest** con simulacros de Electron para ejecuciones amigables con CI; ayudantes de errores de registro de cambios y actualizador cubiertos por pruebas dedicadas
+- **Suite de pruebas Vitest** con simulaciones de Electron para ejecuciones amigables con CI; ayudantes de errores de changelog y actualizador cubiertos por pruebas dedicadas
 - **ESLint y Prettier** integrados en scripts de npm
 - **electron-reloader** para recarga en caliente del proceso principal durante el desarrollo
-- **Exportación de registro de errores** en caso de fallo para facilitar la depuración
+- **Exportación de registro de errores** en caso de fallos para facilitar la depuración
 - **`semver`** como dependencia directa para comparación de versiones confiable en la aplicación
