@@ -917,6 +917,7 @@ async function initElectronBridge() {
         await app.storage.flushPendingWrites();
         const hasUnsaved = app.tabs.projectTabs.some(t => t.isModified);
         if (hasUnsaved) {
+            app.electronAPI.cancelClose?.();
             const unsavedModal = document.getElementById('unsavedModal');
             if (unsavedModal) {
                 unsavedModal.style.display = 'flex';

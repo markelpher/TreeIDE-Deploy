@@ -258,8 +258,8 @@ jobs:
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
+          git config user.name "github-actions"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/changelogs/pt.md docs/changelogs/es.md
-          git commit --signoff -m "docs: update localized changelogs for $tag [skip ci]"
+          git commit --signoff -m "docs: update localized changelogs for v$tag"
           git push origin "HEAD:$branch"

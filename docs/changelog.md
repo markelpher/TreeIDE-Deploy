@@ -1,6 +1,6 @@
-[Português](changelogs/pt.md) · [Español](changelogs/es.md)
+[Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/es.md)
 
-## What's new in v2.0.82
+## What's new in v2.0.83
 
 Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and multi-platform releases.
 
@@ -80,7 +80,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Localized release notes** in the update modal (English, Portuguese, and Spanish)
 - **Readable update changelog** — wider dialog, **What’s new** expanded by default, dedicated scroll area, clearer heading hierarchy, and action buttons pinned in the footer
 - **Manual `docs/changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
-- **Split release notes** — app update modal shows changelog text only; locale navigation links appear in `docs/changelog.md` and on the GitHub release description (pointing to attached `pt.md` / `es.md` assets); the compare link (`Full Changelog`) is GitHub-only
+- **Split release notes** — app update modal shows changelog text only; locale navigation links appear in `docs/changelog.md` and on the GitHub release description (pointing to readable files in `docs/changelogs/`); the compare link (`Full Changelog`) is GitHub-only
 - **GitHub Models translation** — Portuguese and Spanish release notes are generated in CI via the `models.github.ai` API
 
 #### Keyboard shortcuts

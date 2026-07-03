@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onUpdateDownloaded: (callback) => { ipcRenderer.removeAllListeners('update-downloaded'); ipcRenderer.on('update-downloaded', (event, info) => callback(info)); },
     openExternal: (url) => ipcRenderer.send('open-external', url),
     onAttemptClose: (callback) => { ipcRenderer.removeAllListeners('attempt-close'); ipcRenderer.on('attempt-close', () => callback()); },
+    cancelClose: () => ipcRenderer.send('cancel-close'),
     forceClose: () => ipcRenderer.send('force-close'),
     saveErrorLog: wrapInvoke('save-error-log')
 });

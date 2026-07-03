@@ -42,6 +42,8 @@ function lockWindowTitle(win) {
 function createWindow({ app, isReadyToCloseRef }) {
     const iconPath = getAppIconPath();
     const windowIcon = getWindowIcon();
+    let closeFallbackTimer = null;
+    let closeRequestPending = false;
 
     if (process.platform === 'linux') {
         app.commandLine.appendSwitch('icon', iconPath);
@@ -50,20 +52,40 @@ function createWindow({ app, isReadyToCloseRef }) {
     const mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        minWidth: 860,
+        minHeight: 560,
         show: false,
         frame: false,
         title: APP_NAME,
         icon: windowIcon,
         backgroundColor: '#1a1a1a',
+        autoHideMenuBar: true,
         webPreferences: {
             preload: path.join(__dirname, '..', 'preload', 'index.mjs'),
             nodeIntegration: false,
             contextIsolation: true,
-            sandbox: false
+            sandbox: false,
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            navigateOnDragDrop: false,
+            devTools: !app.isPackaged || process.env.TREEIDE_ENABLE_DEVTOOLS === '1'
         }
     });
     mainWindow.setMenu(null);
     lockWindowTitle(mainWindow);
+
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        log.warn('Blocked renderer window.open:', url);
+        return { action: 'deny' };
+    });
+
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        const currentUrl = mainWindow.webContents.getURL();
+        if (url !== currentUrl) {
+            event.preventDefault();
+            log.warn('Blocked renderer navigation:', url);
+        }
+    });
 
     const devServer = process.env.TREEIDE_DEV_SERVER;
     if (devServer) {
@@ -95,11 +117,30 @@ function createWindow({ app, isReadyToCloseRef }) {
         updateWindowState();
     });
 
+    isReadyToCloseRef.cancelPendingClose = () => {
+        closeRequestPending = false;
+        clearTimeout(closeFallbackTimer);
+        closeFallbackTimer = null;
+    };
+
     mainWindow.on('close', (e) => {
         if (!isReadyToCloseRef.value) {
             e.preventDefault();
+            if (closeRequestPending) { return; }
+            closeRequestPending = true;
             mainWindow.webContents.send('attempt-close');
+            closeFallbackTimer = setTimeout(() => {
+                if (isReadyToCloseRef.value || mainWindow.isDestroyed()) { return; }
+                log.warn('Renderer did not confirm close in time; forcing shutdown.');
+                isReadyToCloseRef.value = true;
+                mainWindow.close();
+            }, 8000);
         }
+    });
+
+    mainWindow.on('closed', () => {
+        clearTimeout(closeFallbackTimer);
+        delete isReadyToCloseRef.cancelPendingClose;
     });
 
     return mainWindow;

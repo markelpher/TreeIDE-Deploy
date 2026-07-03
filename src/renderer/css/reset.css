@@ -4,6 +4,12 @@
     padding: 0;
 }
 
+html {
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+}
+
 button,
 .menu-item,
 .menu-label,
@@ -18,11 +24,15 @@ body {
     font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-primary);
+    width: 100vw;
     height: 100vh;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     zoom: var(--app-zoom);
+    transform-origin: top left;
 }
 
 /* Global focus-visible outline for keyboard navigation.

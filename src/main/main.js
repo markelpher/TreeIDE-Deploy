@@ -96,20 +96,40 @@ function getMainWindow() {
     return mainWindow;
 }
 
-app.whenReady().then(() => {
-    registerUpdaterEvents(getMainWindow);
-    registerUpdateIpc(isReadyToCloseRef);
-    registerProjectIpc(lastSaveDirectoryRef);
-    registerAppIpc(getMainWindow, isReadyToCloseRef);
-    mainWindow = createWindow({ app, isReadyToCloseRef });
-});
+function focusMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed?.()) { return; }
+    if (mainWindow.isMinimized?.()) { mainWindow.restore(); }
+    mainWindow.show();
+    mainWindow.focus();
+}
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') { app.quit(); }
-});
+const gotSingleInstanceLock = app.requestSingleInstanceLock?.() ?? true;
+if (!gotSingleInstanceLock) {
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        focusMainWindow();
+    });
+}
 
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+if (gotSingleInstanceLock) {
+    app.whenReady().then(() => {
+        registerUpdaterEvents(getMainWindow);
+        registerUpdateIpc(isReadyToCloseRef);
+        registerProjectIpc(lastSaveDirectoryRef);
+        registerAppIpc(getMainWindow, isReadyToCloseRef);
         mainWindow = createWindow({ app, isReadyToCloseRef });
-    }
-});
+    });
+
+    app.on('window-all-closed', () => {
+        if (process.platform !== 'darwin') { app.quit(); }
+    });
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            mainWindow = createWindow({ app, isReadyToCloseRef });
+        } else {
+            focusMainWindow();
+        }
+    });
+}

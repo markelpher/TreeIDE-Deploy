@@ -40,28 +40,6 @@
     flex-shrink: 0;
 }
 
-.release-update-icon {
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
-    margin: 0;
-    border-radius: 14px;
-    background: var(--bg-accent);
-    border: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent-color);
-    box-sizing: border-box;
-    line-height: 0;
-}
-
-.release-update-icon .lucide {
-    width: 26px;
-    height: 26px;
-    display: block;
-    stroke-width: 2;
-}
 
 .release-update-copy {
     flex: 1;
@@ -104,7 +82,11 @@
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
-    padding-top: 4px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-primary);
 }
 
 .release-update-progress.show {
@@ -113,9 +95,9 @@
 
 .release-update-progress-bar {
     flex: 1;
-    height: 6px;
+    height: 8px;
     background: var(--bg-accent);
-    border-radius: 3px;
+    border-radius: 999px;
     overflow: hidden;
 }
 
@@ -123,8 +105,8 @@
     height: 100%;
     width: 0%;
     background: var(--accent-color);
-    border-radius: 3px;
-    transition: none;
+    border-radius: 999px;
+    transition: width 0.18s ease;
     position: relative;
 }
 
@@ -148,7 +130,7 @@ body.light-theme .release-update-progress.show.downloading .release-update-progr
     font-size: 13px;
     font-weight: 600;
     color: var(--accent-color);
-    min-width: 40px;
+    min-width: 44px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 }

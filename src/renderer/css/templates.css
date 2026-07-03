@@ -540,7 +540,8 @@ body.templates-active .drop-overlay {
 }
 
 .template-tree-editor:focus-visible {
-    box-shadow: inset 0 0 0 1px var(--accent-color);
+    outline: none;
+    box-shadow: none;
 }
 
 .template-tree-preview .tree-item.file-node:not(.no-preview) {
@@ -660,7 +661,8 @@ body.templates-active .drop-overlay {
 }
 
 .template-file-editor:focus-visible {
-    box-shadow: inset 0 0 0 1px var(--accent-color);
+    outline: none;
+    box-shadow: none;
 }
 
 .template-file-editor[readonly] {

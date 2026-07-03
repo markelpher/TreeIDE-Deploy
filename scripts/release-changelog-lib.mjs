@@ -54,16 +54,16 @@ export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || '
     return `https://github.com/${repo}/compare/${current}`;
 }
 
-/** Non-English release assets attached to each GitHub release. */
+/** Non-English changelog docs linked from each GitHub release. */
 export const GITHUB_RELEASE_LOCALE_NAV = [
-    { label: 'Português', asset: 'pt.md' },
-    { label: 'Español', asset: 'es.md' },
+    { label: 'Português', path: 'docs/changelogs/pt.md' },
+    { label: 'Español', path: 'docs/changelogs/es.md' },
 ];
 
 /**
  * @param {string} tag
  * @param {string} [repo]
- * @param {Array<{ label: string, asset: string }>} [locales]
+ * @param {Array<{ label: string, path: string }>} [locales]
  * @returns {string}
  */
 export function buildLocaleChangelogNav(
@@ -71,8 +71,8 @@ export function buildLocaleChangelogNav(
     repo = env.GITHUB_REPOSITORY || 'markelpher/TreeIDE-Deploy',
     locales = GITHUB_RELEASE_LOCALE_NAV,
 ) {
-    const parts = locales.map(({ label, asset }) => (
-        `[${label}](https://github.com/${repo}/releases/download/${tag}/${asset})`
+    const parts = locales.map(({ label, path }) => (
+        `[${label}](https://github.com/${repo}/blob/main/${path})`
     ));
     return `${parts.join(' · ')}\n\n`;
 }

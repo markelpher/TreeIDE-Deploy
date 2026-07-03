@@ -70,12 +70,12 @@ describe('stripFullChangelogLink', () => {
 });
 
 describe('buildLocaleChangelogNav', () => {
-    it('builds release download links for localized changelog assets', () => {
+    it('builds readable repository links for localized changelogs', () => {
         const nav = buildLocaleChangelogNav('v2.0.55', 'owner/repo');
 
         expect(nav).toBe(
-            '[Português](https://github.com/owner/repo/releases/download/v2.0.55/pt.md) · '
-            + '[Español](https://github.com/owner/repo/releases/download/v2.0.55/es.md)\n\n',
+            '[Português](https://github.com/owner/repo/blob/main/docs/changelogs/pt.md) · '
+            + '[Español](https://github.com/owner/repo/blob/main/docs/changelogs/es.md)\n\n',
         );
     });
 });
@@ -88,7 +88,7 @@ describe('ensureGithubReleaseNotes', () => {
             repo: 'owner/repo',
         });
 
-        expect(result).toContain('[Português](https://github.com/owner/repo/releases/download/v2.0.55/pt.md)');
+        expect(result).toContain('[Português](https://github.com/owner/repo/blob/main/docs/changelogs/pt.md)');
         expect(result).toContain('## Added');
         expect(result).toContain('**Full Changelog**: https://github.com/owner/repo/compare/v2.0.54...v2.0.55');
     });
@@ -171,9 +171,9 @@ describe('writeEnglishNotes', () => {
 
         const githubRelease = await readFile(path.join(tempDir, 'github-release.md'), 'utf8');
         expect(githubRelease).toContain(
-            '[Português](https://github.com/markelpher/TreeIDE-Deploy/releases/download/v2.0.55/pt.md)',
+            '[Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md)',
         );
         expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/TreeIDE-Deploy/compare/v2.0.54...v2.0.55');
-        expect(githubRelease).not.toContain('changelogs/pt.md');
+        expect(githubRelease).not.toContain('](changelogs/pt.md)');
     });
 });

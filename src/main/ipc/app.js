@@ -10,39 +10,62 @@ import log from 'electron-log';
 
 const REPO_FULL_NAME = 'markelpher/TreeIDE-Deploy';
 
+function isMainWindowSender(event, win) {
+    return Boolean(win && !win.isDestroyed?.() && event?.sender === win.webContents);
+}
+
 function registerWindowIpc(getMainWindow, isReadyToCloseRef) {
-    ipcMain.on('window-minimize', () => {
-        getMainWindow()?.minimize();
+    ipcMain.on('window-minimize', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return; }
+        win.minimize();
     });
 
-    ipcMain.on('window-maximize', () => {
+    ipcMain.on('window-maximize', (event) => {
         const win = getMainWindow();
-        if (win?.isMaximized()) {
+        if (!isMainWindowSender(event, win)) { return; }
+        if (win.isMaximized()) {
             win.unmaximize();
         } else {
-            win?.maximize();
+            win.maximize();
         }
     });
 
-    ipcMain.handle('is-window-maximized', () => {
-        return getMainWindow()?.isMaximized() ?? false;
+    ipcMain.handle('is-window-maximized', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return false; }
+        return win.isMaximized();
     });
 
-    ipcMain.on('window-close', () => {
-        getMainWindow()?.close();
+    ipcMain.on('window-close', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return; }
+        win.close();
     });
 
-    ipcMain.on('window-reload', () => {
-        getMainWindow()?.webContents.reload();
+    ipcMain.on('window-reload', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return; }
+        win.webContents.reload();
     });
 
-    ipcMain.on('window-dev-tools', () => {
-        getMainWindow()?.webContents.toggleDevTools();
+    ipcMain.on('window-dev-tools', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win) || app.isPackaged) { return; }
+        win.webContents.toggleDevTools();
     });
 
-    ipcMain.on('force-close', () => {
+    ipcMain.on('cancel-close', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return; }
+        isReadyToCloseRef.cancelPendingClose?.();
+    });
+
+    ipcMain.on('force-close', (event) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win)) { return; }
         isReadyToCloseRef.value = true;
-        getMainWindow()?.close();
+        win.close();
     });
 }
 
@@ -54,7 +77,7 @@ async function openHttpUrl(url) {
     }
 }
 
-function registerAppInfoHandlers() {
+function registerAppInfoHandlers(getMainWindow) {
     ipcMain.handle('get-app-info', () => ({
         version: app.getVersion(),
         isPackaged: app.isPackaged
@@ -99,6 +122,7 @@ function registerAppInfoHandlers() {
     });
 
     ipcMain.on('open-external', async (event, url) => {
+        if (!isMainWindowSender(event, getMainWindow())) { return; }
         try {
             await openHttpUrl(url);
         } catch {
@@ -109,5 +133,5 @@ function registerAppInfoHandlers() {
 
 export function registerAppIpc(getMainWindow, isReadyToCloseRef) {
     registerWindowIpc(getMainWindow, isReadyToCloseRef);
-    registerAppInfoHandlers();
+    registerAppInfoHandlers(getMainWindow);
 }

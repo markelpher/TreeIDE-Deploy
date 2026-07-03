@@ -201,6 +201,9 @@ function updateFileNameDisplay(forceName = null) {
 function applyZoom(level) {
     level = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
     document.documentElement.style.setProperty('--app-zoom', level);
+    requestAnimationFrame(() => {
+        app.panelResize?.applyLayout?.();
+    });
 }
 
 function getCurrentZoom() {

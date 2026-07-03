@@ -39,7 +39,7 @@
 #editor:focus-visible,
 #filePreviewEditor:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 1px var(--accent-color);
+    box-shadow: none;
 }
 
 .file-preview-panel {

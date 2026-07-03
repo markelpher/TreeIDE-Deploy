@@ -52,31 +52,54 @@ export function createModals(app) {
         downloadLabel.textContent = app.i18n.t('update_download_release');
     }
 
+    function setReleaseUpdateProgress(percent, state = 'idle') {
+        const progressEl = document.getElementById('releaseUpdateProgress');
+        const progressFill = document.getElementById('releaseUpdateProgressFill');
+        const progressText = document.getElementById('releaseUpdateProgressText');
+        const value = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+        const visible = state === 'downloading' || state === 'complete';
+
+        if (progressEl) {
+            progressEl.classList.toggle('show', visible);
+            progressEl.classList.toggle('downloading', state === 'downloading');
+            progressEl.classList.toggle('complete', state === 'complete');
+            progressEl.setAttribute('aria-valuenow', String(value));
+            progressEl.setAttribute('aria-valuetext', `${value}%`);
+        }
+        if (progressFill) {progressFill.style.width = `${value}%`;}
+        if (progressText) {progressText.textContent = `${value}%`;}
+    }
+
+    function setReleaseUpdateActionsLocked(locked) {
+        const footer = document.querySelector('.release-update-footer');
+        const actions = document.querySelector('.release-update-actions');
+        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
+        const declineBtn = document.getElementById('declineReleaseUpdateBtn');
+        const closeBtn = document.getElementById('closeReleaseUpdateModal');
+
+        if (footer) { footer.hidden = locked; }
+        if (actions) { actions.hidden = locked; }
+        if (downloadBtn) {
+            downloadBtn.style.display = '';
+            downloadBtn.disabled = false;
+        }
+        if (declineBtn) {
+            declineBtn.disabled = locked;
+            declineBtn.setAttribute('aria-disabled', String(locked));
+        }
+        if (closeBtn) {
+            closeBtn.disabled = locked;
+            closeBtn.setAttribute('aria-disabled', String(locked));
+        }
+    }
+
     const escapeHtmlFallback = app.helpers.escapeHtml;
     const renderMarkdown = app.markdown ? app.markdown.renderMarkdown : null;
     function __showToast(msg, dur) { app.toast.showToast(msg, dur); }
 
     function resetReleaseUpdateButton() {
-        const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
-        const progressEl = document.getElementById('releaseUpdateProgress');
-        const progressFill = document.getElementById('releaseUpdateProgressFill');
-        const progressText = document.getElementById('releaseUpdateProgressText');
-        const declineBtn = document.getElementById('declineReleaseUpdateBtn');
-
-        if (declineBtn) {declineBtn.style.display = '';}
-        if (downloadBtn) {
-            downloadBtn.style.display = '';
-            downloadBtn.disabled = false;
-        }
-        if (progressEl) {
-            progressEl.classList.remove('show', 'downloading', 'complete');
-        }
-        if (progressFill) {progressFill.style.width = '0%';}
-        if (progressText) {progressText.textContent = '0%';}
-        if (progressEl) {
-            progressEl.setAttribute('aria-valuenow', '0');
-            progressEl.setAttribute('aria-valuetext', '0%');
-        }
+        setReleaseUpdateActionsLocked(false);
+        setReleaseUpdateProgress(0, 'idle');
         applyUpdateDownloadLabel();
         isDownloadingUpdate = false;
         isUpdateDownloaded = false;
@@ -190,45 +213,18 @@ export function createModals(app) {
         }
         if (app.electronAPI.onUpdateDownloadProgress) {
             app.electronAPI.onUpdateDownloadProgress((progress) => {
-                const progressEl = document.getElementById('releaseUpdateProgress');
-                const progressFill = document.getElementById('releaseUpdateProgressFill');
-                const progressText = document.getElementById('releaseUpdateProgressText');
-
+                if (!isDownloadingUpdate && !isUpdateDownloaded) { return; }
                 maxDownloadPercent = normalizeDownloadPercent(maxDownloadPercent, progress);
-                const percent = maxDownloadPercent;
-                if (progressEl) {
-                    progressEl.classList.add('show', 'downloading');
-                    progressEl.setAttribute('aria-valuenow', String(percent));
-                    progressEl.setAttribute('aria-valuetext', `${percent}%`);
-                }
-                if (progressFill) {progressFill.style.width = `${percent}%`;}
-                if (progressText) {progressText.textContent = `${percent}%`;}
+                setReleaseUpdateProgress(maxDownloadPercent, 'downloading');
             });
         }
         if (app.electronAPI.onUpdateDownloaded) {
             app.electronAPI.onUpdateDownloaded((_info) => {
                 isDownloadingUpdate = false;
                 isUpdateDownloaded = true;
-                const downloadBtn = document.getElementById('downloadReleaseUpdateBtn');
-                const progressEl = document.getElementById('releaseUpdateProgress');
-                const progressFill = document.getElementById('releaseUpdateProgressFill');
-                const progressText = document.getElementById('releaseUpdateProgressText');
-
-                if (downloadBtn) {
-                    downloadBtn.style.display = '';
-                    downloadBtn.disabled = false;
-                }
-                if (progressEl) {
-                    progressEl.classList.remove('downloading');
-                    progressEl.classList.add('show', 'complete');
-                }
-                if (progressEl) {
-                    progressEl.setAttribute('aria-valuenow', '100');
-                    progressEl.setAttribute('aria-valuetext', '100%');
-                }
-                if (progressFill) {progressFill.style.width = '100%';}
-                if (progressText) {progressText.textContent = '100%';}
                 maxDownloadPercent = 100;
+                setReleaseUpdateActionsLocked(false);
+                setReleaseUpdateProgress(100, 'complete');
                 applyUpdateDownloadLabel();
                 if (currentUpdateInstallMode === 'manual') {
                     __showToast(app.i18n.t('update_manual_install_hint'), 5000);
@@ -538,6 +534,7 @@ export function createModals(app) {
     }
 
     function closeReleaseUpdateModal() {
+        if (isDownloadingUpdate) { return; }
         if (latestReleaseUpdate?.latestVersion) { dismissedReleaseVersion = latestReleaseUpdate.latestVersion; }
         const modal = getEl('releaseUpdateModal');
         if (modal) {
@@ -580,11 +577,8 @@ export function createModals(app) {
 
             maxDownloadPercent = 0;
             isDownloadingUpdate = true;
-            const progressEl = document.getElementById('releaseUpdateProgress');
-            const declineBtn = document.getElementById('declineReleaseUpdateBtn');
-            if (progressEl) {progressEl.classList.add('show', 'downloading');}
-            if (declineBtn) {declineBtn.style.display = 'none';}
-            downloadReleaseUpdateBtn.style.display = 'none';
+            setReleaseUpdateActionsLocked(true);
+            setReleaseUpdateProgress(0, 'downloading');
 
             try {
                 const result = await app.electronAPI.downloadUpdate();

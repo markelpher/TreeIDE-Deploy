@@ -14,6 +14,11 @@ export const app = {
     quit: noop,
     on: noop,
     whenReady: () => Promise.resolve(),
+    requestSingleInstanceLock: () => true,
+    setName: noop,
+    setAppUserModelId: noop,
+    isPackaged: false,
+    commandLine: { appendSwitch: noop },
 };
 
 export const ipcMain = {
@@ -34,7 +39,15 @@ export const dialog = {
 
 export class BrowserWindow {
     constructor() {
-        this.webContents = { send: noop, on: noop, once: noop };
+        this.webContents = {
+            send: noop,
+            on: noop,
+            once: noop,
+            reload: noop,
+            toggleDevTools: noop,
+            setWindowOpenHandler: noop,
+            getURL: () => 'file:///index.html',
+        };
     }
 
     loadFile() {}
@@ -44,7 +57,16 @@ export class BrowserWindow {
     show() {}
     setMenu() {}
     setTitle() {}
+    focus() {}
+    restore() {}
+    close() {}
+    minimize() {}
+    maximize() {}
+    unmaximize() {}
+    isDestroyed() { return false; }
+    isMinimized() { return false; }
     isMaximized() { return false; }
+    static getAllWindows() { return []; }
 }
 
 export const shell = { openExternal: async () => {} };
