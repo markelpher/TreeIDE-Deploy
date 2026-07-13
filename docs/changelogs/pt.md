@@ -1,6 +1,6 @@
 <!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->
 
-## O que há de novo na v2.0.104
+## O que há de novo na v2.0.105
 
 Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las em tempo real e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
 
@@ -8,13 +8,13 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 
 #### Instalação, armazenamento e proteção de pacotes
 - **Escolhas explícitas de retenção de dados** — instalar manualmente sobre uma versão existente do Tree IDE e desinstalar agora apresentam opções claras de Manter ou Deletar, com Manter selecionado por padrão
-- **Configuração ciente da primeira instalação** — a escolha de dados é pulada quando não existe um perfil ou dados de atualizador do Tree IDE anteriores e não interrompe atualizações automáticas silenciosas
+- **Configuração ciente da primeira instalação** — a escolha de dados é pulada quando não existe um perfil anterior do Tree IDE ou dados do atualizador e não interrompe atualizações automáticas silenciosas
 - **Fluxo de dados assistido correto** — instalações manuais sobre uma versão existente e desinstalações agora exibem escolhas de Manter/Deletar; atualizações silenciosas no aplicativo pulam o prompt e mantêm os dados
 - **Boas-vindas seguem a escolha de dados** — o onboarding aparece para um perfil novo ou após selecionar Deletar, enquanto selecionar Manter preserva o estado de onboarding concluído
 - **Ação de conclusão do desinstalador correta** — a página final agora rotula seu botão principal como Concluir em vez de Próximo em inglês, português e espanhol
 - **Pacote de produção protegido** — o código do aplicativo permanece organizado em `app.asar`, agora com validação de integridade do Electron ASAR e carregamento restrito ao arquivo validado
 - **Runtime Windows x64 enxuto** — removido o toolchain de empacotamento Squirrel não utilizado e os binários 7-Zip não-Windows/não-x64 dos arquivos do aplicativo distribuído
-- **Limpeza opcional completa** — a exclusão de dados abrange preferências, cache, logs, sessão salva, pastas de perfil atuais e legadas, e dados do atualizador
+- **Limpeza opcional completa** — a exclusão de dados abrange preferências, cache, logs, sessão salva, pastas de perfil atual e legado, e dados do atualizador
 
 #### Build Studio e saída de projeto
 - **Build Studio** — fluxo de construção em tela cheia com visualização de árvore ao vivo, visualização de conteúdo por arquivo, estatísticas e opções de saída
@@ -38,10 +38,10 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
   - Stacks: Node.js, MVC, Python, PHP
   - Sistemas: Go, Java, Kotlin, Rust, Ruby, Swift, Dart
   - Nativo: C, C++, C#
-- **Tela de modelos** — navegador em tela cheia com três colunas, abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
+- **Tela de modelos** — navegador em tela cheia com três colunas com abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
 - **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar o conteúdo do arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
 - **Arquivos `.tree-template`** — exportar e importar modelos personalizados compartilháveis (JSON `treeide-template` v1) via diálogos nativos de salvar/abrir ou exportação por linha na lista personalizada
-- **Rodapé de modelos personalizados** — quando existem modelos personalizados: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
+- **Rodapé de modelos personalizados** — quando existem modelos personalizados: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; o estado vazio oferece início em branco, importação de projeto e importação de arquivo
 - **Visualização por arquivo** — clicar em um arquivo na visualização da estrutura abre um painel de editor monoespaçado em largura total com distintivo de tipo de arquivo (mesmo layout de painel único para modelos embutidos e personalizados)
 
 #### Editor, árvore e validação
@@ -52,7 +52,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Visualização ao vivo de Markdown** para arquivos `.md` no painel de visualização de arquivos
 - **Pastas colapsáveis** na visualização da árvore
 - **Navegação por teclado na árvore** — teclas de seta, Início, Fim e Enter
-- **Correspondência inteligente de renomeação de arquivos** quando linhas da árvore são editadas
+- **Correspondência inteligente de renomeação de arquivos** quando as linhas da árvore são editadas
 - **Indentação / desindentação de bloco** com Tab e Shift+Tab, além de Backspace inteligente para blocos de indentação
 - **Zoom do editor** — `Ctrl++`, `Ctrl+-` e `Ctrl+0`
 - **Painéis redimensionáveis** (editor, árvore, visualização de arquivos) com layout persistido entre sessões
@@ -80,13 +80,13 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Pacote de diagnóstico sanitizado** — redigir caminhos locais, endereços de e-mail, endereços IP e segredos de URL enquanto exclui nomes e conteúdos de projetos
 - **Captura de tela opcional do Tree IDE** — capturar apenas a janela atual do aplicativo após opt-in explícito, nunca a área de trabalho ou outras janelas
 - **Anexos locais primeiro** — salvar o ZIP no caminho escolhido pelo usuário sem abrir o File Explorer ou fazer upload; logs e capturas de tela permanecem locais até serem anexados manualmente
-- **Modal de relatório mais seguro** — seleção de texto e arrastar não descartam mais o diálogo, os campos redimensionam automaticamente, o contraste do tema claro/escuro segue o restante do aplicativo, e o formulário é redefinido após sucesso, Cancelar ou fechamento com o botão X
+- **Modal de relatório mais seguro** — a seleção de texto e o arrastar não descartam mais o diálogo, os campos redimensionam automaticamente, o contraste do tema claro/escuro segue o restante do aplicativo, e o formulário é redefinido após sucesso, Cancelar ou fechar com o botão X
 
 #### Internacionalização
 - **Traduções de interface em inglês, português (pt-BR) e espanhol**
 - **Seleção de idioma na primeira execução** no fluxo de boas-vindas e configurações
-- **Traduções de processo principal** para diálogos nativos e mensagens de erro
-- **Script `npm run i18n:validate`** para manter arquivos de localidade em sincronia
+- **Traduções do processo principal** para diálogos nativos e mensagens de erro
+- **Script `npm run i18n:validate`** para manter os arquivos de localidade em sincronia
 
 #### Persistência de sessão
 - **Armazenamento de sessão IndexedDB** com migração automática do `localStorage` legado
@@ -97,7 +97,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Atualizador automático no aplicativo** — verificar Lançamentos do GitHub, baixar com progresso e reiniciar para instalar
 - **Canais de atualização estáveis e beta**
 - **Notas de lançamento localizadas** no modal de atualização (inglês, português e espanhol)
-- **Changelog de atualização legível** — diálogo mais amplo, **O que há de novo** expandido por padrão, área de rolagem dedicada, hierarquia de cabeçalhos mais clara e botões de ação fixados no rodapé
+- **Changelog de atualização legível** — diálogo mais amplo, **O que há de novo** expandido por padrão, área de rolagem dedicada, hierarquia de cabeçalho mais clara e botões de ação fixados no rodapé
 - **Fluxo de trabalho manual `docs/changelog.md`** — editar notas de lançamento no repositório; CI as traduz para o aplicativo e publica em inglês no GitHub
 - **Notas de lançamento divididas** — o modal de atualização do aplicativo mostra apenas o texto do changelog; links de navegação de localidade aparecem em `docs/changelog.md` e na descrição do lançamento do GitHub (apontando para arquivos legíveis em `docs/changelogs/`); o link de comparação (`Full Changelog`) é exclusivo do GitHub
 - **Tradução de Modelos do GitHub** — notas de lançamento em português e espanhol são geradas no CI via API `models.github.ai`
@@ -109,15 +109,15 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 #### Plataformas e distribuição
 - **Windows x64** — pacotes de instalação NSIS e Portáteis; instalador multilíngue (inglês, português e espanhol)
 - **Lançamentos do GitHub** publicados automaticamente em tags de versão do CI
-- **Build do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI
+- **Construção do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI
 
 #### Arquitetura, ferramentas de desenvolvimento e qualidade
-- **Build do renderizador Vite** com substituição de módulo quente em desenvolvimento
+- **Construção do renderizador Vite** com substituição de módulo quente em desenvolvimento
 - **Base de código modular** — `src/main/`, `src/preload/`, `src/renderer/modules/`, `src/shared/` e 20 módulos CSS
 - **Módulos ES**, Node.js 24+, Electron 42
 - **Manipuladores IPC divididos** para projeto, atualizações e ciclo de vida do aplicativo
 - **API de preload `contextBridge`** para uma fronteira de renderizador reforçada
-- **Suite de testes Vitest** com mocks do Electron para execuções amigáveis ao CI; helpers de erro de changelog e atualizador cobertos por testes dedicados
+- **Conjunto de testes Vitest** com simulações do Electron para execuções amigáveis ao CI; helpers de erro de changelog e atualizador cobertos por testes dedicados
 - **ESLint e Prettier** integrados aos scripts npm
 - **electron-reloader** para recarregamento quente do processo principal durante o desenvolvimento
 - **Exportação de log de erro** em caso de falha para facilitar a depuração
