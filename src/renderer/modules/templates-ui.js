@@ -296,9 +296,11 @@ export function createTemplatesUi(app) {
         const fileNameEl = document.getElementById('templateFileName');
         const fileModeEl = document.getElementById('templateFileMode');
         const fileEditor = document.getElementById('templateFileEditor');
-        filePanel?.classList.remove('has-file');
+        const markdownPreview = document.getElementById('templateMarkdownPreview');
+        filePanel?.classList.remove('has-file', 'markdown-file');
         if (fileNameEl) { fileNameEl.textContent = ''; }
         if (fileModeEl) { fileModeEl.textContent = ''; }
+        if (markdownPreview) { markdownPreview.textContent = ''; }
         if (fileEditor) {
             fileEditor.value = '';
             fileEditor.readOnly = true;
@@ -337,8 +339,20 @@ export function createTemplatesUi(app) {
     }
 
     function onFileEditorInput() {
+        const fileEditor = document.getElementById('templateFileEditor');
+        updateTemplateMarkdownPreview(fileEditor?.value || '', selectedTemplateFile);
         if (!isCustomEditMode() || !selectedTemplateFile) { return; }
         scheduleFileSave();
+    }
+
+    function updateTemplateMarkdownPreview(content, filePath) {
+        const markdownPreview = document.getElementById('templateMarkdownPreview');
+        if (!markdownPreview) { return; }
+        if (!filePath || !app.fileops.isMarkdownFile(filePath)) {
+            markdownPreview.textContent = '';
+            return;
+        }
+        markdownPreview.innerHTML = app.markdown.renderMarkdown(content);
     }
 
     function clearTemplatePreview() {
@@ -584,11 +598,13 @@ export function createTemplatesUi(app) {
         const fileModeEl = document.getElementById('templateFileMode');
         const fileEditor = document.getElementById('templateFileEditor');
         const hasFile = !!filePath && !!snapshot && Object.prototype.hasOwnProperty.call(snapshot.files, filePath);
+        const isMarkdown = hasFile && app.fileops.isMarkdownFile(filePath);
         const content = hasFile ? snapshot.files[filePath] : '';
         const isEditable = isCustomEditMode() && hasFile;
         const isTypingFile = document.activeElement === fileEditor;
 
         filePanel?.classList.toggle('has-file', hasFile);
+        filePanel?.classList.toggle('markdown-file', isMarkdown);
 
         if (fileNameEl) {
             fileNameEl.textContent = hasFile ? filePath : '';
@@ -605,6 +621,7 @@ export function createTemplatesUi(app) {
             fileEditor.setAttribute('aria-readonly', String(!isEditable));
             fileEditor.tabIndex = hasFile ? (isEditable ? 0 : -1) : -1;
         }
+        updateTemplateMarkdownPreview(content, filePath);
         selectedTemplateFile = filePath || '';
         if (isCustomEditMode()) {
             updateLiveStructurePreview();

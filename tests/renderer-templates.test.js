@@ -46,6 +46,9 @@ const app = {
         getProjectName: () => 'my-app',
         getSaveProjectName: () => 'my-app'
     },
+    markdown: {
+        renderMarkdown: vi.fn((content) => `<article>${content}</article>`)
+    },
     dbStorage: {
         get: vi.fn(async () => null),
         set: vi.fn(async () => {})
@@ -330,6 +333,47 @@ describe('template sources', () => {
         expect(preview.innerHTML).toContain('demo/');
         expect(preview.innerHTML).toContain('utils.js');
         expect(preview.querySelector('[tabindex="0"]')).toBeNull();
+    });
+
+    it('renders and updates a live Markdown preview for template files', () => {
+        document.body.innerHTML = `
+            <div id="templateStructureBody"></div>
+            <textarea id="templateTreeEditor"></textarea>
+            <div id="templateTreePreview"></div>
+            <div id="templateFilePanel" class="template-file-panel">
+                <span id="templateFileName"></span>
+                <span id="templateFileMode"></span>
+                <textarea id="templateFileEditor"></textarea>
+                <div id="templateMarkdownPreview" class="markdown-preview"></div>
+            </div>
+        `;
+        localStorage.setItem('custom_templates', JSON.stringify({
+            'custom-docs': {
+                label: 'Docs',
+                tree: 'docs/\n    README.md',
+                files: { 'docs/README.md': '# Initial' }
+            }
+        }));
+        templates.setTemplateSource('custom');
+        templates.selectedTemplateName = 'custom-docs';
+        templates.bindTemplateModal();
+
+        const snapshot = templates.resolveTemplateSnapshot(
+            JSON.parse(localStorage.getItem('custom_templates'))['custom-docs']
+        );
+        templates.renderTemplateFilePreview(snapshot, 'docs/README.md');
+
+        const panel = document.getElementById('templateFilePanel');
+        const editor = document.getElementById('templateFileEditor');
+        const preview = document.getElementById('templateMarkdownPreview');
+        expect(panel.classList.contains('markdown-file')).toBe(true);
+        expect(preview.innerHTML).toContain('# Initial');
+
+        editor.value = '# Updated';
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(preview.innerHTML).toContain('# Updated');
+        expect(app.markdown.renderMarkdown).toHaveBeenLastCalledWith('# Updated');
     });
 
     it('exports a custom template as .tree-template', async () => {

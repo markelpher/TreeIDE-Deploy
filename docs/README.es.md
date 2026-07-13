@@ -39,6 +39,7 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **19 plantillas iniciales integradas** — Frontend (HTML, React, Vite), Stacks (Node.js, MVC, Python, PHP), Systems (Go, Java, Kotlin, Rust, Ruby, Swift, Dart) y Native (C, C++, C#)
 - **Pantalla de Plantillas** — navegador a pantalla completa con tres columnas, pestañas integradas y personalizadas, edición inline de la estructura y vista previa en vivo
 - **Plantillas personalizadas** — crear en blanco, importar del proyecto actual, renombrar, editar contenidos inline, exportar o eliminar
+- **Vista previa Markdown en plantillas** — los archivos `.md` muestran el editor y el documento renderizado lado a lado, con actualización en tiempo real al editar plantillas personalizadas
 - **Archivos `.tree-template`** — exportar e importar plantillas personalizadas compartibles (JSON `treeide-template` v1)
 
 ### UI, i18n y sesión

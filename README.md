@@ -39,6 +39,7 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **19 built-in starter templates** — Frontend (HTML, React, Vite), Stacks (Node.js, MVC, Python, PHP), Systems (Go, Java, Kotlin, Rust, Ruby, Swift, Dart), and Native (C, C++, C#)
 - **Templates screen** — fullscreen three-column browser with built-in and custom tabs, inline structure editing, and live tree preview
 - **Custom templates** — create blank, import from the current project, rename, edit file contents inline, export, or delete
+- **Markdown template preview** — `.md` files show the editor and rendered document side by side, updating live while custom templates are edited
 - **`.tree-template` files** — export and import shareable custom templates (JSON `treeide-template` v1)
 
 ### UI, i18n & session

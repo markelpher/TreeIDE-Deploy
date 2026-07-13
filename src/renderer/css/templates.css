@@ -660,6 +660,22 @@ body.templates-active .drop-overlay {
     display: block;
 }
 
+.template-file-panel.markdown-file .template-file-editor,
+.template-file-panel.markdown-file .template-markdown-preview {
+    flex: 1 1 0;
+    width: 50%;
+    min-width: 0;
+}
+
+.template-file-panel.markdown-file .template-file-editor {
+    border-right: 1px solid var(--border-color);
+}
+
+.template-file-panel.markdown-file .template-markdown-preview {
+    display: block;
+    padding: 24px 20px;
+}
+
 .template-file-editor:focus-visible {
     outline: none;
     box-shadow: none;
