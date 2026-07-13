@@ -29,6 +29,15 @@ Escolha um destes arquivos:
 
 O instalador NSIS é por usuário e instala no perfil do usuário atual do Windows, normalmente dentro de `%LocalAppData%\Programs`. Ele não deve pedir permissão de administrador para instalação normal nem para updates automáticos.
 
+Os arquivos do aplicativo ficam organizados em uma única pasta de instalação, com o código de produção reunido em um `app.asar` com validação de integridade. Configurações pessoais, sessão, cache e logs ficam intencionalmente separados no perfil atual do Windows para que a troca do aplicativo não sobrescreva esses dados.
+
+Quando o Setup detecta dados de uma instalação anterior do Tree IDE, um instalador aberto manualmente pede que você escolha uma opção:
+
+- **Manter configurações e dados do usuário (recomendado)** preserva preferências, sessão, cache, logs e dados de atualização.
+- **Apagar configurações, cache, logs, sessão e dados de atualização** inicia a nova versão do zero.
+
+Essa pergunta não interrompe atualizações automáticas silenciosas.
+
 ## Atualizações automáticas
 
 O Tree IDE usa o canal do instalador Windows NSIS para atualizar automaticamente.
@@ -42,6 +51,8 @@ Use sempre o instalador `Tree-IDE-Setup-{version}-win-x64.exe`. Pacotes Portable
 ## Desinstalar
 
 Use **Configurações -> Aplicativos -> Aplicativos instalados -> Tree IDE -> Desinstalar**, ou execute o desinstalador na pasta de instalação do Tree IDE.
+
+O desinstalador pergunta claramente se deve manter os dados para uma reinstalação futura ou apagar configurações, cache, logs, sessão e dados de atualização. Manter os dados vem selecionado por padrão para evitar perda acidental.
 
 ## Solução de problemas
 

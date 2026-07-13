@@ -47,5 +47,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onAttemptClose: (callback) => { ipcRenderer.removeAllListeners('attempt-close'); ipcRenderer.on('attempt-close', () => callback()); },
     cancelClose: () => ipcRenderer.send('cancel-close'),
     forceClose: () => ipcRenderer.send('force-close'),
-    saveErrorLog: wrapInvoke('save-error-log')
+    saveErrorLog: wrapInvoke('save-error-log'),
+    createDiagnosticReport: wrapInvoke('create-diagnostic-report'),
+    getRepositoryLabels: wrapInvoke('get-repository-labels')
 });

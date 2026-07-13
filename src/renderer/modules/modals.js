@@ -771,7 +771,7 @@ export function createModals(app) {
 
             if (id === 'templatesModal') {
                 app.templates?.closeTemplatesModal?.();
-            } else if (id === 'settingsModal' || id === 'aboutModal' || id === 'unsavedModal') {
+            } else if (id === 'settingsModal' || id === 'aboutModal' || id === 'diagnosticReportModal' || id === 'unsavedModal') {
                 closeModalAnimated(modal);
             } else if (id === 'confirmModal') {
                 settleConfirm(false);
@@ -816,25 +816,38 @@ export function createModals(app) {
 
     document.addEventListener('keydown', handleFocusTrap);
 
+    // Only a gesture that both starts and ends on the backdrop may dismiss a modal.
+    // This prevents text selection dragged outside a field from closing its dialog.
+    let pressedModalBackdrop = null;
+    window.addEventListener('pointerdown', (e) => {
+        pressedModalBackdrop = e.target instanceof Element && e.target.classList.contains('modal')
+            ? e.target
+            : null;
+    }, true);
+    window.addEventListener('pointercancel', () => { pressedModalBackdrop = null; }, true);
+
     // Global click handler for modal dismiss and external links
     window.addEventListener('click', (e) => {
+        const clickedModalBackdrop = e.target === pressedModalBackdrop;
+        pressedModalBackdrop = null;
         if (e.target.tagName === 'A' && e.target.href && e.target.href.startsWith('http') && app.electronAPI) {
             e.preventDefault();
             app.electronAPI.openExternal(e.target.href);
         }
-        if (e.target.id === 'settingsModal') { closeModalAnimated(e.target); }
-        if (e.target.id === 'aboutModal') { closeModalAnimated(e.target); }
-        if (e.target.id === 'templatesModal') { app.templates?.closeTemplatesModal?.(); }
-        if (e.target.id === 'releaseUpdateModal') { closeReleaseUpdateModal(); }
-        if (e.target.id === 'unsavedModal') { closeModalAnimated(e.target); }
+        if (clickedModalBackdrop && e.target.id === 'settingsModal') { closeModalAnimated(e.target); }
+        if (clickedModalBackdrop && e.target.id === 'aboutModal') { closeModalAnimated(e.target); }
+        if (clickedModalBackdrop && e.target.id === 'diagnosticReportModal') { closeModalAnimated(e.target); }
+        if (clickedModalBackdrop && e.target.id === 'templatesModal') { app.templates?.closeTemplatesModal?.(); }
+        if (clickedModalBackdrop && e.target.id === 'releaseUpdateModal') { closeReleaseUpdateModal(); }
+        if (clickedModalBackdrop && e.target.id === 'unsavedModal') { closeModalAnimated(e.target); }
         if (e.target.id === 'welcomeModal') { return; }
-        if (e.target.id === 'promptModal') {
+        if (clickedModalBackdrop && e.target.id === 'promptModal') {
             closePromptModal(null);
         }
-        if (e.target.id === 'decryptPasswordModal') {
+        if (clickedModalBackdrop && e.target.id === 'decryptPasswordModal') {
             closeDecryptPasswordModal(null);
         }
-        if (e.target.id === 'confirmModal') {
+        if (clickedModalBackdrop && e.target.id === 'confirmModal') {
             settleConfirm(false);
         }
     });

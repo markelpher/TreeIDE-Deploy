@@ -80,6 +80,8 @@
             <div class="menu-item" id="menu-help">
                 <span class="menu-label" data-i18n="about_menu" role="menuitem" tabindex="0">About</span>
                 <div class="dropdown-content" role="menu">
+                    <div class="dropdown-item" id="menu-report-problem" data-i18n="report_problem" role="menuitem">Report a problem</div>
+                    <div class="dropdown-divider"></div>
                     <div class="dropdown-item" id="menu-credits" data-i18n="about" role="menuitem">About Tree IDE</div>
                 </div>
             </div>
@@ -115,6 +117,13 @@
 
     <div class="container" id="editorLayout">
         <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
+        <div id="diagnosticRedirectPopup" class="diagnostic-redirect-popup" role="button" tabindex="0" aria-live="assertive" aria-atomic="true" aria-label="Hide redirect notice" hidden>
+            <div class="diagnostic-redirect-content">
+                <strong id="diagnosticRedirectTitle" data-i18n="diagnostic_redirect_title">Diagnostic package saved</strong>
+                <span id="diagnosticRedirectMessage" data-i18n="diagnostic_redirect_message">Opening GitHub in a few seconds…</span>
+                <div class="diagnostic-redirect-progress" aria-hidden="true"><span></span></div>
+            </div>
+        </div>
         <div id="validationPanel" class="validation-panel" role="alert" aria-live="assertive"></div>
 
         <div class="editor-shell">
@@ -315,6 +324,93 @@
                 <p class="about-version" id="aboutVersion">v---</p>
                 <p class="about-description" data-i18n="credits_desc">A minimalist tool for rapid project structure scaffolding.</p>
                 <p class="about-license" data-i18n="license">Licensed under MIT License</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="diagnosticReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="diagnosticReportTitle">
+        <div class="modal-content diagnostic-report-modal">
+            <div class="modal-header">
+                <h2 id="diagnosticReportTitle" data-i18n="report_problem">Report a problem</h2>
+                <button class="modal-close" id="closeDiagnosticReport" aria-label="Close diagnostic report"><i data-lucide="x" aria-hidden="true"></i></button>
+            </div>
+            <div class="modal-body diagnostic-report-body">
+                <div class="diagnostic-privacy">
+                    <div>
+                        <strong data-i18n="diagnostic_privacy_title">Privacy first</strong>
+                        <p data-i18n="diagnostic_privacy">The text below is sent only to prefill the GitHub draft. The diagnostic ZIP, log and screenshot remain local until you choose to attach them.</p>
+                    </div>
+                </div>
+                <div class="diagnostic-field">
+                    <div class="diagnostic-field-heading">
+                        <label class="diagnostic-label" for="diagnosticIssueTitle" data-i18n="diagnostic_issue_title">Issue title</label>
+                        <span id="diagnosticIssueTitleCount" class="diagnostic-character-count">0 / 80</span>
+                    </div>
+                    <div class="diagnostic-title-control">
+                        <select id="diagnosticIssueLabel" class="styled-select diagnostic-title-label" aria-label="GitHub issue label">
+                            <option value="bug">[bug]</option>
+                            <option value="documentation">[documentation]</option>
+                            <option value="duplicate">[duplicate]</option>
+                            <option value="enhancement">[enhancement]</option>
+                            <option value="good first issue">[good first issue]</option>
+                            <option value="help wanted">[help wanted]</option>
+                            <option value="invalid">[invalid]</option>
+                            <option value="question">[question]</option>
+                            <option value="wontfix">[wontfix]</option>
+                        </select>
+                        <input id="diagnosticIssueTitle" type="text" maxlength="80" spellcheck="true" autocomplete="off" aria-describedby="diagnosticIssueTitleHint diagnosticIssueTitleCount" data-i18n-placeholder="diagnostic_issue_title_placeholder" placeholder="Short summary of the problem">
+                    </div>
+                    <p id="diagnosticIssueTitleHint" class="diagnostic-field-hint" data-i18n="diagnostic_issue_title_hint">Use a short and specific title.</p>
+                </div>
+                <div class="diagnostic-field">
+                    <div class="diagnostic-field-heading">
+                        <label class="diagnostic-label" for="diagnosticDescription" data-i18n="diagnostic_description">What happened?</label>
+                        <span id="diagnosticDescriptionCount" class="diagnostic-character-count">0 / 5000</span>
+                    </div>
+                    <textarea id="diagnosticDescription" class="diagnostic-description" maxlength="5000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticDescriptionHint diagnosticDescriptionCount" data-i18n-placeholder="diagnostic_description_placeholder" placeholder="Describe what you were doing and what you expected."></textarea>
+                    <p id="diagnosticDescriptionHint" class="diagnostic-field-hint" data-i18n="diagnostic_description_hint">Explain what failed and what you observed.</p>
+                </div>
+                <div class="diagnostic-field">
+                    <div class="diagnostic-field-heading">
+                        <label class="diagnostic-label" for="diagnosticSteps" data-i18n="diagnostic_issue_steps">Steps to reproduce</label>
+                        <span id="diagnosticStepsCount" class="diagnostic-character-count">0 / 3000</span>
+                    </div>
+                    <textarea id="diagnosticSteps" class="diagnostic-description diagnostic-description-compact" maxlength="3000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticStepsCount" data-i18n-placeholder="diagnostic_steps_placeholder" placeholder="1. Open…&#10;2. Select…&#10;3. The error occurs…"></textarea>
+                </div>
+                <div class="diagnostic-field">
+                    <div class="diagnostic-field-heading">
+                        <label class="diagnostic-label" for="diagnosticExpected" data-i18n="diagnostic_issue_expected">Expected behavior</label>
+                        <span id="diagnosticExpectedCount" class="diagnostic-character-count">0 / 2000</span>
+                    </div>
+                    <textarea id="diagnosticExpected" class="diagnostic-description diagnostic-description-compact" maxlength="2000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticExpectedCount" data-i18n-placeholder="diagnostic_expected_placeholder" placeholder="Describe what should have happened."></textarea>
+                </div>
+                <div class="diagnostic-included">
+                    <div class="diagnostic-section-title">
+                        <p class="diagnostic-label" data-i18n="diagnostic_included">Information included</p>
+                    </div>
+                    <ul>
+                        <li data-i18n="diagnostic_system_info">App/runtime versions, OS, architecture and coarse memory information</li>
+                        <li data-i18n="diagnostic_session_info">Language, theme, update channel and project/error counts — never project names or contents</li>
+                    </ul>
+                </div>
+                <div class="diagnostic-options">
+                    <label class="diagnostic-option">
+                        <input id="diagnosticIncludeLog" type="checkbox" checked>
+                        <span class="diagnostic-option-copy" data-i18n="diagnostic_include_log">Include the recent sanitized app log (up to 256 KB)</span>
+                    </label>
+                    <label class="diagnostic-option diagnostic-screenshot-option">
+                        <input id="diagnosticIncludeScreenshot" type="checkbox">
+                        <span class="diagnostic-option-copy">
+                            <span data-i18n="diagnostic_include_screenshot">Include a screenshot of the Tree IDE window only</span>
+                            <small class="diagnostic-warning" data-i18n="diagnostic_screenshot_warning">The screenshot may contain project text visible inside the app. It never captures the desktop or other windows.</small>
+                        </span>
+                    </label>
+                </div>
+                <p id="diagnosticReportStatus" class="diagnostic-status" role="status" aria-live="polite"></p>
+            </div>
+            <div class="modal-actions diagnostic-report-actions">
+                <button id="cancelDiagnosticReport" class="secondary-btn" type="button" data-i18n="cancel">Cancel</button>
+                <button id="createDiagnosticReport" class="primary-btn" type="button" data-i18n="diagnostic_create">Save package and open issue</button>
             </div>
         </div>
     </div>

@@ -47,6 +47,10 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Modal de boas-vindas** no primeiro uso com seleção de idioma e configurações agrupadas
 - **Temas** — claro, escuro e **Sistema** (segue o esquema de cores do SO)
 - **Inglês, Português (pt-BR) e Espanhol** — traduções da interface e dos diálogos do processo principal
+- **Relatórios de problemas estruturados** — preencha título da issue, descrição, passos para reproduzir e comportamento esperado em um formulário localizado e com campos autoajustáveis dentro do app
+- **Integração com labels do GitHub** — escolha uma label da lista atual do repositório usando o mesmo dropdown personalizado do app; o rascunho localizado abre com título, corpo Markdown e label preenchidos para revisão
+- **Diagnóstico com privacidade em primeiro lugar** — salve um ZIP local com metadados permitidos do sistema/app, erros sanitizados do renderer e logs limitados à execução atual; nomes e conteúdos de projetos ficam de fora
+- **Captura opcional somente do app** — capture apenas a janela do Tree IDE após consentimento explícito; ZIP, log e captura permanecem locais até você anexá-los manualmente
 - **Armazenamento de sessão em IndexedDB** com salvamento automático de abas abertas, conteúdos e nomes de projetos
 - **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
 - **Fontes incluídas** — Inter e JetBrains Mono; ícones Lucide locais (sem CDN)
@@ -151,6 +155,12 @@ npm run build:win
 ```
 
 O Tree IDE é exclusivo para Windows e suporta x64. Ele fornece pacotes NSIS e Portable. O instalador NSIS suporta instalação por usuário e atualizações automáticas silenciosas sem solicitação de administrador.
+
+Os builds de produção mantêm o código do aplicativo organizado em um único pacote `app.asar` com validação de integridade. Os dados do perfil do Windows ficam separados do executável, como é esperado em aplicativos por usuário. Quando o Setup encontra dados de uma instalação anterior, uma instalação manual pergunta se deve mantê-los (opção segura e padrão) ou apagar configurações, cache, logs, sessão e dados de atualização. O desinstalador apresenta a mesma escolha explícita.
+
+O instalador manual assistido e o desinstalador mostram as escolhas de dados. Atualizações silenciosas iniciadas dentro do app ignoram essas páginas e sempre mantêm os dados. A tela de boas-vindas aparece em um perfil novo ou depois de escolher apagar os dados, mas não quando os dados existentes são mantidos.
+
+O desinstalador mantém o mesmo fluxo assistido e localizado até a ação final **Concluir**.
 
 | Identificador Windows | Valor |
 | --- | --- |

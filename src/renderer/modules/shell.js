@@ -1,7 +1,55 @@
 import { toHtmlLang } from '../../shared/i18n.js';
 import { isProjectTreePath, isTreeTemplatePath } from '../../shared/templateFile.js';
+import { buildDiagnosticIssueUrl } from '../../shared/diagnosticIssue.js';
 
 export function createShell(app) {
+
+const OPEN_ISSUE_DELAY_MS = 5000;
+const REDIRECT_POPUP_EXIT_MS = 250;
+
+async function showDiagnosticRedirectPopup(app) {
+    const popup = document.getElementById('diagnosticRedirectPopup');
+    if (!popup) {
+        await new Promise((resolve) => setTimeout(resolve, OPEN_ISSUE_DELAY_MS));
+        return;
+    }
+
+    const title = document.getElementById('diagnosticRedirectTitle');
+    const message = document.getElementById('diagnosticRedirectMessage');
+    if (title) { title.textContent = app.i18n.t('diagnostic_redirect_title'); }
+    if (message) { message.textContent = app.i18n.t('diagnostic_redirect_message'); }
+    popup.setAttribute('aria-label', app.i18n.t('diagnostic_redirect_dismiss'));
+    popup.style.setProperty('--redirect-delay', `${OPEN_ISSUE_DELAY_MS}ms`);
+    popup.hidden = false;
+    popup.classList.remove('diagnostic-redirect-popup-visible');
+    void popup.offsetWidth;
+    popup.classList.add('diagnostic-redirect-popup-visible');
+
+    await new Promise((resolve) => {
+        let dismissTimer = null;
+        const dismissPopup = () => {
+            popup.classList.remove('diagnostic-redirect-popup-visible');
+            if (dismissTimer) { clearTimeout(dismissTimer); }
+            dismissTimer = setTimeout(() => { popup.hidden = true; }, REDIRECT_POPUP_EXIT_MS);
+        };
+        const finish = () => {
+            popup.removeEventListener('click', dismissPopup);
+            popup.removeEventListener('keydown', handleKeydown);
+            resolve();
+        };
+        const handleKeydown = (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') { return; }
+            event.preventDefault();
+            dismissPopup();
+        };
+        popup.addEventListener('click', dismissPopup);
+        popup.addEventListener('keydown', handleKeydown);
+        setTimeout(finish, OPEN_ISSUE_DELAY_MS);
+    });
+    popup.classList.remove('diagnostic-redirect-popup-visible');
+    await new Promise((resolve) => setTimeout(resolve, REDIRECT_POPUP_EXIT_MS));
+    popup.hidden = true;
+}
 
 function resolveThemePreference(val) {
     if (val === 'system') {
@@ -704,6 +752,165 @@ function bindModals() {
             void app.modals.initializeAppInfo();
         });
     }
+    const diagnosticModal = document.getElementById('diagnosticReportModal');
+    const FALLBACK_DIAGNOSTIC_LABELS = [
+        'bug', 'documentation', 'duplicate', 'enhancement', 'good first issue',
+        'help wanted', 'invalid', 'question', 'wontfix',
+    ];
+    const diagnosticLabelSelect = document.getElementById('diagnosticIssueLabel');
+    const getDiagnosticLabelCustomSelect = () => document.querySelector('.custom-select[data-for="diagnosticIssueLabel"]');
+    const prepareDiagnosticLabelCustomSelect = () => {
+        const customSelect = getDiagnosticLabelCustomSelect();
+        if (!customSelect) { return; }
+        customSelect.classList.add('diagnostic-label-custom-select');
+        customSelect.querySelector('.custom-select-options')?.classList.add('diagnostic-label-custom-select-options');
+    };
+    const resizeDiagnosticLabelSelect = () => {
+        if (!diagnosticLabelSelect) { return; }
+        const selectedText = diagnosticLabelSelect.selectedOptions[0]?.textContent || `[${diagnosticLabelSelect.value}]`;
+        diagnosticLabelSelect.style.width = `${Math.max(6, selectedText.length + 1)}ch`;
+        const customSelect = getDiagnosticLabelCustomSelect();
+        customSelect?.style.removeProperty('width');
+    };
+    const renderDiagnosticLabels = (labels) => {
+        if (!diagnosticLabelSelect) { return; }
+        const current = diagnosticLabelSelect.value || 'bug';
+        const names = [...new Set((Array.isArray(labels) ? labels : FALLBACK_DIAGNOSTIC_LABELS)
+            .map((label) => typeof label === 'string' ? label : label?.name)
+            .map((name) => String(name || '').trim())
+            .filter(Boolean))];
+        diagnosticLabelSelect.replaceChildren(...names.map((name) => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = `[${name}]`;
+            return option;
+        }));
+        diagnosticLabelSelect.value = names.includes(current) ? current : (names.includes('bug') ? 'bug' : names[0]);
+        app.customSelect?.refreshAll?.();
+        prepareDiagnosticLabelCustomSelect();
+        resizeDiagnosticLabelSelect();
+    };
+    let diagnosticLabelsLoaded = false;
+    const loadDiagnosticLabels = async () => {
+        if (diagnosticLabelsLoaded) { return; }
+        diagnosticLabelsLoaded = true;
+        const labels = await app.electronAPI?.getRepositoryLabels?.();
+        renderDiagnosticLabels(Array.isArray(labels) && labels.length ? labels : FALLBACK_DIAGNOSTIC_LABELS);
+    };
+    prepareDiagnosticLabelCustomSelect();
+    diagnosticLabelSelect?.addEventListener('change', resizeDiagnosticLabelSelect);
+    resizeDiagnosticLabelSelect();
+    const diagnosticFields = [
+        { id: 'diagnosticIssueTitle', countId: 'diagnosticIssueTitleCount', maxLength: 80 },
+        { id: 'diagnosticDescription', countId: 'diagnosticDescriptionCount', maxLength: 5000, maxHeight: 260 },
+        { id: 'diagnosticSteps', countId: 'diagnosticStepsCount', maxLength: 3000, maxHeight: 180 },
+        { id: 'diagnosticExpected', countId: 'diagnosticExpectedCount', maxLength: 2000, maxHeight: 180 },
+    ].map((config) => ({ ...config, element: document.getElementById(config.id) }));
+    const updateDiagnosticField = (field) => {
+        const counter = document.getElementById(field.countId);
+        if (counter) { counter.textContent = `${field.element?.value.length || 0} / ${field.maxLength}`; }
+        if (!field.element || !field.maxHeight) { return; }
+        field.element.style.height = 'auto';
+        const nextHeight = Math.min(field.element.scrollHeight, field.maxHeight);
+        field.element.style.height = `${nextHeight}px`;
+        field.element.style.overflowY = field.element.scrollHeight > field.maxHeight ? 'auto' : 'hidden';
+    };
+    diagnosticFields.forEach((field) => {
+        field.element?.addEventListener('input', () => updateDiagnosticField(field));
+    });
+    const getDiagnosticIssueDetails = () => ({
+        label: diagnosticLabelSelect?.value || 'bug',
+        title: document.getElementById('diagnosticIssueTitle')?.value || '',
+        description: document.getElementById('diagnosticDescription')?.value || '',
+        steps: document.getElementById('diagnosticSteps')?.value || '',
+        expected: document.getElementById('diagnosticExpected')?.value || '',
+    });
+    const closeDiagnosticReport = () => {
+        if (diagnosticModal) { app.modals.closeModalAnimated(diagnosticModal); }
+    };
+    const resetDiagnosticReport = () => {
+        diagnosticFields.forEach((field) => {
+            if (field.element) { field.element.value = ''; }
+            updateDiagnosticField(field);
+        });
+        if (diagnosticLabelSelect) {
+            diagnosticLabelSelect.value = Array.from(diagnosticLabelSelect.options)
+                .some((option) => option.value === 'bug') ? 'bug' : diagnosticLabelSelect.options[0]?.value;
+        }
+        const includeLog = document.getElementById('diagnosticIncludeLog');
+        const includeScreenshot = document.getElementById('diagnosticIncludeScreenshot');
+        const status = document.getElementById('diagnosticReportStatus');
+        if (includeLog) { includeLog.checked = true; }
+        if (includeScreenshot) { includeScreenshot.checked = false; }
+        if (status) { status.textContent = ''; }
+        app.customSelect?.refreshAll?.();
+        prepareDiagnosticLabelCustomSelect();
+        resizeDiagnosticLabelSelect();
+    };
+    document.getElementById('menu-report-problem')?.addEventListener('click', () => {
+        if (!diagnosticModal) { return; }
+        const status = document.getElementById('diagnosticReportStatus');
+        if (status) { status.textContent = ''; }
+        diagnosticModal.style.display = 'flex';
+        diagnosticLabelSelect?.setAttribute('aria-label', app.i18n.t('diagnostic_issue_label'));
+        diagnosticFields.forEach(updateDiagnosticField);
+        void loadDiagnosticLabels();
+        app.icons.refreshIcons(diagnosticModal);
+        app.modals.trapFocus(diagnosticModal, document.getElementById('diagnosticIssueTitle'));
+    });
+    const discardDiagnosticReport = () => {
+        resetDiagnosticReport();
+        closeDiagnosticReport();
+    };
+    document.getElementById('closeDiagnosticReport')?.addEventListener('click', discardDiagnosticReport);
+    document.getElementById('cancelDiagnosticReport')?.addEventListener('click', discardDiagnosticReport);
+    document.getElementById('createDiagnosticReport')?.addEventListener('click', async () => {
+        if (!diagnosticModal || !app.electronAPI?.createDiagnosticReport) { return; }
+        const submit = document.getElementById('createDiagnosticReport');
+        const status = document.getElementById('diagnosticReportStatus');
+        const includeScreenshot = document.getElementById('diagnosticIncludeScreenshot')?.checked === true;
+        const tabs = Array.isArray(app.tabs?.projectTabs) ? app.tabs.projectTabs : [];
+        const errors = Array.isArray(window.__treeideErrors) ? window.__treeideErrors : [];
+        const issueDetails = getDiagnosticIssueDetails();
+        const payload = {
+            description: issueDetails.description,
+            issueDetails,
+            includeLog: document.getElementById('diagnosticIncludeLog')?.checked !== false,
+            includeScreenshot,
+            context: {
+                language: app.i18n.getCurrentLang(),
+                theme: localStorage.getItem('theme') || 'system',
+                updateChannel: localStorage.getItem('update_channel') || 'stable',
+                openProjectCount: tabs.length,
+                unsavedProjectCount: tabs.filter((tab) => tab.isModified).length,
+                rendererErrorCount: errors.length,
+                errors: errors.slice(-20).map((entry) => String(entry).slice(0, 4000)),
+            },
+        };
+
+        if (submit) { submit.disabled = true; }
+        if (status) { status.textContent = app.i18n.t('diagnostic_creating'); }
+        if (includeScreenshot) {
+            diagnosticModal.style.visibility = 'hidden';
+            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+        const result = await app.electronAPI.createDiagnosticReport(payload);
+        diagnosticModal.style.visibility = '';
+        if (submit) { submit.disabled = false; }
+        if (result?.canceled) {
+            if (status) { status.textContent = ''; }
+            return;
+        }
+        if (!result?.ok) {
+            if (status) { status.textContent = app.i18n.t('diagnostic_failed'); }
+            return;
+        }
+
+        resetDiagnosticReport();
+        closeDiagnosticReport();
+        await showDiagnosticRedirectPopup(app);
+        app.electronAPI.openExternal(buildDiagnosticIssueUrl(issueDetails, (key) => app.i18n.t(key)));
+    });
     const closeAbout = document.getElementById('closeAbout');
     if (closeAbout) {
         closeAbout.addEventListener('click', () => {

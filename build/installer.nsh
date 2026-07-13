@@ -84,9 +84,12 @@ LangString treeIdeFinishButton 3082 "Terminar"
 LangString cleanInstallIntro 1033 "Choose whether Tree IDE should keep your current settings or start fresh."
 LangString cleanInstallIntro 1046 "Escolha se o Tree IDE deve manter suas configurações atuais ou começar do zero."
 LangString cleanInstallIntro 3082 "Elija si Tree IDE debe conservar su configuración actual o empezar de cero."
-LangString cleanInstallOption 1033 "Clean installation: remove Tree IDE settings, cache, logs, and update data for this Windows user."
-LangString cleanInstallOption 1046 "Instalação limpa: remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-LangString cleanInstallOption 3082 "Instalación limpia: elimina la configuración, la caché, los registros y los datos de actualización de Tree IDE para este usuario de Windows."
+LangString cleanInstallKeepOption 1033 "Keep settings and user data (recommended)"
+LangString cleanInstallKeepOption 1046 "Manter configurações e dados do usuário (recomendado)"
+LangString cleanInstallKeepOption 3082 "Conservar la configuración y los datos del usuario (recomendado)"
+LangString cleanInstallDeleteOption 1033 "Delete settings, cache, logs, session, and update data"
+LangString cleanInstallDeleteOption 1046 "Apagar configurações, cache, logs, sessão e dados de atualização"
+LangString cleanInstallDeleteOption 3082 "Eliminar la configuración, la caché, los registros, la sesión y los datos de actualización"
 LangString cleanInstallDetails 1033 "Running clean installation. Removing Tree IDE user data."
 LangString cleanInstallDetails 1046 "Executando instalação limpa. Removendo dados do usuário do Tree IDE."
 LangString cleanInstallDetails 3082 "Ejecutando instalación limpia. Eliminando datos de usuario de Tree IDE."
@@ -114,9 +117,9 @@ LangString treeIdeUninstallingTitle 3082 "Desinstalando"
 LangString treeIdeUninstallingSubtitle 1033 "Please wait while Tree IDE is being removed."
 LangString treeIdeUninstallingSubtitle 1046 "Aguarde enquanto o Tree IDE é removido."
 LangString treeIdeUninstallingSubtitle 3082 "Espere mientras se desinstala Tree IDE."
-LangString treeIdeCleanInstallTitle 1033 "Clean Installation"
-LangString treeIdeCleanInstallTitle 1046 "Instalação limpa"
-LangString treeIdeCleanInstallTitle 3082 "Instalación limpia"
+LangString treeIdeCleanInstallTitle 1033 "Existing Tree IDE Data"
+LangString treeIdeCleanInstallTitle 1046 "Dados existentes do Tree IDE"
+LangString treeIdeCleanInstallTitle 3082 "Datos existentes de Tree IDE"
 LangString treeIdeBackButton 1033 "< &Back"
 LangString treeIdeBackButton 1046 "< &Voltar"
 LangString treeIdeBackButton 3082 "< &Atrás"
@@ -132,9 +135,12 @@ LangString treeIdeUninstallProgressText 3082 "Eliminando Tree IDE de este equipo
 LangString uninstallDataIntro 1033 "Choose whether Tree IDE should keep your user data after uninstalling."
 LangString uninstallDataIntro 1046 "Escolha se o Tree IDE deve manter seus dados de usuário após a desinstalação."
 LangString uninstallDataIntro 3082 "Elija si Tree IDE debe conservar sus datos de usuario después de desinstalar."
-LangString uninstallDataOption 1033 "Remove Tree IDE settings, cache, logs, and update data for this Windows user."
-LangString uninstallDataOption 1046 "Remover configurações, cache, logs e dados de atualização do Tree IDE para este usuário do Windows."
-LangString uninstallDataOption 3082 "Eliminar la configuración, la caché, los registros y los datos de actualización de Tree IDE para este usuario de Windows."
+LangString uninstallDataKeepOption 1033 "Keep settings and user data (recommended)"
+LangString uninstallDataKeepOption 1046 "Manter configurações e dados do usuário (recomendado)"
+LangString uninstallDataKeepOption 3082 "Conservar la configuración y los datos del usuario (recomendado)"
+LangString uninstallDataDeleteOption 1033 "Delete settings, cache, logs, session, and update data"
+LangString uninstallDataDeleteOption 1046 "Apagar configurações, cache, logs, sessão e dados de atualização"
+LangString uninstallDataDeleteOption 3082 "Eliminar la configuración, la caché, los registros, la sesión y los datos de actualización"
 LangString uninstallDataDetails 1033 "Removing Tree IDE user data."
 LangString uninstallDataDetails 1046 "Removendo dados do usuário do Tree IDE."
 LangString uninstallDataDetails 3082 "Eliminando datos de usuario de Tree IDE."
@@ -405,7 +411,8 @@ Function TreeIdeDirectoryLeave
     Abort
   ${EndIf}
 FunctionEnd
-Var CleanInstallCheckbox
+Var CleanInstallKeepRadio
+Var CleanInstallDeleteRadio
 Var CleanInstallRequested
 
 !macro customPageAfterChangeDir
@@ -443,6 +450,19 @@ Function TreeIdeCleanInstallSetHeader
 FunctionEnd
 
 Function TreeIdeCleanInstallPre
+  IfSilent 0 +2
+  Abort
+
+  ReadEnvStr $0 "APPDATA"
+  ReadEnvStr $1 "LOCALAPPDATA"
+  IfFileExists "$0\Tree IDE\*.*" treeIdeExistingDataFound 0
+  IfFileExists "$0\tree-ide\*.*" treeIdeExistingDataFound 0
+  IfFileExists "$1\Tree IDE\*.*" treeIdeExistingDataFound 0
+  IfFileExists "$1\tree-ide\*.*" treeIdeExistingDataFound 0
+  IfFileExists "$1\tree-ide-updater\*.*" treeIdeExistingDataFound 0
+  Abort
+
+treeIdeExistingDataFound:
   Call TreeIdeCleanInstallSetHeader
   Call TreeIdeRefreshWizardButtons
 
@@ -452,32 +472,23 @@ Function TreeIdeCleanInstallPre
   ${If} $0 == error
     Abort
   ${EndIf}
-  ${NSD_CreateCheckbox} 0u 11u 10u 10u ""
-  Pop $CleanInstallCheckbox
-
-  ${NSD_CreateLabel} 15u 8u 285u 40u "$(cleanInstallOption)"
-  Pop $0
-  ${NSD_OnClick} $0 TreeIdeCleanInstallToggle
+  ${NSD_CreateRadioButton} 0u 8u 300u 18u "$(cleanInstallKeepOption)"
+  Pop $CleanInstallKeepRadio
+  ${NSD_CreateRadioButton} 0u 38u 300u 30u "$(cleanInstallDeleteOption)"
+  Pop $CleanInstallDeleteRadio
 
   ${If} $CleanInstallRequested == "1"
-    ${NSD_Check} $CleanInstallCheckbox
+    ${NSD_Check} $CleanInstallDeleteRadio
+  ${Else}
+    ${NSD_Check} $CleanInstallKeepRadio
   ${EndIf}
 
   nsDialogs::Show
 FunctionEnd
 
 
-Function TreeIdeCleanInstallToggle
-  Pop $0
-  ${NSD_GetState} $CleanInstallCheckbox $1
-  ${If} $1 == ${BST_CHECKED}
-    ${NSD_Uncheck} $CleanInstallCheckbox
-  ${Else}
-    ${NSD_Check} $CleanInstallCheckbox
-  ${EndIf}
-FunctionEnd
 Function TreeIdeCleanInstallLeave
-  ${NSD_GetState} $CleanInstallCheckbox $0
+  ${NSD_GetState} $CleanInstallDeleteRadio $0
 
   ${If} $0 == ${BST_CHECKED}
     StrCpy $CleanInstallRequested "1"
@@ -583,11 +594,9 @@ Function un.TreeIdeUpdateWindowTitle
   SendMessage $HWNDPARENT ${WM_SETTEXT} 0 "STR:$(treeIdeUninstallWindowTitle)"
 FunctionEnd
 
-!ifndef BUILD_UNINSTALLER
 Function un.TreeIdeFinishPagePre
   StrCpy $TreeIdeIsFinishPage "1"
 FunctionEnd
-!endif
 
 Function un.TreeIdeFinishPageShow
   Call un.TreeIdeUpdateWindowTitle
@@ -604,7 +613,8 @@ Function un.TreeIdeOnPageShow
 FunctionEnd
 
 
-Var UninstallDataCheckbox
+Var UninstallKeepRadio
+Var UninstallDeleteRadio
 Var UninstallDataRequested
 
 !macro customUnWelcomePage
@@ -632,31 +642,22 @@ Function un.TreeIdeDataPre
     Abort
   ${EndIf}
 
-  ${NSD_CreateCheckbox} 0u 11u 10u 10u ""
-  Pop $UninstallDataCheckbox
-
-  ${NSD_CreateLabel} 15u 8u 285u 40u "$(uninstallDataOption)"
-  Pop $0
-  ${NSD_OnClick} $0 un.TreeIdeDataToggle
+  ${NSD_CreateRadioButton} 0u 8u 300u 18u "$(uninstallDataKeepOption)"
+  Pop $UninstallKeepRadio
+  ${NSD_CreateRadioButton} 0u 38u 300u 30u "$(uninstallDataDeleteOption)"
+  Pop $UninstallDeleteRadio
 
   ${If} $UninstallDataRequested == "1"
-    ${NSD_Check} $UninstallDataCheckbox
+    ${NSD_Check} $UninstallDeleteRadio
+  ${Else}
+    ${NSD_Check} $UninstallKeepRadio
   ${EndIf}
 
   nsDialogs::Show
 FunctionEnd
 
-Function un.TreeIdeDataToggle
-  Pop $0
-  ${NSD_GetState} $UninstallDataCheckbox $1
-  ${If} $1 == ${BST_CHECKED}
-    ${NSD_Uncheck} $UninstallDataCheckbox
-  ${Else}
-    ${NSD_Check} $UninstallDataCheckbox
-  ${EndIf}
-FunctionEnd
 Function un.TreeIdeDataLeave
-  ${NSD_GetState} $UninstallDataCheckbox $0
+  ${NSD_GetState} $UninstallDeleteRadio $0
 
   ${If} $0 == ${BST_CHECKED}
     StrCpy $UninstallDataRequested "1"
@@ -692,9 +693,7 @@ FunctionEnd
   !define MUI_FINISHPAGE_TITLE "$(treeIdeUninstallFinishTitle)"
   !define MUI_FINISHPAGE_TEXT "$(treeIdeUninstallFinishText)"
   !define MUI_FINISHPAGE_BUTTON "$(treeIdeFinishButton)"
-  !ifndef BUILD_UNINSTALLER
-    !define MUI_PAGE_CUSTOMFUNCTION_PRE un.TreeIdeFinishPagePre
-  !endif
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE un.TreeIdeFinishPagePre
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW un.TreeIdeFinishPageShow
 !macroend
 

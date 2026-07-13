@@ -47,6 +47,10 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **Modal de bienvenida** en el primer uso con selección de idioma y configuración agrupada
 - **Temas** — claro, oscuro y **Sistema** (sigue el esquema de colores del SO)
 - **Inglés, portugués (pt-BR) y español** — traducciones de la interfaz y de los diálogos del proceso principal
+- **Informes de problemas estructurados** — completa el título de la issue, la descripción, los pasos para reproducir y el comportamiento esperado en un formulario localizado con campos autoajustables dentro de la app
+- **Integración con labels de GitHub** — elige una label de la lista actual del repositorio usando el mismo dropdown personalizado de la app; el borrador localizado se abre con título, cuerpo Markdown y label completos para revisión
+- **Diagnóstico con privacidad primero** — guarda un ZIP local con metadatos permitidos del sistema/app, errores sanitizados del renderer y registros limitados a la ejecución actual; se excluyen nombres y contenidos de proyectos
+- **Captura opcional solo de la app** — captura únicamente la ventana de Tree IDE después del consentimiento explícito; ZIP, registro y captura permanecen locales hasta que los adjuntes manualmente
 - **Almacenamiento de sesión en IndexedDB** con guardado automático de pestañas abiertas, contenidos y nombres de proyectos
 - **Modos de sesión** — restaurar la última sesión al iniciar o siempre empezar limpio
 - **Fuentes incluidas** — Inter y JetBrains Mono; iconos Lucide locales (sin CDN)
@@ -151,6 +155,12 @@ npm run build:win
 ```
 
 Tree IDE es solo para Windows y soporta x64. Proporciona paquetes NSIS y Portable. El instalador NSIS soporta instalación por usuario y actualizaciones automáticas silenciosas sin pedir administrador.
+
+Las builds de producción mantienen el código de la aplicación organizado en un único paquete `app.asar` con validación de integridad. Los datos del perfil de Windows permanecen separados del ejecutable, como se espera en aplicaciones por usuario. Cuando Setup encuentra datos de una instalación anterior, una instalación manual pregunta si debe conservarlos (la opción segura y predeterminada) o eliminar la configuración, la caché, los registros, la sesión y los datos de actualización. El desinstalador presenta la misma elección explícita.
+
+El instalador manual asistido y el desinstalador muestran las opciones de datos. Las actualizaciones silenciosas iniciadas dentro de la aplicación omiten esas páginas y siempre conservan los datos. La pantalla de bienvenida aparece con un perfil nuevo o después de elegir eliminar los datos, pero no cuando se conservan los datos existentes.
+
+El desinstalador mantiene el mismo flujo asistido y localizado hasta la acción final **Terminar**.
 
 | Identificador Windows | Valor |
 | --- | --- |

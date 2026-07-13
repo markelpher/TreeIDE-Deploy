@@ -47,6 +47,10 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Welcome modal** on first run with language selection and grouped settings
 - **Themes** — light, dark, and **System** (follows OS color scheme)
 - **English, Portuguese (pt-BR), and Spanish** — interface translations plus main-process dialog translations
+- **Structured problem reports** — enter the issue title, description, reproduction steps, and expected behavior in an auto-growing, localized form inside the app
+- **GitHub label integration** — choose from the repository's live label list in the same custom dropdown used by the app; the localized issue draft opens with its title, Markdown body, and label already filled in for review
+- **Privacy-first diagnostics** — save a local ZIP with allowlisted system/app metadata, sanitized renderer errors, and logs limited to the current app execution; project names and contents are excluded
+- **Optional app-only screenshot** — capture only the Tree IDE window after explicit opt-in; the diagnostic ZIP, log, and screenshot remain local until you attach them manually
 - **IndexedDB session storage** with autosave of open tabs, file contents, and project names
 - **Session modes** — restore the last session on launch or always start clean
 - **Bundled fonts** — Inter and JetBrains Mono; Lucide icons bundled locally (no CDN)
@@ -151,6 +155,12 @@ npm run build:win
 ```
 
 Tree IDE is Windows-only and supports x64. It provides NSIS setup and Portable packages. The NSIS installer supports per-user installation and silent automatic updates without administrator prompts.
+
+Production builds keep the application code organized in a single integrity-validated `app.asar` package. Windows profile data remains separate from the executable, as expected for per-user applications. When Setup finds data from an existing installation, a manual install asks whether to keep it (the safe default) or delete settings, cache, logs, session, and update data. The uninstaller presents the same explicit choice.
+
+The assisted manual installer and uninstaller show the data-retention choices. Silent updates started inside the app skip those pages and always retain data. The welcome setup appears on a fresh profile or after choosing to delete data, but not when existing data is retained.
+
+The uninstaller uses the same localized assisted flow through its final **Finish** action.
 
 | Windows identifier | Value |
 | --- | --- |

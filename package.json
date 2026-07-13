@@ -1,6 +1,6 @@
 {
   "name": "tree-ide",
-  "version": "2.0.103",
+  "version": "2.0.104",
   "description": "A lightweight open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
@@ -67,7 +67,7 @@
     "nsis": {
       "include": "build/installer.nsh",
       "artifactName": "Tree-IDE-Setup-${version}-win-${arch}.${ext}",
-      "oneClick": true,
+      "oneClick": false,
       "allowToChangeInstallationDirectory": false,
       "allowElevation": false,
       "perMachine": false,
@@ -97,12 +97,23 @@
       "dist/renderer/**/*",
       "assets/**/*",
       "package.json",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "!node_modules/7zip-bin/linux/**/*",
+      "!node_modules/7zip-bin/mac/**/*",
+      "!node_modules/7zip-bin/win/ia32/**/*"
     ],
     "asar": true,
     "asarUnpack": [
-      "node_modules/7zip-bin/**/*"
-    ]
+      "node_modules/7zip-bin/win/x64/**/*"
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
   },
   "dependencies": {
     "semver": "^7.7.3",
@@ -110,11 +121,9 @@
     "adm-zip": "^0.5.17",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
-    "electron-winstaller": "^5.4.0",
     "node-unrar-js": "^2.0.2"
   },
   "allowScripts": {
-    "electron-winstaller@5.4.0": true,
     "electron": true
   }
 }

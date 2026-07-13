@@ -32,6 +32,78 @@
     transform: translateY(8px);
 }
 
+.diagnostic-redirect-popup {
+    --redirect-delay: 5000ms;
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    z-index: 2700;
+    display: flex;
+    align-items: center;
+    width: min(440px, calc(100vw - 48px));
+    padding: 16px 18px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.98);
+    transition: opacity 0.24s ease, transform 0.24s ease;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.diagnostic-redirect-popup:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+.diagnostic-redirect-popup[hidden] {
+    display: none;
+}
+
+.diagnostic-redirect-popup-visible {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+}
+
+.diagnostic-redirect-content {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.diagnostic-redirect-content span {
+    color: var(--text-secondary);
+}
+
+.diagnostic-redirect-progress {
+    height: 3px;
+    margin-top: 7px;
+    overflow: hidden;
+    background: var(--bg-accent);
+    border-radius: 999px;
+}
+
+.diagnostic-redirect-progress span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: inherit;
+    transform-origin: left;
+    animation: diagnosticRedirectProgress var(--redirect-delay) linear forwards;
+}
+
+@keyframes diagnosticRedirectProgress {
+    to { transform: scaleX(0); }
+}
+
 /* Shared Modal Styling */
 .modal {
     position: fixed;
@@ -147,6 +219,321 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+}
+
+.diagnostic-report-modal {
+    max-width: 660px;
+    max-height: min(760px, calc(100vh - 48px));
+}
+
+.diagnostic-report-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 24px;
+}
+
+.diagnostic-warning,
+.diagnostic-field-hint,
+.diagnostic-status {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.diagnostic-privacy {
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-primary);
+}
+
+.diagnostic-privacy strong {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 13px;
+}
+
+.diagnostic-privacy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.diagnostic-label {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.diagnostic-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.diagnostic-field-heading,
+.diagnostic-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.diagnostic-character-count {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.diagnostic-title-control {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    overflow: hidden;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.diagnostic-title-control:hover {
+    border-color: var(--border-strong);
+}
+
+.diagnostic-title-control:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 10%, transparent);
+}
+
+.diagnostic-title-label {
+    box-sizing: content-box;
+    flex: 0 0 auto;
+    min-width: 0;
+    margin: 0 8px 0 0;
+    padding: 12px 0 12px 14px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0;
+    outline: 0;
+    appearance: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    white-space: pre;
+    cursor: pointer;
+}
+
+.diagnostic-title-label:hover,
+.diagnostic-title-label:focus-visible {
+    color: var(--text-primary);
+}
+
+.diagnostic-title-control .diagnostic-label-custom-select {
+    width: auto;
+    max-width: none;
+    margin-right: 4px;
+    font-family: var(--font-mono);
+}
+
+.diagnostic-title-control .diagnostic-label-custom-select .custom-select-trigger {
+    padding: 12px 0 12px 14px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background-image: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.diagnostic-title-control .diagnostic-label-custom-select .custom-select-trigger:hover,
+.diagnostic-title-control .diagnostic-label-custom-select.open .custom-select-trigger {
+    color: var(--text-primary);
+    border: 0;
+    box-shadow: none;
+}
+
+.diagnostic-label-custom-select-options {
+    min-width: 220px;
+    max-width: min(300px, calc(100vw - 32px));
+}
+
+.diagnostic-title-control input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px 12px 0;
+    color: var(--text-primary);
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font-family: var(--font-sans);
+    font-size: 13px;
+}
+
+.diagnostic-title-control input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.75;
+}
+
+.diagnostic-description {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 140px;
+    max-height: 260px;
+    padding: 13px 14px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    outline: none;
+    resize: none;
+    overflow-y: hidden;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.55;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.diagnostic-description-compact {
+    min-height: 92px;
+    max-height: 180px;
+}
+
+.diagnostic-description::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.75;
+}
+
+.diagnostic-description:hover {
+    border-color: var(--border-strong);
+}
+
+.diagnostic-description:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 10%, transparent);
+}
+
+.diagnostic-field-hint {
+    padding: 0 2px;
+}
+
+.diagnostic-included {
+    padding: 13px 14px;
+    background: color-mix(in srgb, var(--bg-accent) 58%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.diagnostic-section-title {
+    justify-content: flex-start;
+}
+
+.diagnostic-included ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.diagnostic-options {
+    display: grid;
+    gap: 8px;
+}
+
+.diagnostic-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    font-size: 13px;
+    line-height: 1.45;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.diagnostic-option:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-accent);
+}
+
+.diagnostic-option input {
+    width: 16px;
+    height: 16px;
+    margin: 1px 0 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.diagnostic-option-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.diagnostic-warning {
+    display: block;
+    font-size: 11px;
+}
+
+.diagnostic-status {
+    min-height: 18px;
+}
+
+.diagnostic-report-actions {
+    align-items: center;
+    padding: 14px 20px;
+    background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+}
+
+.diagnostic-report-actions .secondary-btn {
+    flex: 0 0 auto;
+}
+
+.diagnostic-report-actions .primary-btn {
+    flex: 0 0 auto;
+    min-width: 210px;
+}
+
+body.light-theme .diagnostic-privacy,
+body.light-theme .diagnostic-title-control,
+body.light-theme .diagnostic-description,
+body.light-theme .diagnostic-option {
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(0, 0, 0, 0.13);
+}
+
+body.light-theme .diagnostic-included {
+    background: rgba(0, 0, 0, 0.025);
+    border-color: rgba(0, 0, 0, 0.11);
+}
+
+body.light-theme .diagnostic-title-control:hover,
+body.light-theme .diagnostic-description:hover,
+body.light-theme .diagnostic-option:hover {
+    border-color: rgba(0, 0, 0, 0.24);
+}
+
+body.light-theme .diagnostic-title-control:focus-within,
+body.light-theme .diagnostic-description:focus {
+    border-color: rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.07);
+}
+
+body.light-theme .diagnostic-report-actions {
+    background: rgba(0, 0, 0, 0.025);
 }
 
 .decrypt-password-modal {

@@ -13,10 +13,13 @@ import { createWindow, APP_NAME } from './window.js';
 import { registerUpdaterEvents, registerUpdateIpc } from './ipc/updates.js';
 import { registerProjectIpc } from './ipc/project.js';
 import { registerAppIpc } from './ipc/app.js';
+import { DIAGNOSTIC_SESSION_MARKER } from './diagnostics.js';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+log.info(DIAGNOSTIC_SESSION_MARKER);
 
 function collectReloadSourceFiles() {
     const files = new Set([__filename]);

@@ -1,8 +1,18 @@
-## What's new in v2.0.103
+## What's new in v2.0.104
 
 Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
 ### Added
+
+#### Installation, storage & package protection
+- **Explicit data retention choices** — manually installing over an existing Tree IDE version and uninstalling now present clear Keep or Delete options, with Keep selected by default
+- **First-install aware Setup** — the data choice is skipped when no previous Tree IDE profile or updater data exists and does not interrupt silent automatic updates
+- **Correct assisted data flow** — manual installs over an existing version and uninstall now display Keep/Delete choices; in-app silent updates skip the prompt and retain data
+- **Welcome follows data choice** — onboarding appears for a fresh profile or after selecting Delete, while selecting Keep preserves the completed onboarding state
+- **Correct uninstaller completion action** — the final page now labels its primary button as Finish instead of Next in English, Portuguese, and Spanish
+- **Protected production package** — application code remains organized in `app.asar`, now with Electron ASAR integrity validation and loading restricted to the validated archive
+- **Lean Windows x64 runtime** — removed the unused Squirrel packaging toolchain and non-Windows/non-x64 7-Zip binaries from distributed application files
+- **Complete optional cleanup** — deleting data covers preferences, cache, logs, saved session, current and legacy profile folders, and updater data
 
 #### Build Studio & project output
 - **Build Studio** — full-screen build flow with live tree preview, per-file content preview, stats, and output options
@@ -59,6 +69,16 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Unsaved-changes dialog** when closing with modified projects
 - **Drag-and-drop overlay** for `.tree` files and archives
 - **Bundled fonts** — Inter and JetBrains Mono
+
+#### Privacy-first diagnostics & GitHub reports
+- **Structured report form** — collect issue title, problem description, reproduction steps, and expected behavior in localized, auto-growing fields with character counters
+- **Repository label selector** — load the current GitHub labels with an offline fallback, display them in the app's custom dropdown, add the selected label to the title prefix, and preselect it in the GitHub draft
+- **Clean localized issue draft** — open GitHub automatically after a visible redirect delay with the title, Markdown sections, and selected label already filled in for review; click the popup or press Enter/Space to hide the notice without changing the timer, and the issue is never submitted automatically
+- **Current-execution logs** — include only log entries from the latest app launch, separated into main-process and renderer sections, capped at 256 KB, and stamped with a localized 12-hour time, day period, and timezone
+- **Sanitized diagnostic package** — redact local paths, email addresses, IP addresses, and URL secrets while excluding project names and contents
+- **Optional Tree IDE screenshot** — capture only the current app window after explicit opt-in, never the desktop or other windows
+- **Local-first attachments** — save the ZIP to the path chosen by the user without opening File Explorer or uploading it; logs and screenshots remain local until manually attached
+- **Safer report modal** — text selection and dragging no longer dismiss the dialog, fields resize automatically, light/dark theme contrast follows the rest of the app, and the form resets after success, Cancel, or closing with the X button
 
 #### Internationalization
 - **English, Portuguese (pt-BR), and Spanish** interface translations
