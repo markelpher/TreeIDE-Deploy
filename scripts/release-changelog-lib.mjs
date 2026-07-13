@@ -9,6 +9,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(__dirname);
 
 export const MANUAL_CHANGELOG_PATH = path.join(root, 'docs', 'changelog.md');
+const DEFAULT_GITHUB_REPOSITORY = 'markelpher/treeide-deploy';
+
+/** @param {string|undefined} repo */
+function normalizeGithubRepository(repo) {
+    return String(repo || DEFAULT_GITHUB_REPOSITORY).trim().toLowerCase();
+}
 
 /** @param {string} tag */
 export function formatReleaseTitle(tag) {
@@ -47,11 +53,12 @@ export function combineChangelogs(tag, locales, notesByLocale) {
  * @param {string} [repo]
  * @returns {string}
  */
-export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || 'markelpher/treeide-deploy') {
+export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY) {
+    const normalizedRepo = normalizeGithubRepository(repo);
     if (prev && prev !== '-') {
-        return `https://github.com/${repo}/compare/${prev}...${current}`;
+        return `https://github.com/${normalizedRepo}/compare/${prev}...${current}`;
     }
-    return `https://github.com/${repo}/compare/${current}`;
+    return `https://github.com/${normalizedRepo}/compare/${current}`;
 }
 
 /** Non-English changelog docs linked from each GitHub release. */
@@ -68,11 +75,12 @@ export const GITHUB_RELEASE_LOCALE_NAV = [
  */
 export function buildLocaleChangelogNav(
     tag,
-    repo = env.GITHUB_REPOSITORY || 'markelpher/treeide-deploy',
+    repo = env.GITHUB_REPOSITORY,
     locales = GITHUB_RELEASE_LOCALE_NAV,
 ) {
+    const normalizedRepo = normalizeGithubRepository(repo);
     const parts = locales.map(({ label, path }) => (
-        `[${label}](https://github.com/${repo}/blob/main/${path})`
+        `[${label}](https://github.com/${normalizedRepo}/blob/main/${path})`
     ));
     return `${parts.join(' · ')}\n\n`;
 }

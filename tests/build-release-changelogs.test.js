@@ -47,7 +47,7 @@ describe('combineChangelogs', () => {
 
 describe('buildCompareUrl', () => {
     it('builds a compare URL between two tags', () => {
-        expect(buildCompareUrl('v2.0.54', 'v2.0.55', 'owner/repo'))
+        expect(buildCompareUrl('v2.0.54', 'v2.0.55', 'Owner/Repo'))
             .toBe('https://github.com/owner/repo/compare/v2.0.54...v2.0.55');
     });
 
@@ -76,7 +76,7 @@ describe('stripFullChangelogLink', () => {
 
 describe('buildLocaleChangelogNav', () => {
     it('builds readable repository links for localized changelogs', () => {
-        const nav = buildLocaleChangelogNav('v2.0.55', 'owner/repo');
+        const nav = buildLocaleChangelogNav('v2.0.55', 'Owner/Repo');
 
         expect(nav).toBe(
             '[Português](https://github.com/owner/repo/blob/main/docs/changelogs/pt.md) · '
