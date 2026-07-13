@@ -5,6 +5,15 @@ const installerScript = readFileSync(new URL('../build/installer.nsh', import.me
 const packageConfig = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 describe('Windows installer data choices', () => {
+    it('lets assisted installs choose whether to create a desktop shortcut', () => {
+        expect(packageConfig.build.nsis.createDesktopShortcut).toBe(true);
+        expect(installerScript).toContain('PageCallbacks TreeIdeDesktopShortcutPre TreeIdeDesktopShortcutLeave');
+        expect(installerScript).toContain('${NSD_CreateCheckbox} 0u 42u 300u 18u "$(treeIdeShortcutOption)"');
+        expect(installerScript).toContain('${NSD_Check} $TreeIdeDesktopShortcutCheckbox');
+        expect(installerScript).toContain('${NSD_GetState} $TreeIdeDesktopShortcutCheckbox $0');
+        expect(installerScript).toMatch(/!macro customInstall[\s\S]*CreateShortCut "\$newDesktopLink"[\s\S]*Delete "\$newDesktopLink"/);
+        expect(installerScript).toMatch(/Function TreeIdeDesktopShortcutPre\s+IfSilent 0 \+2\s+Abort/);
+    });
     it('asks only manual installs that find existing Tree IDE data', () => {
         expect(installerScript).toContain('IfFileExists "$0\\Tree IDE\\*.*" treeIdeExistingDataFound');
         expect(installerScript).toContain('IfFileExists "$1\\tree-ide-updater\\*.*" treeIdeExistingDataFound');

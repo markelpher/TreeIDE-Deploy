@@ -120,6 +120,18 @@ LangString treeIdeUninstallingSubtitle 3082 "Espere mientras se desinstala Tree 
 LangString treeIdeCleanInstallTitle 1033 "Existing Tree IDE Data"
 LangString treeIdeCleanInstallTitle 1046 "Dados existentes do Tree IDE"
 LangString treeIdeCleanInstallTitle 3082 "Datos existentes de Tree IDE"
+LangString treeIdeShortcutTitle 1033 "Desktop Shortcut"
+LangString treeIdeShortcutTitle 1046 "Atalho na área de trabalho"
+LangString treeIdeShortcutTitle 3082 "Acceso directo en el escritorio"
+LangString treeIdeShortcutSubtitle 1033 "Choose whether Setup should create a desktop shortcut."
+LangString treeIdeShortcutSubtitle 1046 "Escolha se o instalador deve criar um atalho na área de trabalho."
+LangString treeIdeShortcutSubtitle 3082 "Elija si el instalador debe crear un acceso directo en el escritorio."
+LangString treeIdeShortcutIntro 1033 "You can launch Tree IDE from the Start menu whether or not you create this shortcut."
+LangString treeIdeShortcutIntro 1046 "Você poderá abrir o Tree IDE pelo menu Iniciar mesmo sem criar este atalho."
+LangString treeIdeShortcutIntro 3082 "Podrá abrir Tree IDE desde el menú Inicio aunque no cree este acceso directo."
+LangString treeIdeShortcutOption 1033 "Create a desktop shortcut"
+LangString treeIdeShortcutOption 1046 "Criar um atalho na área de trabalho"
+LangString treeIdeShortcutOption 3082 "Crear un acceso directo en el escritorio"
 LangString treeIdeBackButton 1033 "< &Back"
 LangString treeIdeBackButton 1046 "< &Voltar"
 LangString treeIdeBackButton 3082 "< &Atrás"
@@ -414,13 +426,75 @@ FunctionEnd
 Var CleanInstallKeepRadio
 Var CleanInstallDeleteRadio
 Var CleanInstallRequested
+Var TreeIdeDesktopShortcutCheckbox
+Var TreeIdeDesktopShortcutRequested
 
 !macro customPageAfterChangeDir
+  PageEx custom
+    PageCallbacks TreeIdeDesktopShortcutPre TreeIdeDesktopShortcutLeave
+    Caption " "
+  PageExEnd
   PageEx custom
     PageCallbacks TreeIdeCleanInstallPre TreeIdeCleanInstallLeave
     Caption " "
   PageExEnd
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW TreeIdeOnPageShow
+!macroend
+
+Function TreeIdeDesktopShortcutSetHeader
+  Push "$(treeIdeShortcutSubtitle)"
+  Push "$(treeIdeShortcutTitle)"
+  Call TreeIdeSetHeader
+FunctionEnd
+
+Function TreeIdeDesktopShortcutPre
+  IfSilent 0 +2
+  Abort
+
+  ${If} $TreeIdeDesktopShortcutRequested == ""
+    StrCpy $TreeIdeDesktopShortcutRequested "1"
+  ${EndIf}
+  Call TreeIdeUpdateWindowTitle
+  Call TreeIdeRefreshWizardButtons
+  Call TreeIdeDesktopShortcutSetHeader
+
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateLabel} 0u 0u 300u 30u "$(treeIdeShortcutIntro)"
+  Pop $0
+  ${NSD_CreateCheckbox} 0u 42u 300u 18u "$(treeIdeShortcutOption)"
+  Pop $TreeIdeDesktopShortcutCheckbox
+  ${If} $TreeIdeDesktopShortcutRequested == "1"
+    ${NSD_Check} $TreeIdeDesktopShortcutCheckbox
+  ${EndIf}
+  nsDialogs::Show
+FunctionEnd
+
+Function TreeIdeDesktopShortcutLeave
+  ${NSD_GetState} $TreeIdeDesktopShortcutCheckbox $0
+  ${If} $0 == ${BST_CHECKED}
+    ${If} $TreeIdeDesktopShortcutRequested == ""
+    StrCpy $TreeIdeDesktopShortcutRequested "1"
+  ${EndIf}
+  ${Else}
+    StrCpy $TreeIdeDesktopShortcutRequested "0"
+  ${EndIf}
+FunctionEnd
+
+!macro customInstall
+  ${If} $TreeIdeDesktopShortcutRequested == "1"
+    CreateShortCut "$newDesktopLink" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+    ClearErrors
+    WinShell::SetLnkAUMI "$newDesktopLink" "${APP_ID}"
+  ${ElseIf} $TreeIdeDesktopShortcutRequested == "0"
+    WinShell::UninstShortcut "$newDesktopLink"
+    Delete "$newDesktopLink"
+  ${EndIf}
+  System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 !macroend
 
 !macro customFinishPage
