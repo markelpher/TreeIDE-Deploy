@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { createRequire } from 'node:module';
 import zip7 from '7zip-min';
 
@@ -18,8 +17,6 @@ function applyAsarUnpack(binaryPath) {
 
 /**
  * Resolves the 7za binary path.
- * Includes defensive fallback for Windows on ARM64 (uses x64 binary).
- * 7zip-bin primarily ships win/x64 (and ia32); the fallback covers edge cases.
  * @returns {string}
  */
 export function resolve7zaPath() {
@@ -31,14 +28,6 @@ export function resolve7zaPath() {
 
     if (fs.existsSync(binaryPath)) {
         return binaryPath;
-    }
-
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-        const archDir = path.dirname(binaryPath);
-        const fallback = path.join(path.dirname(archDir), 'x64', '7za.exe');
-        if (fs.existsSync(fallback)) {
-            return fallback;
-        }
     }
 
     return binaryPath;

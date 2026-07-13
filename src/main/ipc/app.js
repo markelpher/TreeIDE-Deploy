@@ -8,7 +8,7 @@ import path from 'node:path';
 import { ipcMain, app, shell } from 'electron';
 import log from 'electron-log';
 
-const REPO_FULL_NAME = 'markelpher/TreeIDE-Deploy';
+const REPO_FULL_NAME = 'markelpher/treeide-deploy';
 
 function isMainWindowSender(event, win) {
     return Boolean(win && !win.isDestroyed?.() && event?.sender === win.webContents);

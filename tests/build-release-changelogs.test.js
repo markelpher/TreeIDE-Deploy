@@ -69,7 +69,7 @@ describe('stripFullChangelogLink', () => {
     });
 
     it('removes absolute GitHub locale changelog navigation links', () => {
-        const input = '[Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/es.md)\n\n## What\'s new\n\n- item\n';
+        const input = '[Português](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/es.md)\n\n## What\'s new\n\n- item\n';
         expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
     });
 });
@@ -176,9 +176,9 @@ describe('writeEnglishNotes', () => {
 
         const githubRelease = await readFile(path.join(tempDir, 'github-release.md'), 'utf8');
         expect(githubRelease).toContain(
-            '[Português](https://github.com/markelpher/TreeIDE-Deploy/blob/main/docs/changelogs/pt.md)',
+            '[Português](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt.md)',
         );
-        expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/TreeIDE-Deploy/compare/v2.0.54...v2.0.55');
+        expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/treeide-deploy/compare/v2.0.54...v2.0.55');
         expect(githubRelease).not.toContain('](changelogs/pt.md)');
     });
 });

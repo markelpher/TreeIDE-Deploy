@@ -47,7 +47,7 @@ export function combineChangelogs(tag, locales, notesByLocale) {
  * @param {string} [repo]
  * @returns {string}
  */
-export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || 'markelpher/TreeIDE-Deploy') {
+export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY || 'markelpher/treeide-deploy') {
     if (prev && prev !== '-') {
         return `https://github.com/${repo}/compare/${prev}...${current}`;
     }
@@ -68,7 +68,7 @@ export const GITHUB_RELEASE_LOCALE_NAV = [
  */
 export function buildLocaleChangelogNav(
     tag,
-    repo = env.GITHUB_REPOSITORY || 'markelpher/TreeIDE-Deploy',
+    repo = env.GITHUB_REPOSITORY || 'markelpher/treeide-deploy',
     locales = GITHUB_RELEASE_LOCALE_NAV,
 ) {
     const parts = locales.map(({ label, path }) => (

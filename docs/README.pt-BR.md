@@ -2,16 +2,14 @@
 
 [Inglês](../README.md) · [Espanhol](README.es.md) · [Guia de instalação](installation/installation.pt-BR.md)
 
-Aplicativo desktop leve para projetar estruturas de projeto em texto simples, visualizá-las como uma árvore interativa e gerar pastas, arquivos iniciais e arquivos compactados pelo **Build Studio**.
+![Tree IDE Interface](https://github.com/markelpher/treeide-deploy/blob/main/assets/previews/preview-pt-BR.png)
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview-pt-BR.png)
-
-O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). A mesma ideia central — desenhar estruturas de pastas em texto, visualizar ao vivo e gerar projetos — com arquitetura modular Vite + Electron, ferramentas mais ricas e releases focadas em Windows.
+O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). A mesma ideia central: desenhar estruturas de pastas em texto, visualizar em tempo real e gerar projetos. Com arquitetura modular Vite + Electron, ferramentas mais ricas e releases focadas em Windows.
 
 ## Funcionalidades
 
 ### Editor e árvore
-- **Visualização em árvore ao vivo** com conectores ASCII, ícones Lucide, pastas recolhíveis e destaque do arquivo ativo
+- **Visualização em árvore em tempo real** com conectores ASCII, ícones Lucide, pastas recolhíveis e destaque do arquivo ativo
 - **Painel de validação** — indentação incorreta, nomes inválidos, irmãos duplicados, caminhos inseguros e estruturas vazias; clique em um aviso para ir à linha
 - **Desfazer / refazer** com até 100 estados de histórico
 - **Abas multi-projeto** com indicadores de modificação, barra de abas rolável e reordenação por arrastar e soltar
@@ -114,8 +112,8 @@ Atalhos são totalmente configuráveis em **Configurações → Atalhos**.
 Clone o repositório e instale as dependências:
 
 ```bash
-git clone https://github.com/markelpher/TreeIDE-Deploy.git
-cd TreeIDE-Deploy
+git clone https://github.com/markelpher/treeide-deploy.git
+cd TreeIDE
 npm install
 ```
 
@@ -139,31 +137,30 @@ npm run i18n:validate
 
 Compilação:
 
-### Windows (x64 + ARM64)
+### Windows (x64)
 
 ```bash
 npm run build
 ```
 
-Para builds explícitos por arquitetura:
+Para um build explícito do Windows:
 
 ```bash
 npm run build:win
-npm run build:win:arm64
 ```
 
-O Tree IDE é exclusivo para Windows. Ele fornece o instalador NSIS, Portable e MSI para x64 e ARM64. O instalador NSIS suporta instalação por usuário e atualizações automáticas silenciosas sem solicitação de administrador.
+O Tree IDE é exclusivo para Windows e suporta x64. Ele fornece pacotes NSIS e Portable. O instalador NSIS suporta instalação por usuário e atualizações automáticas silenciosas sem solicitação de administrador.
 
 | Identificador Windows | Valor |
 | --- | --- |
 | Application ID | `com.treeide.treeide` |
 | Nome do executável | `Tree IDE` |
-| Tipos de instalador | Setup NSIS (x64 + ARM64), Portable (x64 + ARM64), MSI (x64 + ARM64) |
+| Tipos de instalador | Setup NSIS (x64), Portable (x64) |
 | Idiomas do instalador | Inglês (`en_US`), Português (`pt_BR`), Espanhol (`es_ES`) |
-| Metadados do atualizador | `latest.yml` (x64), `latest-arm64.yml` (ARM64) |
+| Metadados do atualizador | `latest.yml` (x64) |
 | Workflow de CI | `Build Windows` — `.github/workflows/windows-build.yml` |
-| Nomes dos artefatos na CI | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Arquivos de release | `Tree-IDE-Setup-{version}-win-{arch}.exe`, `Tree-IDE-Portable-{version}-win-{arch}.exe`, `Tree-IDE-{version}-win-{arch}.msi` (x64/ARM64) |
+| Nome do artefato na CI | `tree-ide-windows-x64` |
+| Arquivos de release | `Tree-IDE-Setup-{version}-win-x64.exe`, `Tree-IDE-Portable-{version}-win-x64.exe` |
 
 ## Estrutura do Projeto
 
@@ -201,7 +198,7 @@ docs/
 |       installation.es.md      # Guia de instalação em espanhol
 scripts/                        # Scripts de build, changelog e CI
 .github/workflows/
-|   windows-build.yml           # Build Windows (x64 + ARM64: NSIS + Portable + MSI)
+|   windows-build.yml           # Build Windows x64 (NSIS + Portable)
 |   release-finalize.yml        # Traduzir changelogs e publicar release
 ```
 

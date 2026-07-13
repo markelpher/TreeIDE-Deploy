@@ -2,7 +2,7 @@
 
 ## O que há de novo na v2.0.100
 
-Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
+Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree IDE v1.0.0](https://github.com/markelpher/treeide-deploy/releases/tag/v1.0.0)). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las ao vivo e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
 
 ### Adicionado
 
@@ -21,7 +21,6 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - **Importação de arquivos** via diálogo de arquivos ou arrastar e soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` e `.7z`
 - **Solicitações de senha** para arquivos ZIP criptografados e arquivos `.tree` criptografados
 - **Carregar pasta como estrutura** — escanear um diretório existente e transformá-lo em texto de árvore editável
-- **Fallback para Windows ARM64** para 7-Zip quando binários nativos não estão disponíveis
 
 #### Modelos
 - **19 modelos iniciais embutidos** agrupados por categoria:
@@ -88,7 +87,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original ([Tree 
 - Novos padrões incluem `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (construir), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (salvar tudo) e atalhos de zoom do editor
 
 #### Plataformas & distribuição
-- **Windows (x64 + ARM64)** — NSIS, Portable e MSI para x64 e ARM64; instalador multilíngue (inglês, português e espanhol)
+- **Windows x64** — pacotes NSIS e Portable; instalador multilíngue (inglês, português e espanhol)
 - **Lançamentos do GitHub** publicados automaticamente em tags de versão do CI
 - **Construção do renderizador antes do empacotamento** — `beforePack` executa `vite build` e valida `dist/renderer/` para que cada instalador envie o pacote da UI
 

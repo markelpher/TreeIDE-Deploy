@@ -21,6 +21,10 @@
     flex-direction: column;
 }
 
+.release-update-modal-content:focus {
+    outline: none;
+}
+
 .release-update-body {
     flex: 1;
     min-height: 0;

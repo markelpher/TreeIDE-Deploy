@@ -2,11 +2,9 @@
 
 [Português](docs/README.pt-BR.md) · [Español](docs/README.es.md) · [Installation guide](docs/installation/installation.md)
 
-A lightweight desktop app for designing project structures in plain text, previewing them as a visual tree, and generating folders, starter files, and archives through **Build Studio**.
+![Tree IDE Interface](https://github.com/markelpher/treeide-deploy/blob/main/assets/previews/preview.png)
 
-![Tree IDE Interface](https://github.com/markelpher/TreeIDE-Deploy/blob/main/assets/previews/preview.png)
-
-Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0). Same core idea — design folder structures in text, preview them live, and generate projects — with a modular Vite + Electron architecture, richer tooling, and Windows-focused releases.
+Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea: design folder structures in text, preview them in real time, and generate projects. With a modular Vite + Electron architecture, richer tooling, and Windows-focused releases.
 
 ## Features
 
@@ -114,8 +112,8 @@ Shortcuts are fully configurable in **Settings → Shortcuts**.
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/markelpher/TreeIDE-Deploy.git
-cd TreeIDE-Deploy
+git clone https://github.com/markelpher/treeide-deploy.git
+cd TreeIDE
 npm install
 ```
 
@@ -139,31 +137,30 @@ npm run i18n:validate
 
 Build:
 
-### Windows (x64 + ARM64)
+### Windows (x64)
 
 ```bash
 npm run build
 ```
 
-For explicit architecture builds:
+For an explicit Windows build:
 
 ```bash
 npm run build:win
-npm run build:win:arm64
 ```
 
-Tree IDE is Windows-only. It provides NSIS setup, Portable, and MSI for both x64 and ARM64. The NSIS installer supports per-user installation and silent automatic updates without administrator prompts.
+Tree IDE is Windows-only and supports x64. It provides NSIS setup and Portable packages. The NSIS installer supports per-user installation and silent automatic updates without administrator prompts.
 
 | Windows identifier | Value |
 | --- | --- |
 | Application ID | `com.treeide.treeide` |
 | Executable name | `Tree IDE` |
-| Installer types | NSIS setup (x64 + ARM64), Portable (x64 + ARM64), MSI (x64 + ARM64) |
+| Installer types | NSIS setup (x64), Portable (x64) |
 | Installer languages | English (`en_US`), Portuguese (`pt_BR`), Spanish (`es_ES`) |
-| Updater metadata | `latest.yml` (x64), `latest-arm64.yml` (ARM64) |
+| Updater metadata | `latest.yml` (x64) |
 | CI workflow | `Build Windows` — `.github/workflows/windows-build.yml` |
-| CI artifact names | `tree-ide-windows-x64`, `tree-ide-windows-arm64` |
-| Release files | `Tree-IDE-Setup-{version}-win-{arch}.exe`, `Tree-IDE-Portable-{version}-win-{arch}.exe`, `Tree-IDE-{version}-win-{arch}.msi` (x64/ARM64) |
+| CI artifact name | `tree-ide-windows-x64` |
+| Release files | `Tree-IDE-Setup-{version}-win-x64.exe`, `Tree-IDE-Portable-{version}-win-x64.exe` |
 
 ## Project Structure
 
@@ -201,7 +198,7 @@ docs/
 |       installation.es.md      # Installation guide (Spanish)
 scripts/                        # Build, changelog, and CI helper scripts
 .github/workflows/
-|   windows-build.yml           # Build Windows (x64 + ARM64: NSIS + Portable + MSI)
+|   windows-build.yml           # Build Windows x64 (NSIS + Portable)
 |   release-finalize.yml        # Translate changelogs and publish release
 ```
 

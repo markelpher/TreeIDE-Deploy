@@ -134,7 +134,7 @@ export function createModals(app) {
         const modal = getEl('releaseUpdateModal');
         if (modal) {
             modal.style.display = 'flex';
-            trapFocus(modal);
+            trapFocus(modal, modal.querySelector('.release-update-modal-content'));
         }
         app.icons.refreshIcons();
     }

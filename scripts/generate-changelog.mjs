@@ -31,7 +31,7 @@ if (!current || !outPath) {
     exit(2);
 }
 
-const repo = env.GITHUB_REPOSITORY || 'markelpher/TreeIDE-Deploy';
+const repo = env.GITHUB_REPOSITORY || 'markelpher/treeide-deploy';
 const range = prev && prev !== '-' ? `${prev}..${current}` : current;
 const compareUrl = prev && prev !== '-'
     ? `https://github.com/${repo}/compare/${prev}...${current}`

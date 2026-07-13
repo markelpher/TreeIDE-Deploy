@@ -1,6 +1,6 @@
-## What's new in v2.0.100
+## What's new in v2.0.101
 
-Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE/releases/tag/v1.0.0)). Same core idea — design folder structures in plain text, preview them live, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
+Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
 ### Added
 
@@ -19,7 +19,6 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - **Archive import** via file dialog or drag-and-drop: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, and `.7z`
 - **Password prompts** for encrypted ZIP archives and encrypted `.tree` files
 - **Load folder as structure** — scan an existing directory and turn it into editable tree text
-- **Windows ARM64 fallback** for 7-Zip when native binaries are unavailable
 
 #### Templates
 - **19 built-in starter templates** grouped by category:
@@ -86,7 +85,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app ([Tree IDE v1.0.
 - New defaults include `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (build), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (save all), and editor zoom shortcuts
 
 #### Platforms & distribution
-- **Windows (x64 + ARM64)** — NSIS, Portable and MSI for x64 and ARM64; multi-language installer (English, Portuguese, and Spanish)
+- **Windows x64** — NSIS setup and Portable packages; multi-language installer (English, Portuguese, and Spanish)
 - **GitHub Releases** published automatically on version tags from CI
 - **Renderer build before pack** — `beforePack` runs `vite build` and validates `dist/renderer/` so every installer ships the UI bundle
 
