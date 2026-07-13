@@ -1,6 +1,6 @@
 <!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->
 
-## O que há de novo na v2.0.102
+## O que há de novo na v2.0.103
 
 Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Mesma ideia central — projetar estruturas de pastas em texto simples, visualizá-las em tempo real e gerar projetos — com uma nova arquitetura, ferramentas mais ricas e lançamentos apenas para Windows.
 
@@ -11,7 +11,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Três modos de saída** — criar estrutura de pastas no disco, exportar apenas um ZIP ou exportar apenas um arquivo de projeto `.tree`
 - **Saídas combinadas** — opcionalmente exportar um ZIP junto com uma construção de pasta e incluir o arquivo `.tree` dentro do arquivo compactado
 - **Inspeção pré-construção** — escanear a pasta de destino em busca de estrutura existente, arquivos `.tree` ou ZIP antes de escrever
-- **Tratamento de conflitos** — escolher ignorar ou sobrescrever quando arquivos ou pastas já existirem
+- **Tratamento de conflitos** — escolher ignorar ou sobrescrever quando arquivos ou pastas já existem
 - **Conteúdo inicial padrão** para mais de 68 tipos de arquivos (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte e mais)
 - **Marcadores i18n** em arquivos gerados (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
@@ -29,7 +29,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
   - Sistemas: Go, Java, Kotlin, Rust, Ruby, Swift, Dart
   - Nativo: C, C++, C#
 - **Tela de modelos** — navegador em tela cheia com três colunas, abas embutidas e personalizadas, edição de estrutura inline e visualização de árvore ao vivo
-- **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar o conteúdo do arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
+- **Modelos personalizados** — criar em branco, importar do projeto atual, renomear, editar conteúdo de arquivo inline, abrir no editor principal, exportar ou excluir sem sair da tela
 - **Arquivos `.tree-template`** — exportar e importar modelos personalizados compartilháveis (JSON `treeide-template` v1) via diálogos nativos de salvar/abrir ou exportação por linha na lista personalizada
 - **Rodapé de modelos personalizados** — quando modelos personalizados existem: **Novo modelo**, **Do projeto atual** e **Importar .tree-template**; estado vazio oferece início em branco, importação de projeto e importação de arquivo
 - **Visualização por arquivo** — clicar em um arquivo na visualização da estrutura abre um painel de editor monoespaçado em largura total com distintivo de tipo de arquivo (mesmo layout de painel único para modelos embutidos e personalizados)
@@ -38,7 +38,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Painel de validação** — má indentação, nomes inválidos, irmãos duplicados, caminhos inseguros e estruturas vazias; clique em um aviso para pular para a linha
 - **Desfazer / refazer** com até 100 estados de histórico
 - **Abas de múltiplos projetos** com indicadores de modificação, uma barra de abas rolável e reordenação por arrastar e soltar
-- **Abas de visualização de arquivos por projeto** — editar o conteúdo do arquivo inicial antes de construir
+- **Abas de visualização de arquivo por projeto** — editar conteúdo de arquivo inicial antes de construir
 - **Visualização ao vivo de Markdown** para arquivos `.md` no painel de visualização de arquivos
 - **Pastas colapsáveis** na visualização da árvore
 - **Navegação por teclado na árvore** — teclas de seta, Início, Fim e Enter
@@ -57,7 +57,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Barra de menu** — Arquivo, Editar, Visualizar, Janela e Sobre
 - **Modal de boas-vindas** na primeira execução — layout redesenhado com cabeçalho hero, cartões de configuração agrupados (Geral, Aparência, Sessão) e um botão **Começar** fixo
 - **Modal de configurações** com abas: Geral, Aparência, Atalhos e Atualizações
-- **Modal Sobre** com versão do aplicativo ao vivo (evoluído da tela de créditos v1)
+- **Modal Sobre** com versão do aplicativo ao vivo (evoluído da tela de créditos da v1)
 - **Diálogo de alterações não salvas** ao fechar com projetos modificados
 - **Sobreposição de arrastar e soltar** para arquivos `.tree` e arquivos compactados
 - **Fontes agrupadas** — Inter e JetBrains Mono
@@ -66,7 +66,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Traduções de interface em inglês, português (pt-BR) e espanhol**
 - **Seleção de idioma na primeira execução** no fluxo de boas-vindas e configurações
 - **Traduções do processo principal** para diálogos nativos e mensagens de erro
-- **Script `npm run i18n:validate`** para manter os arquivos de localidade em sincronia
+- **Script `npm run i18n:validate`** para manter arquivos de localidade em sincronia
 
 #### Persistência de sessão
 - **Armazenamento de sessão IndexedDB** com migração automática do legado `localStorage`
@@ -79,7 +79,7 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Notas de versão localizadas** no modal de atualização (inglês, português e espanhol)
 - **Changelog de atualização legível** — diálogo mais amplo, **O que há de novo** expandido por padrão, área de rolagem dedicada, hierarquia de cabeçalhos mais clara e botões de ação fixos no rodapé
 - **Fluxo de trabalho manual `docs/changelog.md`** — editar notas de versão no repositório; CI as traduz para o aplicativo e publica em inglês no GitHub
-- **Notas de versão divididas** — modal de atualização do aplicativo mostra apenas o texto do changelog; links de navegação de localidade aparecem em `docs/changelog.md` e na descrição da versão do GitHub (apontando para arquivos legíveis em `docs/changelogs/`); o link de comparação (`Full Changelog`) é exclusivo do GitHub
+- **Notas de versão divididas** — modal de atualização do aplicativo mostra apenas o texto do changelog; links de navegação de localidade aparecem em `docs/changelog.md` e na descrição de lançamento do GitHub (apontando para arquivos legíveis em `docs/changelogs/`); o link de comparação (`Full Changelog`) é exclusivo do GitHub
 - **Tradução de Modelos do GitHub** — notas de versão em português e espanhol são geradas no CI via API `models.github.ai`
 
 #### Atalhos de teclado
@@ -100,5 +100,5 @@ Tree IDE v2 é uma reescrita completa e expansão do aplicativo original [Tree I
 - **Conjunto de testes Vitest** com simulações do Electron para execuções amigáveis ao CI; helpers de erro de changelog e atualizador cobertos por testes dedicados
 - **ESLint e Prettier** integrados aos scripts npm
 - **electron-reloader** para recarregamento quente do processo principal durante o desenvolvimento
-- **Exportação de log de erros** em caso de falha para facilitar a depuração
+- **Exportação de log de erro** em caso de falha para facilitar a depuração
 - **`semver`** como uma dependência direta para comparação de versão confiável no aplicativo
