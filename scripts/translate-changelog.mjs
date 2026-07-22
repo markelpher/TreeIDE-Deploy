@@ -3,7 +3,7 @@
  * TreeIDE - Changelog translator
  *
  * Reads a markdown changelog and produces a translated version in
- * the target language using the GitHub Models API (gpt-4o-mini).
+ * the target language using the GitHub Models API (GPT-4.1).
  * The model is told to preserve the markdown structure exactly:
  *
  *   - Section headers (### Added, ### Fixed, …) become the
@@ -20,8 +20,8 @@
  *   GITHUB_TOKEN=ghp_… \
  *     node scripts/translate-changelog.mjs \
  *       --input path/to/changelog.en.md \
- *       --output path/to/changelog.pt.md \
- *       --target pt
+ *       --output path/to/changelog.pt-br.md \
+ *       --target pt-br
  *
  * If the API call fails, the script exits with an error by default
  * so releases never ship untranslated localized changelogs. Pass
@@ -33,11 +33,11 @@ import { constants as FS } from 'node:fs';
 import { argv, env, exit } from 'node:process';
 
 const MODELS_ENDPOINT = 'https://models.github.ai/inference/chat/completions';
-const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+const DEFAULT_MODEL = 'openai/gpt-4.1';
 const GITHUB_API_VERSION = '2022-11-28';
 
 const LANG_NAMES = {
-    pt: 'Brazilian Portuguese (pt-BR)',
+    'pt-br': 'Brazilian Portuguese (pt-BR)',
     en: 'English (en-US)',
     es: 'neutral Spanish understandable across all regions (es)',
     fr: 'French (fr-FR)',
@@ -94,6 +94,8 @@ Options:
 
 const SYSTEM_PROMPT = `You are a technical translator that translates software release-notes from one language to another.
 
+Write idiomatic, publication-quality prose for native speakers. Translate meaning in context instead of mirroring English word order. Use correct grammar, agreement, articles, prepositions, verb conjugation, punctuation, and established software terminology. Avoid false cognates, untranslated English when a natural target-language term exists, and awkward literal calques. Keep product names, feature names, UI labels, and technical identifiers unchanged only when they are clearly proper names or code. For Brazilian Portuguese, use natural pt-BR vocabulary and constructions. For Spanish, use neutral international Spanish and natural infinitive constructions for release-note actions.
+
 Your output MUST be valid Markdown that preserves the source structure exactly:
 
 1. Heading levels (#, ##, ###) and their order are kept verbatim. Translate the heading TEXT only, not the markers.
@@ -105,7 +107,7 @@ Your output MUST be valid Markdown that preserves the source structure exactly:
 7. Markdown link syntax [text](url) is kept. Translate the link TEXT only.
 8. The H2 title "## What's new in v…" line should be translated EXCEPT for the version string itself.
 9. Do NOT add a "**Full Changelog**" footer — that link is GitHub-only and is not part of the source.
-10. Do NOT add locale navigation lines (e.g. links to changelogs/pt.md) — those are repo-only and are not part of the source.
+10. Do NOT add locale navigation lines (e.g. links to changelogs/pt-br.md) — those are repo-only and are not part of the source.
 
 Output ONLY the translated markdown. No preamble, no explanation, no code-fence wrapper.`;
 
@@ -115,6 +117,8 @@ function buildUserPrompt(sourceText, sourceLang, targetLang) {
     return `Translate the following software release notes from ${sourceName} to ${targetName}.
 
 Preserve all markdown formatting, URLs, commit hashes, code, and version strings exactly as instructed.
+
+Before answering, silently proofread the translation for fluency, terminology consistency, grammar, agreement, and conjugation. Ensure that every source heading and list item appears exactly once in the same order.
 
 Source markdown:
 
@@ -141,8 +145,6 @@ async function translateOnce({ text, source, target, model, token, timeoutMs, si
             },
             body: JSON.stringify({
                 model,
-                temperature: 0,
-                top_p: 0.1,
                 messages: [
                     { role: 'system', content: SYSTEM_PROMPT },
                     { role: 'user', content: buildUserPrompt(text, source, target) }

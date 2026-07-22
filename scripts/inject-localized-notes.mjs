@@ -17,7 +17,7 @@
  *   node scripts/inject-localized-notes.mjs \
  *     --latest dist/latest.yml \
  *     --note en=path/to/en.md \
- *     --note pt=path/to/pt.md
+ *     --note pt-br=path/to/pt-br.md
  *
  */
 

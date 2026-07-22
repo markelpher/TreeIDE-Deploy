@@ -15,11 +15,11 @@ describe('resolveLocalizedReleaseNotes', () => {
     it('returns Portuguese notes for a Portuguese user', () => {
         const result = resolveLocalizedReleaseNotes([
             { locale: 'en', notes: '### Added\n\n- feat: one' },
-            { locale: 'pt', notes: '### Adicionado\n\n- feat: um' },
+            { locale: 'pt-br', notes: '### Novidades\n\n- recurso: um' },
         ], 'pt');
 
-        expect(result.locale).toBe('pt');
-        expect(result.notes).toContain('Adicionado');
+        expect(result.locale).toBe('pt-br');
+        expect(result.notes).toContain('Novidades');
     });
 
     it('returns Spanish notes for a Spanish user', () => {
@@ -44,7 +44,7 @@ describe('resolveLocalizedReleaseNotes', () => {
 
 describe('shouldTranslateChangelogSections', () => {
     it('skips section rewrite when full translation is already selected', () => {
-        expect(shouldTranslateChangelogSections('pt', 'pt')).toBe(false);
+        expect(shouldTranslateChangelogSections('pt', 'pt-br')).toBe(false);
         expect(shouldTranslateChangelogSections('es', 'es')).toBe(false);
     });
 

@@ -218,7 +218,7 @@ docs/
 |   changelog.md                # Notas de release em inglês (editar antes do tag)
 |   changelogs/
 |       locales.json            # Config de idiomas para tradução na CI
-|       pt.md                   # Notas em português (sobrescritas pelo Release Finalize)
+|       pt-br.md                # Notas em português brasileiro (sobrescritas pelo Release Finalize)
 |       es.md                   # Notas em espanhol (sobrescritas pelo Release Finalize)
 |   README.pt-BR.md             # READMEs traduzidos
 |   README.es.md

@@ -103,7 +103,8 @@ jobs:
             "${{ steps.meta.outputs.prev }}" \
             "${{ steps.meta.outputs.tag }}" \
             "$RUNNER_TEMP/changelogs" \
-            --sync-docs
+            --sync-docs \
+            --strict-translations
 
       - name: Download all platform build artifacts
         if: steps.published.outputs.already != 'true'
@@ -144,7 +145,7 @@ jobs:
           node scripts/inject-localized-notes.mjs \
             "${args[@]}" \
             --note "en=$RUNNER_TEMP/changelogs/en.md" \
-            --note "pt=$RUNNER_TEMP/changelogs/pt.md" \
+            --note "pt-br=$RUNNER_TEMP/changelogs/pt-br.md" \
             --note "es=$RUNNER_TEMP/changelogs/es.md"
 
       - name: Re-upload localized latest*.yml to release
@@ -172,7 +173,7 @@ jobs:
           gh release upload --clobber "$tag" \
             "$RUNNER_TEMP/changelogs/changelog.md" \
             "$RUNNER_TEMP/changelogs/en.md" \
-            "$RUNNER_TEMP/changelogs/pt.md" \
+            "$RUNNER_TEMP/changelogs/pt-br.md" \
             "$RUNNER_TEMP/changelogs/es.md"
 
       - name: Publish GitHub release
@@ -206,22 +207,22 @@ jobs:
           tag="${{ steps.meta.outputs.tag }}"
           branch="${{ github.event.repository.default_branch }}"
 
-          cp docs/changelogs/pt.md "$RUNNER_TEMP/changelog-pt-doc.md"
+          cp docs/changelogs/pt-br.md "$RUNNER_TEMP/changelog-pt-br-doc.md"
           cp docs/changelogs/es.md "$RUNNER_TEMP/changelog-es-doc.md"
 
           git fetch origin "$branch"
           git switch "$branch"
 
-          cp "$RUNNER_TEMP/changelog-pt-doc.md" docs/changelogs/pt.md
+          cp "$RUNNER_TEMP/changelog-pt-br-doc.md" docs/changelogs/pt-br.md
           cp "$RUNNER_TEMP/changelog-es-doc.md" docs/changelogs/es.md
 
-          if git diff --quiet -- docs/changelogs/pt.md docs/changelogs/es.md; then
+          if git diff --quiet -- docs/changelogs/pt-br.md docs/changelogs/es.md; then
             echo "[finalize] Localized changelog docs are already up to date."
             exit 0
           fi
 
           head_oid=$(git rev-parse "origin/$branch")
-          pt_b64=$(base64 -w 0 docs/changelogs/pt.md)
+          pt_br_b64=$(base64 -w 0 docs/changelogs/pt-br.md)
           es_b64=$(base64 -w 0 docs/changelogs/es.md)
           message="docs: updated localized changelogs for $tag"
 
@@ -230,7 +231,7 @@ jobs:
             --arg branch "$branch" \
             --arg expectedHeadOid "$head_oid" \
             --arg message "$message" \
-            --arg pt "$pt_b64" \
+            --arg pt_br "$pt_br_b64" \
             --arg es "$es_b64" \
             '{
               query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid url } } }",
@@ -247,8 +248,8 @@ jobs:
                   fileChanges: {
                     additions: [
                       {
-                        path: "docs/changelogs/pt.md",
-                        contents: $pt
+                        path: "docs/changelogs/pt-br.md",
+                        contents: $pt_br
                       },
                       {
                         path: "docs/changelogs/es.md",

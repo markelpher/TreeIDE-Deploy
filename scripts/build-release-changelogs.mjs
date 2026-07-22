@@ -59,8 +59,8 @@ function printHelp() {
 }
 
 function localizedDocsHeader(localeCode) {
-    if (localeCode === 'pt') {
-        return '<!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md -->';
+    if (localeCode === 'pt-br') {
+        return '<!-- Gerado automaticamente pelo Release Finalize — não edite manualmente. Fonte: docs/changelog.md. Idioma: pt-BR. -->';
     }
     if (localeCode === 'es') {
         return '<!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->';

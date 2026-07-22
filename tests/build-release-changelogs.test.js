@@ -23,12 +23,12 @@ describe('combineChangelogs', () => {
     it('merges locale sections into one markdown document', () => {
         const locales = [
             { code: 'en', label: 'English' },
-            { code: 'pt', label: 'Portuguese (Brazil)' },
+            { code: 'pt-br', label: 'Portuguese (Brazil)' },
             { code: 'es', label: 'Español' },
         ];
         const notes = new Map([
             ['en', '## What\'s new in v2.0.54\n\n### Added\n\n- feat: item (abc1234)'],
-            ['pt', '## Novidades em v2.0.54\n\n### Adicionado\n\n- feat: item (abc1234)'],
+            ['pt-br', '## Novidades em v2.0.54\n\n### Novidades\n\n- feat: item (abc1234)'],
             ['es', '## Novedades en v2.0.54\n\n### Agregado\n\n- feat: item (abc1234)'],
         ]);
 
@@ -39,7 +39,7 @@ describe('combineChangelogs', () => {
         expect(combined).toContain('## Portuguese (Brazil)');
         expect(combined).toContain('---');
         expect(combined).toContain('### Added');
-        expect(combined).toContain('### Adicionado');
+        expect(combined).toContain('### Novidades');
         expect(combined).toContain('## Español');
         expect(combined).toContain('### Agregado');
     });
@@ -64,12 +64,12 @@ describe('stripFullChangelogLink', () => {
     });
 
     it('removes locale changelog navigation links', () => {
-        const input = '[Português](changelogs/pt.md) · [Español](changelogs/es.md)\n\n## What\'s new\n\n- item\n';
+        const input = '[Português (Brasil)](changelogs/pt-br.md) · [Español](changelogs/es.md)\n\n## What\'s new\n\n- item\n';
         expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
     });
 
     it('removes absolute GitHub locale changelog navigation links', () => {
-        const input = '[Português](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt.md) · [Español](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/es.md)\n\n## What\'s new\n\n- item\n';
+        const input = '[Português (Brasil)](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt-br.md) · [Español](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/es.md)\n\n## What\'s new\n\n- item\n';
         expect(stripFullChangelogLink(input)).toBe('## What\'s new\n\n- item\n');
     });
 });
@@ -79,7 +79,7 @@ describe('buildLocaleChangelogNav', () => {
         const nav = buildLocaleChangelogNav('v2.0.55', 'Owner/Repo');
 
         expect(nav).toBe(
-            '[Português](https://github.com/owner/repo/blob/main/docs/changelogs/pt.md) · '
+            '[Português (Brasil)](https://github.com/owner/repo/blob/main/docs/changelogs/pt-br.md) · '
             + '[Español](https://github.com/owner/repo/blob/main/docs/changelogs/es.md)\n\n',
         );
     });
@@ -93,7 +93,7 @@ describe('ensureGithubReleaseNotes', () => {
             repo: 'owner/repo',
         });
 
-        expect(result).toContain('[Português](https://github.com/owner/repo/blob/main/docs/changelogs/pt.md)');
+        expect(result).toContain('[Português (Brasil)](https://github.com/owner/repo/blob/main/docs/changelogs/pt-br.md)');
         expect(result).toContain('## Added');
         expect(result).toContain('**Full Changelog**: https://github.com/owner/repo/compare/v2.0.54...v2.0.55');
     });
@@ -156,7 +156,7 @@ describe('writeEnglishNotes', () => {
         const outPath = path.join(tempDir, 'en.md');
         await writeFile(
             manualPath,
-            '[Português](changelogs/pt.md) · [Español](changelogs/es.md)\n\n## Added\n\n- manual note',
+            '[Português (Brasil)](changelogs/pt-br.md) · [Español](changelogs/es.md)\n\n## Added\n\n- manual note',
             'utf8',
         );
 
@@ -172,13 +172,13 @@ describe('writeEnglishNotes', () => {
         expect(written).toContain('## Added');
         expect(written).toContain('- manual note');
         expect(written).not.toContain('**Full Changelog**');
-        expect(written).not.toContain('changelogs/pt.md');
+        expect(written).not.toContain('changelogs/pt-br.md');
 
         const githubRelease = await readFile(path.join(tempDir, 'github-release.md'), 'utf8');
         expect(githubRelease).toContain(
-            '[Português](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt.md)',
+            '[Português (Brasil)](https://github.com/markelpher/treeide-deploy/blob/main/docs/changelogs/pt-br.md)',
         );
         expect(githubRelease).toContain('**Full Changelog**: https://github.com/markelpher/treeide-deploy/compare/v2.0.54...v2.0.55');
-        expect(githubRelease).not.toContain('](changelogs/pt.md)');
+        expect(githubRelease).not.toContain('](changelogs/pt-br.md)');
     });
 });

@@ -1,7 +1,7 @@
 {
   "locales": [
     { "code": "en", "label": "English", "source": true },
-    { "code": "pt", "label": "Português (Brasil)", "translateFrom": "en" },
+    { "code": "pt-br", "label": "Português (Brasil)", "translateFrom": "en" },
     { "code": "es", "label": "Español", "translateFrom": "en" }
   ]
 }

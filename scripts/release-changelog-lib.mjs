@@ -63,7 +63,7 @@ export function buildCompareUrl(prev, current, repo = env.GITHUB_REPOSITORY) {
 
 /** Non-English changelog docs linked from each GitHub release. */
 export const GITHUB_RELEASE_LOCALE_NAV = [
-    { label: 'Português', path: 'docs/changelogs/pt.md' },
+    { label: 'Português (Brasil)', path: 'docs/changelogs/pt-br.md' },
     { label: 'Español', path: 'docs/changelogs/es.md' },
 ];
 
