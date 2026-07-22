@@ -5,6 +5,7 @@ import { app } from 'electron';
 import {
     cleanupPendingUpdateInstall,
     cleanupSupersededPendingUpdate,
+    getUpdateCheckStatus,
     isInstalledUpdateVersion,
     isUpdateNewer,
 } from '../src/main/ipc/updates.js';
@@ -25,6 +26,51 @@ describe('isUpdateNewer', () => {
     it('handles v-prefixed versions', () => {
         expect(isUpdateNewer('v2.0.50', '2.0.49')).toBe(true);
         expect(isUpdateNewer('2.0.49', 'v2.0.49')).toBe(false);
+    });
+});
+
+describe('getUpdateCheckStatus', () => {
+    const finalizedNotes = [
+        { locale: 'en', notes: 'English notes' },
+        { locale: 'pt-br', notes: 'Notas em português' },
+        { locale: 'es', notes: 'Notas en español' },
+    ];
+
+    it('offers a newer release after every translation is finalized', () => {
+        expect(getUpdateCheckStatus({ version: '2.0.107', releaseNotes: finalizedNotes }, '2.0.106')).toEqual({
+            ok: true,
+            updateAvailable: true,
+            currentVersion: '2.0.106',
+            latestVersion: '2.0.107',
+        });
+    });
+
+    it('reports a newer release as pending while translations are incomplete', () => {
+        expect(getUpdateCheckStatus({
+            version: '2.0.107',
+            releaseNotes: [{ locale: 'en', notes: 'English notes' }],
+        }, '2.0.106')).toEqual({
+            ok: false,
+            error: 'update_release_pending',
+            currentVersion: '2.0.106',
+            latestVersion: '2.0.107',
+        });
+    });
+
+    it('keeps the real remote version when no update is available', () => {
+        expect(getUpdateCheckStatus({ version: '2.0.106' }, '2.0.106')).toEqual({
+            ok: true,
+            updateAvailable: false,
+            currentVersion: '2.0.106',
+            latestVersion: '2.0.106',
+        });
+    });
+
+    it('reports missing provider metadata as an error', () => {
+        expect(getUpdateCheckStatus(null, '2.0.106')).toEqual({
+            ok: false,
+            error: 'update_metadata_missing',
+        });
     });
 });
 

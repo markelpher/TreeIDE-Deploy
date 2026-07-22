@@ -1,6 +1,6 @@
 # Tree IDE
 
-[English](../README.md) · [Português](README.pt-BR.md) · [Guía de instalación](installation/installation.es.md)
+[English](../README.md) · [Português (Brasil)](README.pt-BR.md) · [Guía de instalación](installation/installation.es.md)
 
 ![Tree IDE Interface](https://github.com/markelpher/treeide-deploy/blob/main/assets/previews/preview-ES.png)
 

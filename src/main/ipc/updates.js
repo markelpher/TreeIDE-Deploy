@@ -229,6 +229,28 @@ export function isUpdateNewer(latestVersion, currentVersion) {
     return semver.gt(latest, current);
 }
 
+export function getUpdateCheckStatus(info, currentVersion) {
+    const latestVersion = info?.version;
+    if (!latestVersion) {
+        return { ok: false, error: 'update_metadata_missing' };
+    }
+    const updateAvailable = isUpdateNewer(latestVersion, currentVersion);
+    if (updateAvailable && !isReleaseFinalized(info?.releaseNotes)) {
+        return {
+            ok: false,
+            error: 'update_release_pending',
+            currentVersion,
+            latestVersion,
+        };
+    }
+    return {
+        ok: true,
+        updateAvailable,
+        currentVersion,
+        latestVersion,
+    };
+}
+
 try {
     const updater = require('electron-updater');
     autoUpdater = updater.autoUpdater;
@@ -250,49 +272,36 @@ try {
     log.warn('electron-updater not available:', err.message);
 }
 
-function shouldOfferUpdate(info, currentVersion) {
-    const latestVersion = info?.version;
-    if (!isUpdateNewer(latestVersion, currentVersion)) { return false; }
-    if (!isReleaseFinalized(info?.releaseNotes)) {
-        log.info(`Ignoring update ${latestVersion} — release notes are not finalized yet.`);
-        return false;
-    }
-    return true;
-}
-
 async function checkReleaseUpdate() {
     if (!autoUpdater) {
-        return { ok: true, updateAvailable: false, currentVersion: app.getVersion(), latestVersion: app.getVersion() };
+        return { ok: false, error: 'update_unavailable' };
     }
     if (!app.isPackaged) {
         log.info('Skipping update check because the app is not packaged.');
-        return {
-            ok: true,
-            updateAvailable: false,
-            currentVersion: app.getVersion(),
-            latestVersion: app.getVersion()
-        };
+        return { ok: false, error: 'update_unavailable' };
     }
 
     log.info('Checking for updates.');
     const result = await autoUpdater.checkForUpdates();
     const info = result?.updateInfo;
     const currentVersion = app.getVersion();
-    const latestVersion = info?.version;
-    const updateAvailable = shouldOfferUpdate(info, currentVersion);
+    const status = getUpdateCheckStatus(info, currentVersion);
+    if (!status.ok) {
+        log.warn('Update provider returned no version information.');
+        return status;
+    }
+
+    const { latestVersion, updateAvailable } = status;
     if (updateAvailable) { lastAvailableUpdateInfo = info; }
     if (updateAvailable) { cleanupSupersededPendingUpdate(latestVersion); }
     const downloadedUpdate = updateAvailable ? getPendingDownloadedUpdate(latestVersion, currentVersion) : null;
 
-    if (latestVersion && !updateAvailable) {
+    if (!updateAvailable) {
         log.info(`No newer update: current=${currentVersion}, latest=${latestVersion}`);
     }
 
     return buildUpdatePayload({
-        ok: true,
-        updateAvailable,
-        currentVersion,
-        latestVersion: updateAvailable ? latestVersion : currentVersion,
+        ...status,
         releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
         releaseNotes: updateAvailable ? normalizeReleaseNotesEntries(info?.releaseNotes) : [],
         assetName: updateAvailable ? (info?.files?.[0]?.url || '') : '',
@@ -307,12 +316,13 @@ export function registerUpdaterEvents(getMainWindow) {
 
     autoUpdater.on('update-available', (info) => {
         const currentVersion = app.getVersion();
-        if (!shouldOfferUpdate(info, currentVersion)) {
-            if (isUpdateNewer(info.version, currentVersion) && !isReleaseFinalized(info?.releaseNotes)) {
-                log.info(`Ignoring update ${info.version} — release is not finalized yet.`);
-            } else if (!isUpdateNewer(info.version, currentVersion)) {
-                log.info(`Ignoring update ${info.version} — not newer than ${currentVersion}`);
-            }
+        const status = getUpdateCheckStatus(info, currentVersion);
+        if (!status.ok) {
+            log.info(`Ignoring update ${info?.version || 'unknown'} — localized release notes are not finalized.`);
+            return;
+        }
+        if (!status.updateAvailable) {
+            log.info(`Ignoring update ${info?.version || 'unknown'} — not newer than ${currentVersion}`);
             return;
         }
         cleanupSupersededPendingUpdate(info.version);

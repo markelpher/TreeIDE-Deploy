@@ -3,6 +3,7 @@ export const UPDATE_ERROR_KEYS = new Set([
     'update_failed',
     'update_repo_inaccessible',
     'update_metadata_missing',
+    'update_release_pending',
     'update_network_error',
     'update_unavailable',
     'update_manual_install',

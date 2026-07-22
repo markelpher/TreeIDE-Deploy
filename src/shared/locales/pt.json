@@ -243,6 +243,7 @@
     "update_failed": "Falha na atualização.",
     "update_repo_inaccessible": "Não foi possível verificar atualizações agora.",
     "update_metadata_missing": "As informações de atualização estão indisponíveis.",
+    "update_release_pending": "Uma nova versão ainda está sendo preparada com todas as notas traduzidas. Tente novamente em alguns minutos.",
     "update_network_error": "Falha ao verificar atualizações. Verifique sua conexão.",
     "update_unavailable": "Atualização automática não está disponível neste ambiente.",
     "update_decline": "Agora não",

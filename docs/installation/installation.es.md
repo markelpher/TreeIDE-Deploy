@@ -1,6 +1,6 @@
 # Guía de instalación de Tree IDE
 
-[English](installation.md) · [Português](installation.pt-BR.md) · [README principal](../README.es.md)
+[English](installation.md) · [Português (Brasil)](installation.pt-BR.md) · [README principal](../README.es.md)
 
 Tree IDE publica paquetes oficiales para Windows x64. Es una aplicación exclusiva para Windows. Los paquetes NSIS y Portable están disponibles.
 

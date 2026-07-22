@@ -243,6 +243,7 @@
     "update_failed": "Update failed.",
     "update_repo_inaccessible": "Unable to check for updates right now.",
     "update_metadata_missing": "Update information is unavailable.",
+    "update_release_pending": "A new version is still being prepared with all translated release notes. Try again in a few minutes.",
     "update_network_error": "Update check failed. Check your connection.",
     "update_unavailable": "Auto-update is not available in this environment.",
     "update_decline": "Not now",
