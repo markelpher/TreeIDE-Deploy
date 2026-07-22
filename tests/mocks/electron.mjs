@@ -79,6 +79,10 @@ export const nativeImage = {
     createFromPath: () => ({ isEmpty: () => true }),
 };
 
+export const powerMonitor = {
+    on: noop,
+};
+
 export const contextBridge = { exposeInMainWorld: noop };
 
 export const webUtils = { getPathForFile: () => '' };

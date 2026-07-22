@@ -8,8 +8,8 @@ export default defineConfig({
     root: path.resolve(__dirname),
     resolve: {
         alias: {
-            electron: path.resolve(__dirname, 'tests/mocks/electron.mjs'),
-        },
+            electron: path.resolve(__dirname, 'tests/mocks/electron.mjs')
+        }
     },
     test: {
         include: ['tests/**/*.test.js'],
@@ -22,6 +22,7 @@ export default defineConfig({
             ['tests/renderer-toast.test.js', 'happy-dom'],
             ['tests/renderer-tree-render.test.js', 'happy-dom'],
             ['tests/panel-resize.test.js', 'happy-dom'],
-        ],
-    },
+            ['tests/discord-presence-ui.test.js', 'happy-dom']
+        ]
+    }
 });

@@ -72,6 +72,11 @@ function updateDocumentI18n(i18n) {
         el.placeholder = i18n.t(key);
     });
 
+    document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+        const key = el.getAttribute('data-i18n-aria-label');
+        el.setAttribute('aria-label', i18n.t(key));
+    });
+
     if (typeof window !== 'undefined' && window.lucide) {
         window.lucide.createIcons();
     }

@@ -533,7 +533,7 @@ body.light-theme #buildStudioTreeView .tree-connector {
 
 .build-studio-option.is-disabled {
     opacity: 0.45;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .build-studio-option input[type="radio"],
@@ -547,7 +547,7 @@ body.light-theme #buildStudioTreeView .tree-connector {
 }
 
 .build-studio-option input:disabled {
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .build-studio-option-text {
@@ -576,6 +576,11 @@ body.light-theme #buildStudioTreeView .tree-connector {
     flex-direction: column;
     gap: 10px;
     padding: 0 2px;
+    transition: opacity 0.15s ease;
+}
+
+.build-password-fields.is-disabled {
+    opacity: 0.45;
 }
 
 .build-password-label {
@@ -586,7 +591,7 @@ body.light-theme #buildStudioTreeView .tree-connector {
 
 .build-studio-options-group.is-disabled .styled-input,
 .build-studio-options-group.is-disabled .build-studio-option {
-    cursor: not-allowed;
+    cursor: default;
 }
 
 .build-studio-footer {

@@ -1,11 +1,11 @@
 {
   "name": "tree-ide",
-  "version": "2.0.105",
+  "version": "2.0.106",
   "description": "A lightweight open-source project structure editor",
   "author": "Mare <treeide@immare.xyz>",
   "license": "MIT",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.7.0"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "icons:generate": "node scripts/generate-lucide-local.mjs",
+    "icons:discord": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-discord-presence-icons.ps1",
     "i18n:validate": "node scripts/validate-i18n.mjs",
     "lint": "eslint . --ext .js,.mjs",
     "lint:fix": "eslint . --ext .js,.mjs --fix",
@@ -116,12 +117,13 @@
     }
   },
   "dependencies": {
-    "semver": "^7.7.3",
+    "@xhayper/discord-rpc": "^1.3.4",
     "7zip-min": "^3.0.1",
     "adm-zip": "^0.5.17",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
-    "node-unrar-js": "^2.0.2"
+    "node-unrar-js": "^2.0.2",
+    "semver": "^7.7.3"
   },
   "allowScripts": {
     "electron": true

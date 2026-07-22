@@ -13,7 +13,7 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Validation panel** — bad indentation, invalid names, duplicate siblings, unsafe paths, and empty structures; click a warning to jump to the line
 - **Undo / redo** with up to 100 history states
 - **Multi-project tabs** with modified indicators, scrollable tab bar, and drag-and-drop reorder
-- **Per-project file preview tabs** — edit starter file contents before building; Markdown live preview for `.md` files
+- **Per-project file editor tabs** — edit starter file contents before building, reorder tabs by dragging, and automatically close tabs for deleted files; Markdown live preview for `.md` files
 - **Block indent / outdent** with Tab and Shift+Tab, plus smart Backspace for indentation blocks
 - **Tree keyboard navigation** — arrow keys, Home, End, and Enter
 - **Editor zoom** — `Ctrl++`, `Ctrl+-`, and `Ctrl+0`
@@ -23,14 +23,17 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Build Studio** — full-screen build flow with live tree preview, per-file content preview, stats, and output options
 - **Three output modes** — create folder structure on disk, export a ZIP only, or export a `.tree` project file only
 - **Combined outputs** — optionally export a ZIP alongside a folder build, and include the `.tree` file inside the archive
+- **Content-aware build action** — when creating a structure with an additional ZIP, the action button identifies whether it will create a file, files, a folder, folders, or a combination, followed by `+ ZIP`
 - **Pre-build inspection** — scan the target folder for existing structure, `.tree`, or ZIP files before writing
 - **Conflict handling** — choose to skip or overwrite when files or folders already exist
 - **Default starter content** for 68+ file types (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte, and more)
 - **i18n placeholders** in generated files (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
 ### Archives & encryption
+- **Tree IDE 1 file compatibility** — Tree IDE 1 is the first-generation `.tree` file format used by Tree IDE Legacy; its headerless UTF-8 files remain fully readable, including tab- and `...`-based indentation
 - **ZIP export** with optional AES-256 password protection via 7-Zip
-- **Encrypted `.tree` projects** (TREEIDE1 / TREEIDE2 format, AES-256-GCM + scrypt)
+- **High-strength encrypted `.tree` projects** — TREEIDE2 uses authenticated AES-256-GCM with Argon2id (256 MiB, 4 passes, 4 lanes), while original Tree IDE Legacy plaintext files remain readable as the first-generation format
+- **Explicit `.tree` password protection** — password fields stay visible but disabled until protection is selected; enabling it shows the unrecoverable-password warning and requires matching values before saving
 - **Archive import** via file dialog or drag-and-drop: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, and `.7z`
 - **Password prompts** for encrypted ZIP archives and encrypted `.tree` files
 - **Load folder as structure** — scan an existing directory and turn it into editable tree text
@@ -38,6 +41,7 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 ### Templates
 - **19 built-in starter templates** — Frontend (HTML, React, Vite), Stacks (Node.js, MVC, Python, PHP), Systems (Go, Java, Kotlin, Rust, Ruby, Swift, Dart), and Native (C, C++, C#)
 - **Templates screen** — fullscreen three-column browser with built-in and custom tabs, inline structure editing, and live tree preview
+- **Template search and favorites** — accent-insensitive filtering across built-in and custom templates, plus locally persisted favorites with an offline bundled star icon
 - **Custom templates** — create blank, import from the current project, rename, edit file contents inline, export, or delete
 - **Markdown template preview** — `.md` files show the editor and rendered document side by side, updating live while custom templates are edited
 - **`.tree-template` files** — export and import shareable custom templates (JSON `treeide-template` v1)
@@ -54,6 +58,9 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **IndexedDB session storage** with autosave of open tabs, file contents, and project names
 - **Session modes** — restore the last session on launch or always start clean
 - **Bundled fonts** — Inter and JetBrains Mono; Lucide icons bundled locally (no CDN)
+- **Command Palette** — use `Ctrl+Shift+P` to access 23 project, editing, tab navigation, build, view, update, and help actions; unavailable contextual tab commands are shown disabled
+- **Accessibility improvements** — localized screen-reader labels, live result announcements, semantic listboxes and tabs, visible focus, and keyboard navigation for command and template workflows
+- **Optional Rich Presence** — localized contextual editor/file/template/build/settings states, dedicated activity and idle icons, five-minute idle detection, automatic pause on lock or suspend, reconnect, and three privacy levels
 
 ### Auto-updater
 - **In-app auto-updater** — check GitHub Releases, download with progress, and restart to install
@@ -86,7 +93,7 @@ Folders can end with `/` for clarity. Tree IDE also detects folders when they co
 3. Customize starter file contents in per-file preview tabs if needed
 4. Click **Build** to open **Build Studio**
 5. Choose output mode (folder, ZIP, `.tree`, or combined) and confirm the target path
-6. Optionally save the project as a `.tree` file or export an encrypted archive
+6. Optionally protect the `.tree` file or ZIP archive with a password
 
 You can also open existing `.tree` projects, archives, or folders via drag-and-drop or **File → Open**.
 
@@ -100,10 +107,11 @@ You can also open existing `.tree` projects, archives, or folders via drag-and-d
 | `Ctrl + Shift + S` | Save project as |
 | `Ctrl + Alt + S` | Save all projects |
 | `Ctrl + B` | Open Build Studio |
+| `Ctrl + Shift + P` | Open Command Palette |
 | `Ctrl + Z` / `Ctrl + Y` | Undo / redo |
 | `Ctrl + T` | New tab |
 | `Ctrl + Tab` / `Ctrl + Shift + Tab` | Next / previous tab |
-| `Ctrl + W` / `Ctrl + Shift + W` | Close tab / close all tabs |
+| `Ctrl + W` / `Ctrl + Shift + W` | Close project tab / close file tab |
 | `Ctrl + Q` | Quit app |
 | `Ctrl + R` | Reload app |
 | `Ctrl + +` / `Ctrl + -` / `Ctrl + 0` | Zoom in / out / reset |
@@ -111,6 +119,16 @@ You can also open existing `.tree` projects, archives, or folders via drag-and-d
 | `Tab` / `Shift + Tab` | Increase / decrease indentation |
 
 Shortcuts are fully configurable in **Settings → Shortcuts**.
+
+## Rich Presence
+
+Open **Settings → Rich Presence** and enable Rich Presence. The Tree IDE Discord application is already configured, and the Discord desktop app must be running. Presence starts as Idle and changes to Editing Structure only after direct interaction with the structure editor. Contextual states cover file preview, templates, settings, file creation, folder-structure creation, combined folder-and-file creation, and file export without exposing names, paths, formats, or encryption; each group uses a dedicated small icon while the Tree IDE logo remains the large image.
+
+Choose Basic, Activity, or Detailed privacy; only Detailed may include the project name and file type. File paths and contents are never sent. After five minutes without interaction, Presence returns to Idle with its keyboard icon. It is cleared while Windows is locked or suspended and restored when the device resumes.
+
+The Presence language follows the Tree IDE language by default, or it can be fixed to English, Portuguese, or Spanish independently. Discord receives one localized text payload, so every viewer sees the language selected by the Tree IDE user rather than an automatic translation based on each viewer's Discord language. Developers can override the bundled application ID with `TREEIDE_DISCORD_CLIENT_ID`.
+
+Contextual Presence PNGs are versioned in `assets/discord-presence/` and can be recreated with `scripts/generate-discord-presence-icons.ps1`.
 
 ## Development
 
@@ -188,8 +206,9 @@ src/
 |   |-- fonts/                  # Inter and JetBrains Mono fonts
 |-- shared/                     # Shared helpers, i18n, updater logic
 assets/
-|   preview/
+|   previews/
 |       preview.png             # README screenshots
+|   discord-presence/           # Versioned contextual Discord Presence PNGs
 |   icon.png                    # App icons
 |   icon-no-bg.png
 |   icon-no-bg.ico
@@ -207,7 +226,7 @@ docs/
 |       installation.md         # Installation guide (English)
 |       installation.pt-BR.md   # Installation guide (Portuguese)
 |       installation.es.md      # Installation guide (Spanish)
-scripts/                        # Build, changelog, and CI helper scripts
+scripts/                        # Build, changelog, CI, and Presence artwork scripts
 .github/workflows/
 |   windows-build.yml           # Build Windows x64 (NSIS + Portable)
 |   release-finalize.yml        # Translate changelogs and publish release

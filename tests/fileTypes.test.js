@@ -2,7 +2,7 @@ import { createI18n } from '../src/shared/i18n.js';
 import { createFileTypes } from '../src/renderer/modules/file-types.js';
 
 const i18n = createI18n('en');
-const { FILE_TYPES, FILENAME_MAP, validExtensions, isValidExtension, getFileTypeLabel } = createFileTypes({ i18n });
+const { FILE_TYPES, FILENAME_MAP, validExtensions, isValidExtension, getFileTypeLabel, getFilePresenceKind } = createFileTypes({ i18n });
 
 describe('FILE_TYPES', () => {
     it('has entries for common extensions', () => {
@@ -59,5 +59,15 @@ describe('getFileTypeLabel', () => {
 
     it('returns uppercase extension for unknown types', () => {
         expect(getFileTypeLabel('file.xyz')).toBe('XYZ');
+    });
+});
+
+describe('getFilePresenceKind', () => {
+    it('distinguishes code from text documents', () => {
+        expect(getFilePresenceKind('src/index.js')).toBe('code');
+        expect(getFilePresenceKind('config/settings.json')).toBe('code');
+        expect(getFilePresenceKind('README.md')).toBe('text');
+        expect(getFilePresenceKind('LICENSE')).toBe('text');
+        expect(getFilePresenceKind('notes.txt')).toBe('text');
     });
 });

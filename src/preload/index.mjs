@@ -49,5 +49,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     forceClose: () => ipcRenderer.send('force-close'),
     saveErrorLog: wrapInvoke('save-error-log'),
     createDiagnosticReport: wrapInvoke('create-diagnostic-report'),
-    getRepositoryLabels: wrapInvoke('get-repository-labels')
+    getRepositoryLabels: wrapInvoke('get-repository-labels'),
+    configureDiscordPresence: wrapInvoke('discord-presence-configure'),
+    updateDiscordPresence: wrapInvoke('discord-presence-update'),
+    reconnectDiscordPresence: wrapInvoke('discord-presence-reconnect'),
+    getDiscordPresenceStatus: wrapInvoke('discord-presence-status'),
+    onDiscordPresenceStatusChanged: (callback) => {
+        ipcRenderer.removeAllListeners('discord-presence-status-changed');
+        ipcRenderer.on('discord-presence-status-changed', (event, value) => callback(value));
+    }
 });

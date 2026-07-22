@@ -12,6 +12,7 @@
 @import './build-studio.css';
 @import './settings.css';
 @import './templates.css';
+@import './command-palette.css';
 @import './release-update.css';
 @import './welcome.css';
 @import './forms.css';

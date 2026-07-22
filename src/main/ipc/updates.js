@@ -26,8 +26,6 @@ let lastDownloadPercent = 0;
 let lastDownloadedUpdateFile = '';
 let lastDownloadedUpdateVersion = '';
 const PENDING_UPDATE_INSTALL_FILE = 'pending-update-install.json';
-const GITHUB_OWNER = 'markelpher';
-const GITHUB_REPO = 'treeide-deploy';
 
 let lastAvailableUpdateInfo = null;
 

@@ -37,7 +37,6 @@ function lockWindowTitle(win) {
 }
 
 function createWindow({ app, isReadyToCloseRef }) {
-    const iconPath = getAppIconPath();
     const windowIcon = getWindowIcon();
     let closeFallbackTimer = null;
     let closeRequestPending = false;

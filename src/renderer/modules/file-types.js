@@ -335,6 +335,14 @@ const FILE_TYPES = {
     ]);
 
     const validExtensions = new Set(Object.keys(FILE_TYPES));
+    const PRESENCE_TEXT_EXTENSIONS = new Set([
+        'txt', 'text', 'md', 'markdown', 'mdown', 'mkd', 'rst', 'rest',
+        'adoc', 'asciidoc', 'org', 'tex', 'log', 'nfo', 'rtf'
+    ]);
+    const PRESENCE_TEXT_FILENAMES = new Set([
+        'readme', 'license', 'licence', 'changelog', 'authors',
+        'contributors', 'notice', 'copying'
+    ]);
 
     function _t(key) {
         return app.i18n ? app.i18n.t(key) : key;
@@ -372,12 +380,20 @@ const FILE_TYPES = {
         return entry.label || ext.toUpperCase() || '';
     }
 
+    function getFilePresenceKind(filePath) {
+        const name = String(filePath || '').split(/[\\/]/).pop().toLowerCase();
+        const ext = name.includes('.') ? name.split('.').pop() : '';
+        const baseName = name.includes('.') ? name.slice(0, name.indexOf('.')) : name;
+        return PRESENCE_TEXT_EXTENSIONS.has(ext) || PRESENCE_TEXT_FILENAMES.has(baseName) ? 'text' : 'code';
+    }
+
     return {
         FILE_TYPES,
         FILENAME_MAP,
         validExtensions,
         isValidExtension,
-        getFileTypeLabel
+        getFileTypeLabel,
+        getFilePresenceKind
     };
 
 }

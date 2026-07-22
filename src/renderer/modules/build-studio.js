@@ -9,6 +9,7 @@ import {
     readBuildOptions,
     syncBuildOptionsUi
 } from './build-options.js';
+import { getBuildContentI18nKeys } from './build-content.js';
 
 export function createBuildStudio(app) {
 
@@ -37,6 +38,8 @@ export function createBuildStudio(app) {
         fileEditor: document.getElementById('buildStudioFileEditor'),
         markdownPreview: document.getElementById('buildStudioMarkdownPreview'),
         stats: document.getElementById('buildStudioStats'),
+        structureOptionTitle: document.getElementById('buildStudioOutputStructureTitle'),
+        structureOptionDescription: document.getElementById('buildStudioOutputStructureDescription'),
         folderPath: document.getElementById('buildStudioFolderPath'),
         existingWarning: document.getElementById('buildStudioExistingWarning'),
         conflictSection: document.getElementById('buildStudioConflictSection'),
@@ -87,6 +90,28 @@ export function createBuildStudio(app) {
             .map((id) => app.tabs.projectTabs.find((tab) => tab.id === id))
             .filter(Boolean)
             .map((tab) => shared().getTabBuildPayload(tab));
+    }
+
+    function getPresenceBuildCounts() {
+        return getSelectedPayloads().reduce((total, payload) => {
+            const stats = shared().getPayloadStats(payload);
+            total.files += stats.files;
+            total.folders += stats.folders;
+            return total;
+        }, { files: 0, folders: 0 });
+    }
+
+    function updateStructureOptionCopy() {
+        const { structureOptionTitle, structureOptionDescription } = els();
+        const keys = getBuildContentI18nKeys(getPresenceBuildCounts());
+        if (structureOptionTitle) {
+            structureOptionTitle.dataset.i18n = keys.title;
+            structureOptionTitle.textContent = t(keys.title);
+        }
+        if (structureOptionDescription) {
+            structureOptionDescription.dataset.i18n = keys.description;
+            structureOptionDescription.textContent = t(keys.description);
+        }
     }
 
     function getPreviewTab() {
@@ -140,7 +165,11 @@ export function createBuildStudio(app) {
             optionEls.alsoExportZip,
             optionsLocked || buildOptions.outputMode !== BUILD_OUTPUT_MODES.STRUCTURE
         );
-        syncBuildOptionsUi(optionEls, { t, optionsLocked });
+        syncBuildOptionsUi(optionEls, {
+            t,
+            optionsLocked,
+            contentCounts: getPresenceBuildCounts()
+        });
     }
 
     function ensureBuildTabScrollControls() {
@@ -289,6 +318,8 @@ export function createBuildStudio(app) {
     function renderPreview() {
         const { treeView, stats } = els();
         const tab = getPreviewTab();
+
+        updateStructureOptionCopy();
 
         if (!tab) {
             if (treeView) { treeView.innerHTML = ''; }
@@ -525,6 +556,7 @@ export function createBuildStudio(app) {
             if (optionEls.outputModeStructure) { optionEls.outputModeStructure.checked = true; }
             if (optionEls.alsoExportZip) { optionEls.alsoExportZip.checked = false; }
             if (optionEls.includeTreeInZip) { optionEls.includeTreeInZip.checked = false; }
+            if (optionEls.protectTreeWithPassword) { optionEls.protectTreeWithPassword.checked = false; }
             [optionEls.zipPassword, optionEls.zipPasswordConfirm, optionEls.treePassword, optionEls.treePasswordConfirm]
                 .forEach((input) => { if (input) { input.value = ''; } });
 
@@ -630,7 +662,8 @@ export function createBuildStudio(app) {
     return {
         open,
         requestClose,
-        isOpen
+        isOpen,
+        getPresenceBuildCounts
     };
 
 }

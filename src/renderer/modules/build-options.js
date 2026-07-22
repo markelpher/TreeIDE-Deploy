@@ -2,6 +2,8 @@
  * Build output options for the studio UI.
  */
 
+import { getBuildContentI18nKeys } from './build-content.js';
+
 export const BUILD_OUTPUT_MODES = {
     STRUCTURE: 'structure',
     ZIP: 'zip',
@@ -21,6 +23,10 @@ export function getBuildOptionsElements(prefix) {
         alsoExportZipLabel: document.getElementById(`${prefix}AlsoExportZipLabel`),
         includeTreeInZip: document.getElementById(`${prefix}IncludeTreeInZip`),
         includeTreeInZipLabel: document.getElementById(`${prefix}IncludeTreeInZipLabel`),
+        protectTreeWithPassword: document.getElementById(`${prefix}ProtectTreeWithPassword`),
+        protectTreeWithPasswordLabel: document.getElementById(`${prefix}ProtectTreeWithPasswordLabel`),
+        treePasswordFields: document.getElementById(`${prefix}TreePasswordFields`),
+        treePasswordWarning: document.getElementById(`${prefix}TreePasswordWarning`),
         zipPassword: document.getElementById(`${prefix}ZipPassword`),
         zipPasswordConfirm: document.getElementById(`${prefix}ZipPasswordConfirm`),
         treePassword: document.getElementById(`${prefix}TreePassword`),
@@ -58,9 +64,13 @@ export function readBuildOptions(els) {
     const includeTreeInZip = Boolean(els.includeTreeInZip?.checked);
     const zipPassword = els.zipPassword?.value || '';
     const zipPasswordConfirm = els.zipPasswordConfirm?.value || '';
-    const treePassword = els.treePassword?.value || '';
-    const treePasswordConfirm = els.treePasswordConfirm?.value || '';
     const zipEnabled = isZipExtrasEnabled(outputMode, alsoExportZip);
+    const treeProtectionAvailable = outputMode === BUILD_OUTPUT_MODES.TREE
+        || (includeTreeInZip && zipEnabled);
+    const protectTreeWithPassword = treeProtectionAvailable
+        && Boolean(els.protectTreeWithPassword?.checked);
+    const treePassword = protectTreeWithPassword ? els.treePassword?.value || '' : '';
+    const treePasswordConfirm = protectTreeWithPassword ? els.treePasswordConfirm?.value || '' : '';
 
     return {
         outputMode,
@@ -68,11 +78,12 @@ export function readBuildOptions(els) {
         includeTreeInZip,
         zipPassword,
         zipPasswordConfirm,
+        protectTreeWithPassword,
         treePassword,
         treePasswordConfirm,
         zipEnabled,
-        treeEncryptEnabled: outputMode === BUILD_OUTPUT_MODES.TREE
-            || (includeTreeInZip && zipEnabled)
+        treeProtectionAvailable,
+        treeEncryptEnabled: protectTreeWithPassword
     };
 }
 
@@ -87,9 +98,13 @@ export function validateBuildPasswords(options, t) {
         return t('build_password_mismatch');
     }
 
-    const treeFilled = Boolean(options.treePassword || options.treePasswordConfirm);
-    if (options.treeEncryptEnabled && treeFilled && options.treePassword !== options.treePasswordConfirm) {
-        return t('build_password_mismatch');
+    if (options.treeEncryptEnabled) {
+        if (!options.treePassword || !options.treePasswordConfirm) {
+            return t('build_password_required');
+        }
+        if (options.treePassword !== options.treePasswordConfirm) {
+            return t('build_password_mismatch');
+        }
     }
 
     return null;
@@ -97,7 +112,11 @@ export function validateBuildPasswords(options, t) {
 
 /**
  * @param {ReturnType<typeof getBuildOptionsElements>} els
- * @param {{ t: (key: string) => string }} ctx
+ * @param {{
+ *   t: (key: string) => string,
+ *   optionsLocked?: boolean,
+ *   contentCounts?: { files?: number, folders?: number }
+ * }} ctx
  */
 function setExtrasGroupState(groupEl, enabled, inputs = []) {
     if (groupEl) {
@@ -140,15 +159,29 @@ export function syncBuildOptionsUi(els, ctx) {
         els.includeTreeInZipLabel.classList.toggle('is-disabled', !zipExtrasEnabled);
     }
 
-    const treeExtrasEnabled = options.treeEncryptEnabled && !optionsLocked;
-    if (!treeExtrasEnabled) {
+    const treeExtrasEnabled = options.treeProtectionAvailable && !optionsLocked;
+    setExtrasGroupState(els.treeExtras, treeExtrasEnabled, [els.protectTreeWithPassword]);
+    if (!treeExtrasEnabled && els.protectTreeWithPassword) {
+        els.protectTreeWithPassword.checked = false;
+    }
+    if (els.protectTreeWithPasswordLabel) {
+        els.protectTreeWithPasswordLabel.classList.toggle('is-disabled', !treeExtrasEnabled);
+    }
+
+    const treePasswordEnabled = treeExtrasEnabled && Boolean(els.protectTreeWithPassword?.checked);
+    if (els.treePasswordFields) {
+        els.treePasswordFields.classList.toggle('is-disabled', !treePasswordEnabled);
+    }
+    if (els.treePasswordWarning) {
+        els.treePasswordWarning.hidden = !treePasswordEnabled;
+    }
+    if (!treePasswordEnabled) {
         if (els.treePassword) { els.treePassword.value = ''; }
         if (els.treePasswordConfirm) { els.treePasswordConfirm.value = ''; }
     }
-    setExtrasGroupState(els.treeExtras, treeExtrasEnabled, [
-        els.treePassword,
-        els.treePasswordConfirm
-    ]);
+    [els.treePassword, els.treePasswordConfirm].forEach((input) => {
+        if (input) { input.disabled = !treePasswordEnabled; }
+    });
 
     if (els.createBtn) {
         if (isZipOnly) {
@@ -156,7 +189,8 @@ export function syncBuildOptionsUi(els, ctx) {
         } else if (isTreeOnly) {
             els.createBtn.textContent = ctx.t('build_action_save_tree');
         } else if (isStructure && options.alsoExportZip) {
-            els.createBtn.textContent = ctx.t('build_action_create_zip');
+            const { title } = getBuildContentI18nKeys(ctx.contentCounts);
+            els.createBtn.textContent = `${ctx.t(title)} + ZIP`;
         } else {
             els.createBtn.textContent = ctx.t('build_studio_create');
         }
@@ -174,7 +208,8 @@ export function bindBuildOptionsUi(prefix, ctx) {
         els.outputModeZip,
         els.outputModeTree,
         els.alsoExportZip,
-        els.includeTreeInZip
+        els.includeTreeInZip,
+        els.protectTreeWithPassword
     ].filter(Boolean);
 
     inputs.forEach((input) => input.addEventListener('change', handler));

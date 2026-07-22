@@ -1,31 +1,28 @@
-import {
-    isTreeTemplatePath,
-    parseTemplateFile,
-    serializeTemplateFile
-} from '../../shared/templateFile.js';
+import { isTreeTemplatePath, parseTemplateFile, serializeTemplateFile } from '../../shared/templateFile.js';
 import { findRenameMatch } from '../../shared/helpers.js';
 
 export function createTemplatesUi(app) {
-
     let templateDropCounter = 0;
 
     const CUSTOM_TEMPLATES_KEY = 'custom_templates';
+    const TEMPLATE_FAVORITES_KEY = 'template_favorites';
     const STRUCTURE_SAVE_DEBOUNCE_MS = 150;
     const FILE_SAVE_DEBOUNCE_MS = 150;
     const CUSTOM_TEMPLATES_AUTOSAVE_MS = 5000;
     let selectedTemplateName = 'node';
     let selectedTemplateFile = '';
     let selectedTemplateSource = 'builtin';
+    let templateSearchQuery = '';
     let modalListenersBound = false;
     let structureSaveTimer = null;
     let fileSaveTimer = null;
     let customTemplatesHydrated = false;
     let customTemplatesAutosaveTimer = null;
     let pendingCustomTemplatesDbWrite = null;
+    let previousTemplatesFocus = null;
 
     function isCustomEditMode() {
-        return selectedTemplateSource === 'custom'
-            && isCustomTemplate(selectedTemplateName);
+        return selectedTemplateSource === 'custom' && isCustomTemplate(selectedTemplateName);
     }
 
     function loadCustomTemplates() {
@@ -37,10 +34,59 @@ export function createTemplatesUi(app) {
         }
     }
 
+    function loadFavoriteKeys() {
+        try {
+            const value = JSON.parse(localStorage.getItem(TEMPLATE_FAVORITES_KEY) || '[]');
+            return new Set(Array.isArray(value) ? value.filter((key) => typeof key === 'string') : []);
+        } catch {
+            return new Set();
+        }
+    }
+
+    function saveFavoriteKeys(favorites) {
+        localStorage.setItem(TEMPLATE_FAVORITES_KEY, JSON.stringify([...favorites]));
+    }
+
+    function isFavoriteTemplate(key) {
+        return loadFavoriteKeys().has(key);
+    }
+
+    function toggleFavoriteTemplate(key) {
+        if (!getAllTemplates()[key]) {
+            return;
+        }
+        const favorites = loadFavoriteKeys();
+        const added = !favorites.has(key);
+        if (added) {
+            favorites.add(key);
+        } else {
+            favorites.delete(key);
+        }
+        saveFavoriteKeys(favorites);
+        renderTemplateModal();
+        app.toast?.showToast(app.i18n.t(added ? 'template_favorite_added' : 'template_favorite_removed'));
+    }
+
+    function replaceFavoriteKey(oldKey, newKey = '') {
+        const favorites = loadFavoriteKeys();
+        if (!favorites.delete(oldKey)) {
+            return;
+        }
+        if (newKey) {
+            favorites.add(newKey);
+        }
+        saveFavoriteKeys(favorites);
+    }
+
     function queueCustomTemplatesDbWrite(json) {
-        if (!app.dbStorage) { return; }
-        if (pendingCustomTemplatesDbWrite) { return; }
-        pendingCustomTemplatesDbWrite = app.dbStorage.set(CUSTOM_TEMPLATES_KEY, json)
+        if (!app.dbStorage) {
+            return;
+        }
+        if (pendingCustomTemplatesDbWrite) {
+            return;
+        }
+        pendingCustomTemplatesDbWrite = app.dbStorage
+            .set(CUSTOM_TEMPLATES_KEY, json)
             .catch((err) => {
                 console.warn('IndexedDB custom templates write failed:', err);
             })
@@ -53,7 +99,9 @@ export function createTemplatesUi(app) {
         if (pendingCustomTemplatesDbWrite) {
             try {
                 await pendingCustomTemplatesDbWrite;
-            } catch { /* already logged */ }
+            } catch {
+                /* already logged */
+            }
         }
     }
 
@@ -69,17 +117,25 @@ export function createTemplatesUi(app) {
     }
 
     async function ensureCustomTemplatesHydrated() {
-        if (customTemplatesHydrated) { return; }
+        if (customTemplatesHydrated) {
+            return;
+        }
         customTemplatesHydrated = true;
 
         const local = loadCustomTemplates();
-        if (Object.keys(local).length > 0 || !app.dbStorage) { return; }
+        if (Object.keys(local).length > 0 || !app.dbStorage) {
+            return;
+        }
 
         try {
             const raw = await app.dbStorage.get(CUSTOM_TEMPLATES_KEY);
-            if (!raw) { return; }
+            if (!raw) {
+                return;
+            }
             const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== 'object') { return; }
+            if (!parsed || typeof parsed !== 'object') {
+                return;
+            }
             localStorage.setItem(CUSTOM_TEMPLATES_KEY, raw);
         } catch (err) {
             console.warn('Failed to hydrate custom templates from IndexedDB:', err);
@@ -89,7 +145,9 @@ export function createTemplatesUi(app) {
     function startCustomTemplatesAutosave() {
         stopCustomTemplatesAutosave();
         customTemplatesAutosaveTimer = setInterval(() => {
-            if (!document.body.classList.contains('templates-active')) { return; }
+            if (!document.body.classList.contains('templates-active')) {
+                return;
+            }
             flushTemplateEdits();
         }, CUSTOM_TEMPLATES_AUTOSAVE_MS);
     }
@@ -114,7 +172,14 @@ export function createTemplatesUi(app) {
     }
 
     function getTemplatesForSource(source = selectedTemplateSource) {
-        return source === 'custom' ? loadCustomTemplates() : getBuiltInTemplates();
+        if (source === 'custom') {
+            return loadCustomTemplates();
+        }
+        if (source === 'favorites') {
+            const favorites = loadFavoriteKeys();
+            return Object.fromEntries(Object.entries(getAllTemplates()).filter(([key]) => favorites.has(key)));
+        }
+        return getBuiltInTemplates();
     }
 
     function getSortedTemplateKeys(templates) {
@@ -122,6 +187,27 @@ export function createTemplatesUi(app) {
             const labelA = (templates[a]?.label || a).trim();
             const labelB = (templates[b]?.label || b).trim();
             return labelA.localeCompare(labelB, undefined, { sensitivity: 'base' });
+        });
+    }
+
+    function normalizeTemplateSearch(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
+    }
+
+    function getFilteredTemplateKeys(templates) {
+        const keys = getSortedTemplateKeys(templates);
+        const query = normalizeTemplateSearch(templateSearchQuery);
+        if (!query) {
+            return keys;
+        }
+        return keys.filter((key) => {
+            const template = templates[key] || {};
+            const searchable = [key, template.label, template.tree, ...Object.keys(template.files || {})].join(' ');
+            return normalizeTemplateSearch(searchable).includes(query);
         });
     }
 
@@ -149,15 +235,17 @@ export function createTemplatesUi(app) {
     function findTemplateFileKey(template, resolvedPath) {
         const replace = app.fileops.replaceTemplatePlaceholders;
         for (const key of Object.keys(template?.files || {})) {
-            if (replace(key) === resolvedPath) { return key; }
+            if (replace(key) === resolvedPath) {
+                return key;
+            }
         }
         return resolvedPath;
     }
 
-    function ensureSelectedTemplate() {
+    function ensureSelectedTemplate(allowedKeys = null) {
         const templates = getTemplatesForSource();
-        const keys = getSortedTemplateKeys(templates);
-        if (templates[selectedTemplateName]) {
+        const keys = allowedKeys || getSortedTemplateKeys(templates);
+        if (templates[selectedTemplateName] && keys.includes(selectedTemplateName)) {
             return templates[selectedTemplateName];
         }
         selectedTemplateName = keys[0] || '';
@@ -171,31 +259,32 @@ export function createTemplatesUi(app) {
 
     function getDefaultTemplateFile(files, treeText = '') {
         const paths = Object.keys(files || {});
-        if (!paths.length) { return ''; }
-        const treePaths = app.tree.getFilePathsFromTree(
-            app.helpers.parseEditorContent(
-                app.fileops.replaceTemplatePlaceholders(treeText)
-            )
-        );
+        if (!paths.length) {
+            return '';
+        }
+        const treePaths = app.tree.getFilePathsFromTree(app.helpers.parseEditorContent(app.fileops.replaceTemplatePlaceholders(treeText)));
         const treeSet = new Set(treePaths);
         const inTree = paths.filter((p) => treeSet.has(p));
         const previewableInTree = getPreviewablePaths(inTree);
-        if (previewableInTree.length) { return previewableInTree[0]; }
+        if (previewableInTree.length) {
+            return previewableInTree[0];
+        }
         const previewableAll = getPreviewablePaths(paths);
-        if (previewableAll.length) { return previewableAll[0]; }
+        if (previewableAll.length) {
+            return previewableAll[0];
+        }
         return paths.sort()[0] || '';
     }
 
     function paintTemplateTree(snapshot, previewEl = document.getElementById('templateTreePreview')) {
-        if (!previewEl || !snapshot) { return; }
-        previewEl.innerHTML = app.tree.renderTree(
-            app.helpers.parseEditorContent(snapshot.treeText),
-            '', '', 1, {
-                collapsible: false,
-                focusable: false,
-                activeFilePath: selectedTemplateFile
-            }
-        );
+        if (!previewEl || !snapshot) {
+            return;
+        }
+        previewEl.innerHTML = app.tree.renderTree(app.helpers.parseEditorContent(snapshot.treeText), '', '', 1, {
+            collapsible: false,
+            focusable: false,
+            activeFilePath: selectedTemplateFile
+        });
         app.icons.refreshIcons(previewEl);
     }
 
@@ -222,7 +311,9 @@ export function createTemplatesUi(app) {
         }
 
         const trackedPaths = new Set(Object.keys(fileContents));
-        if (selectedTemplateFile) { trackedPaths.add(selectedTemplateFile); }
+        if (selectedTemplateFile) {
+            trackedPaths.add(selectedTemplateFile);
+        }
 
         const removedPaths = [...trackedPaths].filter((path) => !filePaths.has(path));
         const addedPaths = [];
@@ -242,7 +333,9 @@ export function createTemplatesUi(app) {
             const usedAdded = new Set();
             removedPaths.forEach((oldPath) => {
                 const oldContent = resolveTemplateFileContent({ files: fileContents }, oldPath, fileEditor);
-                if (oldContent === undefined) { return; }
+                if (oldContent === undefined) {
+                    return;
+                }
                 const match = findRenameMatch(oldPath, addedPaths, usedAdded);
                 if (match) {
                     usedAdded.add(match);
@@ -265,8 +358,12 @@ export function createTemplatesUi(app) {
         const template = loadCustomTemplates()[selectedTemplateName];
         const treeEditor = document.getElementById('templateTreeEditor');
         const fileEditor = document.getElementById('templateFileEditor');
-        if (!template) { return null; }
-        if (!isCustomEditMode()) { return template; }
+        if (!template) {
+            return null;
+        }
+        if (!isCustomEditMode()) {
+            return template;
+        }
 
         const draft = {
             ...template,
@@ -283,9 +380,13 @@ export function createTemplatesUi(app) {
     }
 
     function updateLiveStructurePreview() {
-        if (!isCustomEditMode()) { return; }
+        if (!isCustomEditMode()) {
+            return;
+        }
         const treeEditor = document.getElementById('templateTreeEditor');
-        if (!treeEditor) { return; }
+        if (!treeEditor) {
+            return;
+        }
         const replace = app.fileops.replaceTemplatePlaceholders;
         const treeText = replace(treeEditor.value || '');
         paintTemplateTree({ treeText, files: {} });
@@ -298,9 +399,15 @@ export function createTemplatesUi(app) {
         const fileEditor = document.getElementById('templateFileEditor');
         const markdownPreview = document.getElementById('templateMarkdownPreview');
         filePanel?.classList.remove('has-file', 'markdown-file');
-        if (fileNameEl) { fileNameEl.textContent = ''; }
-        if (fileModeEl) { fileModeEl.textContent = ''; }
-        if (markdownPreview) { markdownPreview.textContent = ''; }
+        if (fileNameEl) {
+            fileNameEl.textContent = '';
+        }
+        if (fileModeEl) {
+            fileModeEl.textContent = '';
+        }
+        if (markdownPreview) {
+            markdownPreview.textContent = '';
+        }
         if (fileEditor) {
             fileEditor.value = '';
             fileEditor.readOnly = true;
@@ -312,10 +419,12 @@ export function createTemplatesUi(app) {
 
     function refreshFilePanelFromEditorDraft() {
         const draft = getCustomTemplateDraft();
-        if (!draft) { return; }
+        if (!draft) {
+            return;
+        }
 
         const treeEditor = document.getElementById('templateTreeEditor');
-        const rawTree = isCustomEditMode() && treeEditor ? treeEditor.value : (draft.tree || '');
+        const rawTree = isCustomEditMode() && treeEditor ? treeEditor.value : draft.tree || '';
         if (!rawTree.trim()) {
             clearTemplateFilePanel();
             return;
@@ -341,13 +450,17 @@ export function createTemplatesUi(app) {
     function onFileEditorInput() {
         const fileEditor = document.getElementById('templateFileEditor');
         updateTemplateMarkdownPreview(fileEditor?.value || '', selectedTemplateFile);
-        if (!isCustomEditMode() || !selectedTemplateFile) { return; }
+        if (!isCustomEditMode() || !selectedTemplateFile) {
+            return;
+        }
         scheduleFileSave();
     }
 
     function updateTemplateMarkdownPreview(content, filePath) {
         const markdownPreview = document.getElementById('templateMarkdownPreview');
-        if (!markdownPreview) { return; }
+        if (!markdownPreview) {
+            return;
+        }
         if (!filePath || !app.fileops.isMarkdownFile(filePath)) {
             markdownPreview.textContent = '';
             return;
@@ -358,7 +471,9 @@ export function createTemplatesUi(app) {
     function clearTemplatePreview() {
         const preview = document.getElementById('templateTreePreview');
         const treeEditor = document.getElementById('templateTreeEditor');
-        if (preview) { preview.innerHTML = ''; }
+        if (preview) {
+            preview.innerHTML = '';
+        }
         if (treeEditor) {
             treeEditor.value = '';
             delete treeEditor.dataset.templateKey;
@@ -379,29 +494,35 @@ export function createTemplatesUi(app) {
         previewLabel?.classList.toggle('hidden', !editable);
         label?.classList.toggle('is-editable', editable);
         if (label) {
-            label.textContent = editable
-                ? app.i18n.t('template_panel_structure_edit')
-                : app.i18n.t('template_panel_structure');
+            label.textContent = editable ? app.i18n.t('template_panel_structure_edit') : app.i18n.t('template_panel_structure');
         }
     }
 
     function flushStructureEdits() {
-        if (!isCustomEditMode()) { return; }
+        if (!isCustomEditMode()) {
+            return;
+        }
         const treeEditor = document.getElementById('templateTreeEditor');
         const custom = loadCustomTemplates();
         const entry = custom[selectedTemplateName];
-        if (!entry || !treeEditor) { return; }
+        if (!entry || !treeEditor) {
+            return;
+        }
         entry.tree = treeEditor.value;
         syncTemplateFilesWithTree(entry, treeEditor.value);
         saveCustomTemplates(custom);
     }
 
     function flushFileEdits() {
-        if (!isCustomEditMode() || !selectedTemplateFile) { return; }
+        if (!isCustomEditMode() || !selectedTemplateFile) {
+            return;
+        }
         const fileEditor = document.getElementById('templateFileEditor');
         const custom = loadCustomTemplates();
         const entry = custom[selectedTemplateName];
-        if (!entry || !fileEditor) { return; }
+        if (!entry || !fileEditor) {
+            return;
+        }
         const originalKey = findTemplateFileKey(entry, selectedTemplateFile);
         entry.files[originalKey] = fileEditor.value;
         saveCustomTemplates(custom);
@@ -428,7 +549,9 @@ export function createTemplatesUi(app) {
 
     function refreshFilePanelForSelectedTemplate() {
         const template = getAllTemplates()[selectedTemplateName];
-        if (!template) { return; }
+        if (!template) {
+            return;
+        }
         const snapshot = resolveTemplateSnapshot(template);
         if (!selectedTemplateFile || !Object.prototype.hasOwnProperty.call(snapshot.files, selectedTemplateFile)) {
             selectedTemplateFile = getDefaultTemplateFile(snapshot.files, template.tree || '');
@@ -442,7 +565,9 @@ export function createTemplatesUi(app) {
 
         if (isCustomEditMode()) {
             setStructureMode(true);
-            if (!treeEditor) { return; }
+            if (!treeEditor) {
+                return;
+            }
             if (!isTypingStructure || treeEditor.dataset.templateKey !== selectedTemplateName) {
                 treeEditor.value = template.tree || '';
                 treeEditor.dataset.templateKey = selectedTemplateName;
@@ -466,24 +591,28 @@ export function createTemplatesUi(app) {
             const active = btn.dataset.source === selectedTemplateSource;
             btn.classList.toggle('active', active);
             btn.setAttribute('aria-selected', String(active));
+            btn.tabIndex = active ? 0 : -1;
         });
     }
 
     function updateTemplateChrome(hasSelection) {
         const useBtn = document.getElementById('useTemplateBtn');
-        if (useBtn) { useBtn.disabled = !hasSelection; }
+        if (useBtn) {
+            useBtn.disabled = !hasSelection;
+        }
     }
 
     function applyTemplate(templateName) {
         const template = getAllTemplates()[templateName];
-        if (!template) { return; }
+        if (!template) {
+            return;
+        }
 
         const S = app.state;
         const editor = S.editor;
 
-        app.undoredo.pushUndoState();
-
         editor.value = app.fileops.replaceTemplatePlaceholders(template.tree);
+        app.undoredo.pushUndoState();
         S.fileContents = {};
         Object.entries(template.files).forEach(([path, content]) => {
             const resolvedPath = app.fileops.replaceTemplatePlaceholders(path);
@@ -514,6 +643,9 @@ export function createTemplatesUi(app) {
     function renderTemplateModal() {
         const list = document.getElementById('templatesList');
         const emptyState = document.getElementById('templatesEmptyState');
+        const searchEmpty = document.getElementById('templatesSearchEmpty');
+        const favoritesEmpty = document.getElementById('templatesFavoritesEmpty');
+        const resultsStatus = document.getElementById('templatesResultsStatus');
         const escapeHtml = app.helpers.escapeHtml;
         const t = (key) => app.i18n.t(key);
         const customTemplates = loadCustomTemplates();
@@ -521,35 +653,58 @@ export function createTemplatesUi(app) {
         const isCustomTab = selectedTemplateSource === 'custom';
         const hasCustomTemplates = customKeys.length > 0;
         const showEmptyState = isCustomTab && !hasCustomTemplates;
+        const templates = getTemplatesForSource();
+        const showFavoritesEmpty = selectedTemplateSource === 'favorites' && Object.keys(templates).length === 0;
+        const filteredKeys = getFilteredTemplateKeys(templates);
+        const showSearchEmpty = !showEmptyState && !showFavoritesEmpty && filteredKeys.length === 0;
 
         const customFooter = document.getElementById('templatesCustomFooter');
         const listPanel = document.querySelector('.templates-panel-list');
         const showCustomFooter = isCustomTab && hasCustomTemplates;
 
         updateTemplateSourceTabs();
-        list?.classList.toggle('hidden', showEmptyState);
+        list?.classList.toggle('hidden', showEmptyState || showFavoritesEmpty || showSearchEmpty);
         emptyState?.classList.toggle('hidden', !showEmptyState);
+        favoritesEmpty?.classList.toggle('hidden', !showFavoritesEmpty);
+        searchEmpty?.classList.toggle('hidden', !showSearchEmpty);
         customFooter?.classList.toggle('hidden', !showCustomFooter);
         listPanel?.classList.toggle('has-custom-footer', showCustomFooter);
+        if (resultsStatus) {
+            resultsStatus.textContent = app.helpers.formatMessage(t('template_results'), { count: filteredKeys.length });
+        }
 
-        if (showEmptyState) {
-            if (list) { list.innerHTML = ''; }
+        if (showEmptyState || showFavoritesEmpty) {
+            if (list) {
+                list.innerHTML = '';
+            }
             listPanel?.classList.remove('has-custom-footer');
             clearTemplatePreview();
             updateTemplateChrome(false);
             return;
         }
 
-        const templates = getTemplatesForSource();
-        const template = ensureSelectedTemplate();
+        if (showSearchEmpty) {
+            if (list) {
+                list.innerHTML = '';
+            }
+            clearTemplatePreview();
+            updateTemplateChrome(false);
+            return;
+        }
+
+        const template = ensureSelectedTemplate(filteredKeys);
         const hasSelection = !!template;
+        const favoriteKeys = loadFavoriteKeys();
 
         if (list) {
-            list.innerHTML = getSortedTemplateKeys(templates).map((key) => {
-                const isActive = key === selectedTemplateName;
-                const label = templates[key].label || key;
-                const actions = isCustomTab
-                    ? `<div class="template-icon-group" role="group" aria-label="${escapeHtml(t('template_row_actions'))}">
+            list.innerHTML = filteredKeys
+                .map((key, index) => {
+                    const isActive = key === selectedTemplateName;
+                    const label = templates[key].label || key;
+                    const isFavorite = favoriteKeys.has(key);
+                    const favoriteLabel = app.helpers.formatMessage(t(isFavorite ? 'template_remove_favorite' : 'template_add_favorite'), { name: label });
+                    const customActions = isCustomTemplate(key)
+                        ? `
                         <button type="button" class="template-icon-btn" data-template-rename="${escapeHtml(key)}" title="${escapeHtml(t('template_rename'))}" aria-label="${escapeHtml(t('template_rename'))}">
                             <i data-lucide="type" aria-hidden="true"></i>
                         </button>
@@ -561,16 +716,23 @@ export function createTemplatesUi(app) {
                         </button>
                         <button type="button" class="template-icon-btn template-icon-btn-danger" data-template-delete="${escapeHtml(key)}" title="${escapeHtml(t('template_delete'))}" aria-label="${escapeHtml(t('template_delete'))}">
                             <i data-lucide="trash-2" aria-hidden="true"></i>
-                        </button>
-                    </div>`
-                    : '';
-                return `<div class="template-option-wrap${isActive ? ' active' : ''}">
-                    <button type="button" class="template-option${isActive ? ' active' : ''}" data-template="${escapeHtml(key)}" role="option" aria-selected="${isActive}">
+                        </button>`
+                        : '';
+                    return `<div class="template-option-wrap${isActive ? ' active' : ''}">
+                    <button id="templateOption${index}" type="button" class="template-option${isActive ? ' active' : ''}" data-template="${escapeHtml(key)}" role="option" aria-selected="${isActive}" tabindex="${isActive ? '0' : '-1'}">
                         <span class="template-option-label">${escapeHtml(label)}</span>
                     </button>
-                    ${actions}
+                    <div class="template-icon-group" role="group" aria-label="${escapeHtml(t('template_row_actions'))}">
+                        <button type="button" class="template-icon-btn template-favorite-btn${isFavorite ? ' active' : ''}" data-template-favorite="${escapeHtml(key)}" aria-pressed="${isFavorite}" title="${escapeHtml(favoriteLabel)}" aria-label="${escapeHtml(favoriteLabel)}">
+                            <i data-lucide="star" aria-hidden="true"></i>
+                        </button>
+                        ${customActions}
+                    </div>
                 </div>`;
-            }).join('');
+                })
+                .join('');
+            const activeOption = list.querySelector('.template-option.active');
+            list.setAttribute('aria-activedescendant', activeOption?.id || '');
             app.icons.refreshIcons(list);
         }
         if (showCustomFooter && customFooter) {
@@ -632,24 +794,36 @@ export function createTemplatesUi(app) {
 
     function handleTemplateTreeClick(e) {
         const preview = document.getElementById('templateTreePreview');
-        if (!preview) { return; }
+        if (!preview) {
+            return;
+        }
         const item = e.target.closest('.tree-item');
-        if (!item || item.dataset.type !== 'file') { return; }
-        if (item.dataset.preview === 'disabled' || item.classList.contains('no-preview')) { return; }
+        if (!item || item.dataset.type !== 'file') {
+            return;
+        }
+        if (item.dataset.preview === 'disabled' || item.classList.contains('no-preview')) {
+            return;
+        }
 
         flushFileEdits();
 
         const draft = getCustomTemplateDraft() || getAllTemplates()[selectedTemplateName];
-        if (!draft) { return; }
+        if (!draft) {
+            return;
+        }
         const snapshot = resolveTemplateSnapshot(draft);
         const filePath = item.dataset.path;
-        if (!Object.prototype.hasOwnProperty.call(snapshot.files, filePath)) { return; }
+        if (!Object.prototype.hasOwnProperty.call(snapshot.files, filePath)) {
+            return;
+        }
         renderTemplateFilePreview(snapshot, filePath);
     }
 
     function bindTemplateTreePreview() {
         const preview = document.getElementById('templateTreePreview');
-        if (!preview || preview.dataset.boundClicks) { return; }
+        if (!preview || preview.dataset.boundClicks) {
+            return;
+        }
         preview.dataset.boundClicks = '1';
         preview.addEventListener('click', handleTemplateTreeClick);
     }
@@ -663,13 +837,21 @@ export function createTemplatesUi(app) {
                 clearTimeout(structureSaveTimer);
                 flushStructureEdits();
             });
-            treeEditor.addEventListener('keydown', (e) => {
-                if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
-                if (e.ctrlKey || e.metaKey || e.altKey) { return; }
-                if (app.editor.insertTabInTextarea(treeEditor, e)) {
-                    e.stopImmediatePropagation();
-                }
-            }, true);
+            treeEditor.addEventListener(
+                'keydown',
+                (e) => {
+                    if (e.key !== 'Tab' && e.key !== 'Backspace') {
+                        return;
+                    }
+                    if (e.ctrlKey || e.metaKey || e.altKey) {
+                        return;
+                    }
+                    if (app.editor.insertTabInTextarea(treeEditor, e)) {
+                        e.stopImmediatePropagation();
+                    }
+                },
+                true
+            );
         }
 
         const fileEditor = document.getElementById('templateFileEditor');
@@ -680,14 +862,24 @@ export function createTemplatesUi(app) {
                 clearTimeout(fileSaveTimer);
                 flushFileEdits();
             });
-            fileEditor.addEventListener('keydown', (e) => {
-                if (e.key !== 'Tab' && e.key !== 'Backspace') { return; }
-                if (e.ctrlKey || e.metaKey || e.altKey) { return; }
-                if (fileEditor.readOnly) { return; }
-                if (app.editor.insertTabInTextarea(fileEditor, e)) {
-                    e.stopImmediatePropagation();
-                }
-            }, true);
+            fileEditor.addEventListener(
+                'keydown',
+                (e) => {
+                    if (e.key !== 'Tab' && e.key !== 'Backspace') {
+                        return;
+                    }
+                    if (e.ctrlKey || e.metaKey || e.altKey) {
+                        return;
+                    }
+                    if (fileEditor.readOnly) {
+                        return;
+                    }
+                    if (app.editor.insertTabInTextarea(fileEditor, e)) {
+                        e.stopImmediatePropagation();
+                    }
+                },
+                true
+            );
         }
     }
 
@@ -697,7 +889,9 @@ export function createTemplatesUi(app) {
 
     function isTemplateFileDrag(e) {
         const types = e.dataTransfer?.types;
-        if (!types) { return false; }
+        if (!types) {
+            return false;
+        }
         return Array.from(types).includes('Files');
     }
 
@@ -716,11 +910,15 @@ export function createTemplatesUi(app) {
 
     function bindTemplateFileDrop() {
         const dropZone = document.getElementById('templatesListBody');
-        if (!dropZone || dropZone.dataset.boundTemplateDrop) { return; }
+        if (!dropZone || dropZone.dataset.boundTemplateDrop) {
+            return;
+        }
         dropZone.dataset.boundTemplateDrop = '1';
 
         dropZone.addEventListener('dragenter', (e) => {
-            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             templateDropCounter++;
@@ -728,7 +926,9 @@ export function createTemplatesUi(app) {
         });
 
         dropZone.addEventListener('dragleave', (e) => {
-            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             templateDropCounter = Math.max(0, templateDropCounter - 1);
@@ -738,29 +938,67 @@ export function createTemplatesUi(app) {
         });
 
         dropZone.addEventListener('dragover', (e) => {
-            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             e.dataTransfer.dropEffect = 'copy';
         });
 
         dropZone.addEventListener('drop', (e) => {
-            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) { return; }
+            if (!document.body.classList.contains('templates-active') || !isTemplateFileDrag(e)) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             templateDropCounter = 0;
             setTemplateDropActive(false);
 
             const file = e.dataTransfer?.files?.[0];
-            if (!file) { return; }
+            if (!file) {
+                return;
+            }
             if (!isTreeTemplateFileName(file.name)) {
                 app.toast.showToast(app.i18n.t('template_import_invalid'), 3000);
                 return;
             }
-            if (!app.electronAPI?.getFilePath || !app.electronAPI?.readTemplateFileAtPath) { return; }
+            if (!app.electronAPI?.getFilePath || !app.electronAPI?.readTemplateFileAtPath) {
+                return;
+            }
 
             const filePath = app.electronAPI.getFilePath(file);
             void importTemplateFromPath(filePath);
+        });
+    }
+
+    function bindTemplateSearch() {
+        const searchInput = document.getElementById('templatesSearchInput');
+        if (!searchInput || searchInput.dataset.boundTemplateSearch) {
+            return;
+        }
+        searchInput.dataset.boundTemplateSearch = '1';
+        searchInput.addEventListener('input', () => {
+            templateSearchQuery = searchInput.value;
+            selectedTemplateFile = '';
+            renderTemplateModal();
+        });
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown') {
+                const activeOption = document.querySelector('#templatesList .template-option.active');
+                if (activeOption) {
+                    event.preventDefault();
+                    activeOption.focus();
+                }
+                return;
+            }
+            if (event.key === 'Escape' && searchInput.value) {
+                event.preventDefault();
+                event.stopPropagation();
+                searchInput.value = '';
+                templateSearchQuery = '';
+                renderTemplateModal();
+            }
         });
     }
 
@@ -768,8 +1006,11 @@ export function createTemplatesUi(app) {
         bindTemplateTreePreview();
         bindTemplateEditors();
         bindTemplateFileDrop();
+        bindTemplateSearch();
 
-        if (modalListenersBound) { return; }
+        if (modalListenersBound) {
+            return;
+        }
         modalListenersBound = true;
 
         document.querySelectorAll('.templates-source-tab').forEach((tabBtn) => {
@@ -777,10 +1018,33 @@ export function createTemplatesUi(app) {
                 flushTemplateEdits();
                 setTemplateSource(tabBtn.dataset.source);
             });
+            tabBtn.addEventListener('keydown', (event) => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+                    return;
+                }
+                event.preventDefault();
+                const tabs = [...document.querySelectorAll('.templates-source-tab')];
+                const currentIndex = tabs.indexOf(tabBtn);
+                const nextIndex =
+                    event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? tabs.length - 1
+                          : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+                tabs[nextIndex]?.click();
+                tabs[nextIndex]?.focus();
+            });
         });
 
         const listPanel = document.querySelector('.templates-panel-list');
         listPanel?.addEventListener('click', (e) => {
+            const favoriteBtn = e.target.closest('[data-template-favorite]');
+            if (favoriteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavoriteTemplate(favoriteBtn.dataset.templateFavorite);
+                return;
+            }
             const renameBtn = e.target.closest('[data-template-rename]');
             if (renameBtn) {
                 e.preventDefault();
@@ -810,11 +1074,32 @@ export function createTemplatesUi(app) {
                 return;
             }
             const option = e.target.closest('.template-option');
-            if (!option) { return; }
+            if (!option) {
+                return;
+            }
             flushTemplateEdits();
             selectedTemplateName = option.dataset.template;
             selectedTemplateFile = '';
             renderTemplateModal();
+        });
+        listPanel?.addEventListener('keydown', (e) => {
+            const option = e.target.closest('.template-option');
+            if (!option || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+                return;
+            }
+            e.preventDefault();
+            const options = [...document.querySelectorAll('#templatesList .template-option')];
+            const currentIndex = options.indexOf(option);
+            let nextIndex = e.key === 'Home' ? 0 : e.key === 'End' ? options.length - 1 : currentIndex + (e.key === 'ArrowDown' ? 1 : -1);
+            nextIndex = Math.max(0, Math.min(options.length - 1, nextIndex));
+            const nextKey = options[nextIndex]?.dataset.template;
+            if (!nextKey) {
+                return;
+            }
+            selectedTemplateName = nextKey;
+            selectedTemplateFile = '';
+            renderTemplateModal();
+            document.querySelector('.template-option.active')?.focus();
         });
 
         document.getElementById('createCustomTemplateBtn')?.addEventListener('click', () => {
@@ -838,8 +1123,12 @@ export function createTemplatesUi(app) {
     }
 
     function setTemplateSource(source) {
-        if (source !== 'builtin' && source !== 'custom') { return; }
-        if (source === selectedTemplateSource) { return; }
+        if (!['builtin', 'custom', 'favorites'].includes(source)) {
+            return;
+        }
+        if (source === selectedTemplateSource) {
+            return;
+        }
 
         selectedTemplateSource = source;
         selectedTemplateFile = '';
@@ -865,7 +1154,11 @@ export function createTemplatesUi(app) {
         setTemplateDropActive(false);
         const modal = document.getElementById('templatesModal');
         setTemplatesScreenActive(false);
-        app.modals.closeModalAnimated(modal);
+        const focusTarget = previousTemplatesFocus;
+        previousTemplatesFocus = null;
+        app.modals.closeModalAnimated(modal, {
+            onClosed: () => focusTarget?.focus?.({ preventScroll: true })
+        });
     }
 
     async function openTemplatesModal() {
@@ -874,35 +1167,44 @@ export function createTemplatesUi(app) {
         const modal = document.getElementById('templatesModal');
         bindTemplateModal();
 
+        previousTemplatesFocus = document.activeElement;
         selectedTemplateSource = 'builtin';
         selectedTemplateName = getSortedTemplateKeys(getBuiltInTemplates())[0] || '';
         selectedTemplateFile = '';
+        templateSearchQuery = '';
+        const searchInput = document.getElementById('templatesSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
 
         setTemplatesScreenActive(true);
         modal.style.display = 'flex';
         app.modals.trapFocus(modal);
         startCustomTemplatesAutosave();
         renderTemplateModal();
+        searchInput?.focus({ preventScroll: true });
     }
 
     function openCustomTemplateInEditor(key) {
-        if (!isCustomTemplate(key)) { return; }
+        if (!isCustomTemplate(key)) {
+            return;
+        }
         applyTemplate(key);
         closeTemplatesModal();
         app.toast.showToast(app.i18n.t('template_edit_in_editor_hint'), 4000);
     }
 
     function slugifyTemplateName(name) {
-        const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const slug = name
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
         return slug ? `custom-${slug}` : `custom-${Date.now()}`;
     }
 
     async function promptTemplateName(defaultName, titleKey) {
-        const name = await app.modals.showPromptAsync(
-            app.i18n.t('template_name_prompt'),
-            defaultName,
-            app.i18n.t(titleKey)
-        );
+        const name = await app.modals.showPromptAsync(app.i18n.t('template_name_prompt'), defaultName, app.i18n.t(titleKey));
         return name?.trim() || '';
     }
 
@@ -912,11 +1214,10 @@ export function createTemplatesUi(app) {
         const builtIn = getBuiltInTemplates();
 
         if (custom[key] || builtIn[key]) {
-            const overwrite = await app.modals.showConfirmAsync(
-                app.i18n.t('template_overwrite_msg'),
-                app.i18n.t('confirm_title')
-            );
-            if (!overwrite) { return null; }
+            const overwrite = await app.modals.showConfirmAsync(app.i18n.t('template_overwrite_msg'), app.i18n.t('confirm_title'));
+            if (!overwrite) {
+                return null;
+            }
         }
 
         custom[key] = { label, ...payload };
@@ -930,7 +1231,9 @@ export function createTemplatesUi(app) {
 
     async function createBlankCustomTemplate() {
         const label = await promptTemplateName(app.i18n.t('untitled'), 'template_create_new');
-        if (!label) { return; }
+        if (!label) {
+            return;
+        }
 
         const key = await saveCustomTemplateEntry(label, buildBlankTemplate(label));
         if (key) {
@@ -939,23 +1242,27 @@ export function createTemplatesUi(app) {
     }
 
     async function exportCustomTemplate(key = selectedTemplateName) {
-        if (!isCustomTemplate(key)) { return; }
-        if (!app.electronAPI?.saveTemplateAs) { return; }
+        if (!isCustomTemplate(key)) {
+            return;
+        }
+        if (!app.electronAPI?.saveTemplateAs) {
+            return;
+        }
 
         if (key === selectedTemplateName) {
             flushTemplateEdits();
         }
 
         const entry = loadCustomTemplates()[key];
-        if (!entry) { return; }
+        if (!entry) {
+            return;
+        }
 
         const exportLabel = String(entry.label || entry.name || key).trim() || key;
-        const result = await app.electronAPI.saveTemplateAs(
-            serializeTemplateFile({ ...entry, label: exportLabel }),
-            exportLabel,
-            app.i18n.getCurrentLang()
-        );
-        if (result.canceled) { return; }
+        const result = await app.electronAPI.saveTemplateAs(serializeTemplateFile({ ...entry, label: exportLabel }), exportLabel, app.i18n.getCurrentLang());
+        if (result.canceled) {
+            return;
+        }
         if (result.error) {
             app.toast.showToast(result.error, 3000);
             return;
@@ -984,7 +1291,9 @@ export function createTemplatesUi(app) {
     }
 
     async function importTemplateFromPath(filePath) {
-        if (!app.electronAPI?.readTemplateFileAtPath) { return false; }
+        if (!app.electronAPI?.readTemplateFileAtPath) {
+            return false;
+        }
 
         const result = await app.electronAPI.readTemplateFileAtPath(filePath, app.i18n.getCurrentLang());
         if (result.error) {
@@ -995,10 +1304,14 @@ export function createTemplatesUi(app) {
     }
 
     async function importTemplateFile() {
-        if (!app.electronAPI?.loadTemplateFile) { return false; }
+        if (!app.electronAPI?.loadTemplateFile) {
+            return false;
+        }
 
         const result = await app.electronAPI.loadTemplateFile(app.i18n.getCurrentLang());
-        if (result.canceled) { return false; }
+        if (result.canceled) {
+            return false;
+        }
         if (result.error) {
             app.toast.showToast(result.error, 3000);
             return false;
@@ -1017,7 +1330,9 @@ export function createTemplatesUi(app) {
         app.fileops.syncFileContentsWithTree(tree);
 
         const label = await promptTemplateName(app.fileops.getProjectName(), 'template_import_project');
-        if (!label) { return; }
+        if (!label) {
+            return;
+        }
 
         const key = await saveCustomTemplateEntry(label, {
             tree: S.editor.value,
@@ -1029,30 +1344,36 @@ export function createTemplatesUi(app) {
     }
 
     async function renameCustomTemplate(key = selectedTemplateName) {
-        if (!isCustomTemplate(key)) { return; }
+        if (!isCustomTemplate(key)) {
+            return;
+        }
 
         flushTemplateEdits();
 
         const custom = loadCustomTemplates();
         const existing = custom[key];
-        if (!existing) { return; }
+        if (!existing) {
+            return;
+        }
 
         const label = await promptTemplateName(existing.label, 'template_rename_title');
-        if (!label) { return; }
+        if (!label) {
+            return;
+        }
 
         const newKey = slugifyTemplateName(label);
         if (newKey !== key && (custom[newKey] || getBuiltInTemplates()[newKey])) {
-            const overwrite = await app.modals.showConfirmAsync(
-                app.i18n.t('template_overwrite_msg'),
-                app.i18n.t('confirm_title')
-            );
-            if (!overwrite) { return; }
+            const overwrite = await app.modals.showConfirmAsync(app.i18n.t('template_overwrite_msg'), app.i18n.t('confirm_title'));
+            if (!overwrite) {
+                return;
+            }
         }
 
         const entry = { ...existing, label };
         delete custom[key];
         custom[newKey] = entry;
         saveCustomTemplates(custom);
+        replaceFavoriteKey(key, newKey);
         selectedTemplateSource = 'custom';
         selectedTemplateName = newKey;
         renderTemplateModal();
@@ -1060,20 +1381,27 @@ export function createTemplatesUi(app) {
     }
 
     async function deleteCustomTemplate(key = selectedTemplateName) {
-        if (!isCustomTemplate(key)) { return; }
+        if (!isCustomTemplate(key)) {
+            return;
+        }
 
         const custom = loadCustomTemplates();
         const existing = custom[key];
-        if (!existing) { return; }
+        if (!existing) {
+            return;
+        }
 
         const confirmed = await app.modals.showConfirmAsync(
             app.helpers.formatMessage(app.i18n.t('template_delete_confirm'), { name: existing.label }),
             app.i18n.t('template_delete_confirm_title')
         );
-        if (!confirmed) { return; }
+        if (!confirmed) {
+            return;
+        }
 
         delete custom[key];
         saveCustomTemplates(custom);
+        replaceFavoriteKey(key);
 
         const remainingKeys = getSortedTemplateKeys(custom);
         if (remainingKeys.length) {
@@ -1089,16 +1417,22 @@ export function createTemplatesUi(app) {
     }
 
     return {
-        get selectedTemplateName() { return selectedTemplateName; },
+        get selectedTemplateName() {
+            return selectedTemplateName;
+        },
         set selectedTemplateName(val) {
             selectedTemplateName = val;
             selectedTemplateFile = '';
         },
-        get selectedTemplateSource() { return selectedTemplateSource; },
+        get selectedTemplateSource() {
+            return selectedTemplateSource;
+        },
         getBuiltInTemplates,
         getTemplatesForSource,
         getAllTemplates,
         isCustomTemplate,
+        isFavoriteTemplate,
+        toggleFavoriteTemplate,
         resolveTemplateSnapshot,
         applyTemplate,
         renderTemplateModal,
@@ -1122,5 +1456,4 @@ export function createTemplatesUi(app) {
         flushCustomTemplatesPersisted,
         flushTemplateEdits
     };
-
 }

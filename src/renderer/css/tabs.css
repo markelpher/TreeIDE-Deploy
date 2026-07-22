@@ -178,21 +178,26 @@ body.light-theme .build-project-tabs-bar.has-tab-overflow:focus-within .tab-scro
 }
 
 .project-tab-list.is-reordering,
-.project-tab-list.is-reordering .project-tab {
+.project-tab-list.is-reordering .project-tab,
+.code-tab-list.is-reordering,
+.code-tab-list.is-reordering .code-tab {
     cursor: grabbing;
 }
 
-.project-tab.dragging {
+.project-tab.dragging,
+.code-tab.dragging {
     opacity: 0.4;
     transform: scale(0.98);
     cursor: grabbing;
 }
 
-.project-tab.drag-over-left {
+.project-tab.drag-over-left,
+.code-tab.drag-over-left {
     box-shadow: inset 3px 0 0 0 var(--accent-color);
 }
 
-.project-tab.drag-over-right {
+.project-tab.drag-over-right,
+.code-tab.drag-over-right {
     box-shadow: inset -3px 0 0 0 var(--accent-color);
 }
 
@@ -613,5 +618,4 @@ body.light-theme .tab-scroll-btn .lucide {
     width: 10px;
     height: 10px;
 }
-
 

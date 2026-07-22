@@ -1,8 +1,6 @@
 import crypto from 'node:crypto';
 
-export const TREE_ENCRYPTED_V1_MAGIC = 'TREEIDE1';
 export const TREE_ENCRYPTED_V2_MAGIC = 'TREEIDE2';
-/** @deprecated Use TREE_ENCRYPTED_V2_MAGIC */
 export const TREE_ENCRYPTED_MAGIC = TREE_ENCRYPTED_V2_MAGIC;
 
 const CIPHER = 'aes-256-gcm';
@@ -10,26 +8,29 @@ const KEY_LEN = 32;
 const IV_LEN = 12;
 const TAG_LEN = 16;
 
-const V1_SALT_LEN = 16;
 const V2_SALT_LEN = 32;
 
-/** @type {import('node:crypto').ScryptOptions} */
-const V2_SCRYPT = {
-    N: 262144,
-    r: 8,
-    p: 1,
-    maxmem: 512 * 1024 * 1024
+// High-strength password-based profile. AES-256 remains resistant to known
+// quantum cryptanalysis at a practical security margin; Argon2id raises the
+// cost of password guessing. This is not a public-key ML-KEM scheme.
+const V2_ARGON2 = {
+    memory: 256 * 1024,
+    passes: 4,
+    parallelism: 4,
+    tagLength: KEY_LEN
 };
 
 const V2_HEADER = {
     v: 2,
-    kdf: 'scrypt',
+    kdf: 'argon2id',
     cipher: CIPHER,
-    n: V2_SCRYPT.N,
-    r: V2_SCRYPT.r,
-    p: V2_SCRYPT.p,
+    memory: V2_ARGON2.memory,
+    passes: V2_ARGON2.passes,
+    parallelism: V2_ARGON2.parallelism,
+    tagLength: V2_ARGON2.tagLength,
     salt: V2_SALT_LEN,
-    iv: IV_LEN
+    iv: IV_LEN,
+    authTag: TAG_LEN
 };
 
 /**
@@ -38,18 +39,18 @@ const V2_HEADER = {
  */
 export function isEncryptedTreeContent(content) {
     if (typeof content !== 'string') { return false; }
-    return content.startsWith(`${TREE_ENCRYPTED_V1_MAGIC}\n`)
-        || content.startsWith(`${TREE_ENCRYPTED_V2_MAGIC}\n`);
+    return content.startsWith(`${TREE_ENCRYPTED_V2_MAGIC}\n`);
 }
 
-/**
- * @param {string} password
- * @param {Buffer} salt
- * @param {import('node:crypto').ScryptOptions | undefined} scryptOptions
- * @returns {Buffer}
- */
-function deriveKey(password, salt, scryptOptions) {
-    return crypto.scryptSync(password, salt, KEY_LEN, scryptOptions);
+function deriveArgon2idKey(password, salt) {
+    return crypto.argon2Sync('argon2id', {
+        message: Buffer.from(password, 'utf8'),
+        nonce: salt,
+        parallelism: V2_ARGON2.parallelism,
+        tagLength: V2_ARGON2.tagLength,
+        memory: V2_ARGON2.memory,
+        passes: V2_ARGON2.passes
+    });
 }
 
 /**
@@ -58,8 +59,11 @@ function deriveKey(password, salt, scryptOptions) {
  * @param {Buffer} key
  * @returns {{ encrypted: Buffer, tag: Buffer }}
  */
-function encryptAesGcm(iv, plaintext, key) {
+function encryptAesGcm(iv, plaintext, key, additionalData) {
     const cipher = crypto.createCipheriv(CIPHER, key, iv);
+    if (additionalData) {
+        cipher.setAAD(additionalData);
+    }
     const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
     return { encrypted, tag: cipher.getAuthTag() };
 }
@@ -69,7 +73,7 @@ function encryptAesGcm(iv, plaintext, key) {
  * @param {Buffer} key
  * @returns {Buffer}
  */
-function decryptAesGcm(payload, key) {
+function decryptAesGcm(payload, key, additionalData) {
     if (payload.length < IV_LEN + TAG_LEN + 1) {
         throw new Error('Invalid encrypted tree payload');
     }
@@ -77,6 +81,9 @@ function decryptAesGcm(payload, key) {
     const tag = payload.subarray(IV_LEN, IV_LEN + TAG_LEN);
     const encrypted = payload.subarray(IV_LEN + TAG_LEN);
     const decipher = crypto.createDecipheriv(CIPHER, key, iv);
+    if (additionalData) {
+        decipher.setAAD(additionalData);
+    }
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
 }
@@ -92,36 +99,26 @@ export function encryptTreeContent(content, password) {
     }
     const salt = crypto.randomBytes(V2_SALT_LEN);
     const iv = crypto.randomBytes(IV_LEN);
-    const key = deriveKey(password, salt, V2_SCRYPT);
-    const { encrypted, tag } = encryptAesGcm(iv, Buffer.from(content, 'utf8'), key);
-    const payload = Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
     const header = JSON.stringify(V2_HEADER);
+    const additionalData = Buffer.from(`${TREE_ENCRYPTED_V2_MAGIC}\n${header}`, 'utf8');
+    const key = deriveArgon2idKey(password, salt);
+    const { encrypted, tag } = encryptAesGcm(iv, Buffer.from(content, 'utf8'), key, additionalData);
+    const payload = Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
     return `${TREE_ENCRYPTED_V2_MAGIC}\n${header}\n${payload}\n`;
 }
 
 /**
  * @param {string} content
- * @returns {{ version: 1 | 2, payloadB64: string, header?: typeof V2_HEADER }}
+ * @returns {{ payloadB64: string, header: Record<string, string | number>, headerLine: string }}
  */
 function parseEncryptedTreeFile(content) {
     const lines = content.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
-    if (lines.length < 2) {
+    if (lines.length < 3 || lines[0] !== TREE_ENCRYPTED_V2_MAGIC) {
         throw new Error('Invalid encrypted tree payload');
     }
-
-    if (lines[0] === TREE_ENCRYPTED_V1_MAGIC) {
-        return { version: 1, payloadB64: lines[1] };
-    }
-
-    if (lines[0] === TREE_ENCRYPTED_V2_MAGIC) {
-        if (lines.length < 3) {
-            throw new Error('Invalid encrypted tree payload');
-        }
-        const header = JSON.parse(lines[1]);
-        return { version: 2, header, payloadB64: lines[2] };
-    }
-
-    throw new Error('Unsupported encrypted tree format');
+    const headerLine = lines[1];
+    const header = JSON.parse(headerLine);
+    return { header, headerLine, payloadB64: lines[2] };
 }
 
 /**
@@ -137,25 +134,23 @@ export function decryptTreeContent(content, password) {
     const parsed = parseEncryptedTreeFile(content);
     const data = Buffer.from(parsed.payloadB64, 'base64');
 
-    if (parsed.version === 1) {
-        if (data.length < V1_SALT_LEN + IV_LEN + TAG_LEN + 1) {
-            throw new Error('Invalid encrypted tree payload');
-        }
-        const salt = data.subarray(0, V1_SALT_LEN);
-        const encryptedPayload = data.subarray(V1_SALT_LEN);
-        const key = deriveKey(password, salt);
-        return decryptAesGcm(encryptedPayload, key).toString('utf8');
-    }
-
-    const saltLen = parsed.header?.salt || V2_SALT_LEN;
-    if (data.length < saltLen + IV_LEN + TAG_LEN + 1) {
+    const header = parsed.header;
+    const validHeader = header?.v === V2_HEADER.v
+        && header?.kdf === V2_HEADER.kdf
+        && header?.cipher === V2_HEADER.cipher
+        && header?.memory === V2_HEADER.memory
+        && header?.passes === V2_HEADER.passes
+        && header?.parallelism === V2_HEADER.parallelism
+        && header?.tagLength === V2_HEADER.tagLength
+        && header?.salt === V2_HEADER.salt
+        && header?.iv === V2_HEADER.iv
+        && header?.authTag === V2_HEADER.authTag;
+    if (!validHeader || data.length < V2_SALT_LEN + IV_LEN + TAG_LEN + 1) {
         throw new Error('Invalid encrypted tree payload');
     }
-    const salt = data.subarray(0, saltLen);
-    const encryptedPayload = data.subarray(saltLen);
-    const scryptOptions = parsed.header
-        ? { N: parsed.header.n, r: parsed.header.r, p: parsed.header.p, maxmem: V2_SCRYPT.maxmem }
-        : V2_SCRYPT;
-    const key = deriveKey(password, salt, scryptOptions);
-    return decryptAesGcm(encryptedPayload, key).toString('utf8');
+    const salt = data.subarray(0, V2_SALT_LEN);
+    const encryptedPayload = data.subarray(V2_SALT_LEN);
+    const key = deriveArgon2idKey(password, salt);
+    const additionalData = Buffer.from(`${TREE_ENCRYPTED_V2_MAGIC}\n${parsed.headerLine}`, 'utf8');
+    return decryptAesGcm(encryptedPayload, key, additionalData).toString('utf8');
 }

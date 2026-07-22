@@ -353,6 +353,7 @@ export function createBuildShared(app) {
             includeTreeInZip = false,
             zipPassword = '',
             zipPasswordConfirm = '',
+            protectTreeWithPassword = false,
             treePassword = '',
             treePasswordConfirm = ''
         } = buildOptions;
@@ -363,11 +364,11 @@ export function createBuildShared(app) {
             includeTreeInZip,
             zipPassword,
             zipPasswordConfirm,
+            protectTreeWithPassword,
             treePassword,
             treePasswordConfirm,
             zipEnabled: isZipExtrasEnabled(outputMode, alsoExportZip),
-            treeEncryptEnabled: outputMode === BUILD_OUTPUT_MODES.TREE
-                || (includeTreeInZip && isZipExtrasEnabled(outputMode, alsoExportZip))
+            treeEncryptEnabled: Boolean(protectTreeWithPassword)
         }, t);
         if (passwordError) {
             app.toast.showToast(passwordError, 4000);
@@ -376,6 +377,7 @@ export function createBuildShared(app) {
 
         let completed = 0;
         let skipped = 0;
+        const effectiveTreePassword = protectTreeWithPassword ? treePassword : '';
 
         for (const payload of payloads) {
             if (outputMode === BUILD_OUTPUT_MODES.STRUCTURE) {
@@ -397,7 +399,7 @@ export function createBuildShared(app) {
                     const zipOk = await exportPayloadZip(prepared, {
                         includeTreeInZip,
                         zipPassword,
-                        treePassword,
+                        treePassword: effectiveTreePassword,
                         targetPath,
                         conflictMode,
                         silent: true
@@ -409,7 +411,7 @@ export function createBuildShared(app) {
                 const zipOk = await exportPayloadZip(payload, {
                     includeTreeInZip,
                     zipPassword,
-                    treePassword,
+                    treePassword: effectiveTreePassword,
                     targetPath,
                     conflictMode,
                     silent: payloads.length > 1
@@ -419,7 +421,7 @@ export function createBuildShared(app) {
                 else { completed++; }
             } else if (outputMode === BUILD_OUTPUT_MODES.TREE) {
                 const treeOk = await savePayloadTree(payload, {
-                    treePassword,
+                    treePassword: effectiveTreePassword,
                     targetPath,
                     conflictMode
                 });

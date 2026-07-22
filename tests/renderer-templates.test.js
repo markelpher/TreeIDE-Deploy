@@ -190,6 +190,33 @@ describe('template sources', () => {
         expect(templates.isCustomTemplate('custom-demo')).toBe(true);
         expect(templates.isCustomTemplate('vite')).toBe(false);
     });
+
+    it('persists favorites and exposes them as a separate source', () => {
+        document.body.innerHTML = `
+            <section class="templates-panel-list">
+                <div id="templatesList"></div>
+                <div id="templatesSearchEmpty" class="hidden"></div>
+                <div id="templatesFavoritesEmpty" class="hidden"></div>
+                <div id="templatesEmptyState" class="hidden"></div>
+                <p id="templatesResultsStatus"></p>
+            </section>
+            <button id="useTemplateBtn"></button>
+        `;
+
+        templates.toggleFavoriteTemplate('vite');
+        expect(templates.isFavoriteTemplate('vite')).toBe(true);
+        expect(JSON.parse(localStorage.getItem('template_favorites'))).toEqual(['vite']);
+        expect(Object.keys(templates.getTemplatesForSource('favorites'))).toEqual(['vite']);
+
+        templates.setTemplateSource('favorites');
+        templates.renderTemplateModal();
+        expect(document.querySelector('[data-template="vite"]')).toBeTruthy();
+        expect(document.querySelector('[data-template-favorite="vite"]')?.getAttribute('aria-pressed')).toBe('true');
+
+        templates.toggleFavoriteTemplate('vite');
+        expect(templates.isFavoriteTemplate('vite')).toBe(false);
+        expect(document.getElementById('templatesFavoritesEmpty').classList.contains('hidden')).toBe(false);
+    });
     it('opens with the first built-in template in alphabetical order selected', async () => {
         templatesData.alpha = {
             label: 'Alpha Starter',
@@ -224,6 +251,45 @@ describe('template sources', () => {
 
         templates.closeTemplatesModal();
         delete templatesData.alpha;
+    });
+
+    it('filters templates by label, structure and file name', () => {
+        templatesData.docs = {
+            label: 'Documentation Starter',
+            tree: 'docs/\n    guide.md',
+            files: { 'docs/guide.md': '# Guide' }
+        };
+        document.body.innerHTML = `
+            <section class="templates-panel-list">
+                <input id="templatesSearchInput" type="search">
+                <div id="templatesList"></div>
+                <div id="templatesSearchEmpty" class="templates-empty hidden"></div>
+                <div id="templatesEmptyState" class="templates-empty hidden"></div>
+            </section>
+            <div id="templateStructureBody"></div>
+            <textarea id="templateTreeEditor"></textarea>
+            <div id="templateTreePreview"></div>
+            <div id="templateFilePanel"><span id="templateFileName"></span><span id="templateFileMode"></span><textarea id="templateFileEditor"></textarea></div>
+            <button id="useTemplateBtn"></button>
+        `;
+        templates.setTemplateSource('builtin');
+        templates.bindTemplateModal();
+        templates.renderTemplateModal();
+
+        const search = document.getElementById('templatesSearchInput');
+        search.value = 'package.json';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect([...document.querySelectorAll('.template-option')].map((el) => el.dataset.template)).toEqual(['vite']);
+
+        search.value = 'guide.md';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect([...document.querySelectorAll('.template-option')].map((el) => el.dataset.template)).toEqual(['docs']);
+
+        search.value = 'not-found';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.getElementById('templatesSearchEmpty').classList.contains('hidden')).toBe(false);
+        expect(document.getElementById('useTemplateBtn').disabled).toBe(true);
+        delete templatesData.docs;
     });
 
     it('removes a custom template after confirmation', async () => {

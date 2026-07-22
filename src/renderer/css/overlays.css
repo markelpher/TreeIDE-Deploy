@@ -15,6 +15,11 @@
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
     font-size: 12px;
     line-height: 1.5;
+    transition: bottom 0.18s ease;
+}
+
+body.discord-presence-bar-visible .validation-panel {
+    bottom: 56px;
 }
 
 .validation-panel.show {

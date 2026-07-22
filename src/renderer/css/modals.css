@@ -10,6 +10,11 @@
     gap: 8px;
     max-width: min(420px, calc(100vw - 48px));
     pointer-events: none;
+    transition: bottom 0.18s ease;
+}
+
+body.discord-presence-bar-visible .toast-stack {
+    bottom: 56px;
 }
 
 .toast-item {

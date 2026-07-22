@@ -7,13 +7,15 @@ import { createRequire } from 'node:module';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow } from 'electron';
+import { app, powerMonitor } from 'electron';
 import log from 'electron-log';
 import { createWindow, APP_NAME } from './window.js';
 import { registerUpdaterEvents, registerUpdateIpc } from './ipc/updates.js';
 import { registerProjectIpc } from './ipc/project.js';
 import { registerAppIpc } from './ipc/app.js';
+import { registerDiscordPresenceIpc } from './ipc/discordPresence.js';
 import { DIAGNOSTIC_SESSION_MARKER } from './diagnostics.js';
+import { createDiscordPresence } from './discordPresence.js';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
@@ -97,6 +99,15 @@ function getMainWindow() {
     return mainWindow;
 }
 
+const discordPresence = createDiscordPresence({
+    logger: log,
+    onStatus: (presenceStatus) => {
+        const win = getMainWindow();
+        if (!win || win.isDestroyed?.()) { return; }
+        win.webContents.send('discord-presence-status-changed', presenceStatus);
+    }
+});
+
 function focusMainWindow() {
     if (!mainWindow || mainWindow.isDestroyed?.()) { return; }
     if (mainWindow.isMinimized?.()) { mainWindow.restore(); }
@@ -115,14 +126,31 @@ if (!gotSingleInstanceLock) {
 
 if (gotSingleInstanceLock) {
     app.whenReady().then(() => {
+        powerMonitor.on('lock-screen', () => {
+            void discordPresence.pause();
+        });
+        powerMonitor.on('suspend', () => {
+            void discordPresence.pause();
+        });
+        powerMonitor.on('unlock-screen', () => {
+            void discordPresence.resume();
+        });
+        powerMonitor.on('resume', () => {
+            void discordPresence.resume();
+        });
         registerUpdaterEvents(getMainWindow);
         registerUpdateIpc(isReadyToCloseRef, getMainWindow);
         registerProjectIpc(lastSaveDirectoryRef);
         registerAppIpc(getMainWindow, isReadyToCloseRef);
+        registerDiscordPresenceIpc(getMainWindow, discordPresence);
         mainWindow = createWindow({ app, isReadyToCloseRef });
     });
 
     app.on('window-all-closed', () => {
         app.quit();
+    });
+
+    app.on('before-quit', () => {
+        void discordPresence.stop();
     });
 }

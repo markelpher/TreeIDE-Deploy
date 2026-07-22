@@ -1,4 +1,4 @@
-## What's new in v2.0.105
+## What's new in v2.0.106
 
 Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
@@ -18,14 +18,17 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Build Studio** — full-screen build flow with live tree preview, per-file content preview, stats, and output options
 - **Three output modes** — create folder structure on disk, export a ZIP only, or export a `.tree` project file only
 - **Combined outputs** — optionally export a ZIP alongside a folder build, and include the `.tree` file inside the archive
+- **Content-aware create-with-ZIP button** — combined folder-and-ZIP builds now label the action as Create File, Files, Folder, Folders, File and Folder, or Files and Folders followed by `+ ZIP`, based on the selected structure
 - **Pre-build inspection** — scan the target folder for existing structure, `.tree`, or ZIP files before writing
 - **Conflict handling** — choose to skip or overwrite when files or folders already exist
 - **Default starter content** for 68+ file types (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte, and more)
 - **i18n placeholders** in generated files (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
 #### Archives & encryption
+- **Tree IDE 1 file compatibility** — Tree IDE 1 identifies the first-generation `.tree` file format used by Tree IDE Legacy; original headerless UTF-8 files remain readable with both tab and `...` indentation styles
 - **ZIP export** with optional AES-256 password protection via 7-Zip
-- **Encrypted `.tree` projects** (TREEIDE1 / TREEIDE2 format, AES-256-GCM + scrypt)
+- **High-strength encrypted `.tree` projects** — TREEIDE2 uses authenticated AES-256-GCM with Argon2id (256 MiB, 4 passes, 4 lanes), authenticates its cryptographic header, and keeps the original headerless Tree IDE Legacy format readable as generation 1
+- **Explicit `.tree` protection** — a dedicated checkbox enables the otherwise disabled password and confirmation fields, explains that TREEIDE2 encryption will be applied, and shows the unrecoverable-password warning only while protection is selected
 - **Archive import** via file dialog or drag-and-drop: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, and `.7z`
 - **Password prompts** for encrypted ZIP archives and encrypted `.tree` files
 - **Load folder as structure** — scan an existing directory and turn it into editable tree text
@@ -41,12 +44,31 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **`.tree-template` files** — export and import shareable custom templates (JSON `treeide-template` v1) via native save/open dialogs or per-row export in the custom list
 - **Custom templates footer** — when custom templates exist: **New template**, **From current project**, and **Import .tree-template**; empty state offers blank start, project import, and file import
 - **Per-file preview** — clicking a file in the structure preview opens a full-width monospace editor panel with file-type badge (same single-pane layout for built-in and custom templates)
+- **Template search** — filter built-in and custom templates as you type, with case- and accent-insensitive matching and localized empty-result feedback
+- **Template favorites** — mark templates with a locally bundled Lucide star, browse them in a dedicated Favorites tab, and keep the selection across app sessions
+
+#### Command Palette & accessibility
+- **Expanded Command Palette** — use `Ctrl+Shift+P` to search 23 actions, adding Save All, Undo, Redo, New Tab, next/previous project tab, close project/file tab, Reload, zoom controls, Check for Updates, and About to the existing project, build, settings, fullscreen, and reporting commands
+- **Context-aware commands** — Save All and project/file tab actions remain visible for discoverability but are disabled when the current session cannot execute them safely
+- **Keyboard-first command flow** — Arrow keys change the active command, Enter runs it, Escape closes the palette, and focus returns to the previous control
+- **Improved screen-reader support** — localized accessible names, semantic combobox/listbox/tab patterns, active-descendant tracking, live result counts, and clearer status announcements across commands and templates
+- **Accessible template actions** — favorite, rename, edit, export, and delete controls expose localized labels and state through `aria-pressed`, `aria-selected`, and live regions
+
+#### Rich Presence
+- **Ready-to-use Discord RPC** — Tree IDE ships with its public Discord Application ID, automatically connects to the running desktop client, reports connection status, retries after disconnects, and requires no setup from the user
+- **Specific activity states** — Editing Structure, Editing Code, Editing Text, Viewing File, Browsing Templates, Customizing Template, Settings, and build-aware Creating File, Creating Files, Creating Folder, Creating Folders, Creating File and Folder, or Creating Files and Folders states; the Build Studio option uses the same dynamic title and description, while `.tree` outputs remain available for valid flat projects and exports use one generic Exporting File state.
+- **Editor-aware idle state** — Presence starts as Idle and only reports Editing Structure after direct interaction with the structure editor; five minutes without interaction returns to Idle with a keyboard icon
+- **Three privacy levels** — Basic shows only Tree IDE, Activity adds the current action, and Detailed may also show the project name and file type; file paths and contents are never shared
+- **Power-aware Presence** — lock and suspend clear the activity, while unlock and resume restore it automatically
+- **Localized Presence** — follow the Tree IDE language or choose English, Portuguese, or Spanish independently; the setting updates the RPC immediately and persists between sessions
+- **Localization scope explained** — Discord receives one localized activity payload, so every viewer sees the publisher's selected Presence language rather than a translation based on the viewer's Discord locale
 
 #### Editor, tree & validation
 - **Validation panel** — bad indentation, invalid names, duplicate siblings, unsafe paths, and empty structures; click a warning to jump to the line
 - **Undo / redo** with up to 100 history states
 - **Multi-project tabs** with modified indicators, a scrollable tab bar, and drag-and-drop reorder
-- **Per-project file preview tabs** — edit starter file contents before building
+- **Per-project file editor tabs** — edit starter file contents before building and reorder open files with drag and drop while preserving the active tab
+- **Deleted-file tab synchronization** — removing files or changing extensions in the structure editor now closes every stale file tab, selects the nearest valid tab when needed, and prevents deleted content from reappearing
 - **Markdown live preview** for `.md` files in the file preview panel
 - **Collapsible folders** in the tree preview
 - **Tree keyboard navigation** — arrow keys, Home, End, and Enter

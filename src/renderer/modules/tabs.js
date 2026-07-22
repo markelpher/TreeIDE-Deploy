@@ -197,6 +197,11 @@ const tabManager = {
         if (editor) { editor.value = tab.editorContent; }
 
         S.currentTree = resolveTabTreeData(tab);
+        this.reconcileOpenFileTabs(tab, app.tree.getFilePathsFromTree(S.currentTree), {
+            render: false,
+            updatePreview: false,
+            persist: false
+        });
         if (treeView) {
             app.editor.paintTreeView();
         }
@@ -334,6 +339,86 @@ const tabManager = {
 
         this.renderProjectTabBar();
         this.saveTabsToStorage();
+        return true;
+    },
+
+    reorderFileTab(draggedPath, targetPath, insertBefore = true) {
+        const tab = this.getActiveTab();
+        if (!tab) { return false; }
+
+        const fromIndex = tab.openFileTabs.findIndex((ft) => ft.path === draggedPath);
+        const targetIndex = tab.openFileTabs.findIndex((ft) => ft.path === targetPath);
+        if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) { return false; }
+
+        let toIndex = insertBefore ? targetIndex : targetIndex + 1;
+        const [fileTab] = tab.openFileTabs.splice(fromIndex, 1);
+        if (fromIndex < toIndex) { toIndex--; }
+        tab.openFileTabs.splice(toIndex, 0, fileTab);
+
+        this.renderCodeTabBar(tab);
+        this.saveTabsToStorage();
+        return true;
+    },
+
+    reconcileOpenFileTabs(tab = this.getActiveTab(), validFilePaths = null, options = {}) {
+        if (!tab) { return false; }
+
+        const validPaths = validFilePaths instanceof Set
+            ? validFilePaths
+            : new Set(validFilePaths || app.tree.getFilePathsFromTree(resolveTabTreeData(tab)));
+        const previousTabs = Array.isArray(tab.openFileTabs) ? tab.openFileTabs : [];
+        const previousPaths = previousTabs.map((ft) => ft.path);
+        const previousActivePath = tab.activeFileTabPath;
+        const previousActiveIndex = previousPaths.indexOf(previousActivePath);
+        const seen = new Set();
+
+        tab.openFileTabs = previousTabs.filter((fileTab) => {
+            if (!fileTab?.path || !validPaths.has(fileTab.path) || seen.has(fileTab.path)) {
+                return false;
+            }
+            seen.add(fileTab.path);
+            return true;
+        });
+
+        const activeStillOpen = tab.openFileTabs.some((ft) => ft.path === previousActivePath);
+        if (!activeStillOpen) {
+            if (tab.openFileTabs.length === 0) {
+                tab.activeFileTabPath = null;
+            } else {
+                const fallbackIndex = Math.min(
+                    previousActiveIndex >= 0 ? previousActiveIndex : 0,
+                    tab.openFileTabs.length - 1
+                );
+                tab.activeFileTabPath = tab.openFileTabs[fallbackIndex].path;
+            }
+        }
+
+        const nextPaths = tab.openFileTabs.map((ft) => ft.path);
+        const changed = previousActivePath !== tab.activeFileTabPath
+            || previousPaths.length !== nextPaths.length
+            || previousPaths.some((path, index) => path !== nextPaths[index]);
+        if (!changed) { return false; }
+
+        const isActiveProject = tab.id === this.activeProjectTabId;
+        const { render = true, updatePreview = true, persist = false } = options;
+        if (isActiveProject && updatePreview) {
+            if (tab.activeFileTabPath) {
+                if (
+                    previousActivePath !== tab.activeFileTabPath
+                    || app.state.activePreviewPath !== tab.activeFileTabPath
+                ) {
+                    app.editor.openFilePreview(tab.activeFileTabPath);
+                }
+            } else {
+                app.editor.closeFilePreview();
+            }
+        }
+        if (isActiveProject && render) {
+            this.renderCodeTabBar(tab);
+        }
+        if (persist) {
+            this.saveTabsToStorage();
+        }
         return true;
     },
 
@@ -634,6 +719,127 @@ const tabManager = {
         list.addEventListener('pointercancel', onPointerCancel);
 
         list._tabReorderHandlers = { onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
+    },
+
+    _bindFileTabListReorder(list) {
+        if (!list || list._fileTabReorderBound) { return; }
+        list._fileTabReorderBound = true;
+
+        const DRAG_THRESHOLD = 6;
+        const EDGE_SCROLL_ZONE = 32;
+        const EDGE_SCROLL_SPEED = 8;
+        let dragState = null;
+        let edgeScrollRaf = 0;
+        let suppressClick = false;
+
+        const clearDragOver = () => {
+            list.querySelectorAll('.code-tab.drag-over-left, .code-tab.drag-over-right').forEach((el) => {
+                el.classList.remove('drag-over-left', 'drag-over-right');
+            });
+        };
+
+        const finishDrag = () => {
+            if (!dragState) { return; }
+            cancelAnimationFrame(edgeScrollRaf);
+            edgeScrollRaf = 0;
+            dragState.tabEl.classList.remove('dragging');
+            if (dragState.tabEl.hasPointerCapture(dragState.pointerId)) {
+                dragState.tabEl.releasePointerCapture(dragState.pointerId);
+            }
+            list.classList.remove('is-reordering');
+            clearDragOver();
+            dragState = null;
+        };
+
+        const onPointerDown = (event) => {
+            if (event.button !== 0 || event.target.closest('.code-tab-close')) { return; }
+            const tabEl = event.target.closest('.code-tab[data-file-path]');
+            if (!tabEl) { return; }
+            dragState = {
+                filePath: tabEl.dataset.filePath,
+                tabEl,
+                startX: event.clientX,
+                startY: event.clientY,
+                dragging: false,
+                pointerId: event.pointerId,
+                dropTarget: null
+            };
+            tabEl.setPointerCapture(event.pointerId);
+        };
+
+        const onPointerMove = (event) => {
+            if (!dragState || event.pointerId !== dragState.pointerId) { return; }
+            if (!dragState.dragging) {
+                const dx = event.clientX - dragState.startX;
+                const dy = event.clientY - dragState.startY;
+                if (Math.hypot(dx, dy) < DRAG_THRESHOLD) { return; }
+                dragState.dragging = true;
+                dragState.tabEl.classList.add('dragging');
+                list.classList.add('is-reordering');
+            }
+
+            event.preventDefault();
+            clearDragOver();
+            dragState.dropTarget = null;
+
+            const underPointer = document.elementFromPoint(event.clientX, event.clientY);
+            const targetEl = underPointer?.closest?.('.code-tab[data-file-path]');
+            if (targetEl && targetEl !== dragState.tabEl) {
+                const rect = targetEl.getBoundingClientRect();
+                const insertBefore = event.clientX < rect.left + rect.width / 2;
+                targetEl.classList.add(insertBefore ? 'drag-over-left' : 'drag-over-right');
+                dragState.dropTarget = { filePath: targetEl.dataset.filePath, insertBefore };
+            }
+
+            const viewport = getTabScrollViewport(list);
+            if (viewport) {
+                const rect = viewport.getBoundingClientRect();
+                let scrollDelta = 0;
+                if (event.clientX < rect.left + EDGE_SCROLL_ZONE) { scrollDelta = -EDGE_SCROLL_SPEED; }
+                else if (event.clientX > rect.right - EDGE_SCROLL_ZONE) { scrollDelta = EDGE_SCROLL_SPEED; }
+
+                cancelAnimationFrame(edgeScrollRaf);
+                edgeScrollRaf = 0;
+                if (scrollDelta) {
+                    const step = () => {
+                        if (!dragState?.dragging) { return; }
+                        viewport.scrollLeft += scrollDelta;
+                        edgeScrollRaf = requestAnimationFrame(step);
+                    };
+                    edgeScrollRaf = requestAnimationFrame(step);
+                }
+            }
+        };
+
+        const onPointerUp = (event) => {
+            if (!dragState || event.pointerId !== dragState.pointerId) { return; }
+            if (dragState.dragging) {
+                suppressClick = true;
+                const { dropTarget, filePath } = dragState;
+                if (dropTarget && dropTarget.filePath !== filePath) {
+                    this.reorderFileTab(filePath, dropTarget.filePath, dropTarget.insertBefore);
+                }
+            }
+            finishDrag();
+        };
+
+        const onPointerCancel = (event) => {
+            if (!dragState || event.pointerId !== dragState.pointerId) { return; }
+            finishDrag();
+        };
+
+        const onClickCapture = (event) => {
+            if (!suppressClick) { return; }
+            suppressClick = false;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        };
+
+        list.addEventListener('pointerdown', onPointerDown);
+        list.addEventListener('pointermove', onPointerMove);
+        list.addEventListener('pointerup', onPointerUp);
+        list.addEventListener('pointercancel', onPointerCancel);
+        list.addEventListener('click', onClickCapture, true);
     },
 
     destroyTabBarListeners() {
@@ -948,6 +1154,8 @@ const tabManager = {
         const list = document.getElementById('codeTabList');
         const panel = document.getElementById('filePreviewPanel');
         if (!list || !panel) {return;}
+
+        this._bindFileTabListReorder(list);
 
         if (!tab || tab.openFileTabs.length === 0) {
             panel.classList.remove('show');

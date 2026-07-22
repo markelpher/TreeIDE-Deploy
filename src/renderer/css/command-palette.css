@@ -1,0 +1,123 @@
+.command-palette-modal {
+    align-items: flex-start;
+    padding-top: min(18vh, 150px);
+    z-index: 2900;
+}
+
+.command-palette-content {
+    width: min(620px, calc(100vw - 32px));
+    max-height: min(520px, calc(100vh - 64px));
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+.command-palette-search {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.command-palette-search .lucide {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.command-palette-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 15px;
+}
+
+.command-palette-search input::placeholder {
+    color: var(--text-secondary);
+}
+
+.command-palette-search kbd,
+.command-palette-shortcut {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+}
+
+.command-palette-search kbd {
+    padding: 3px 6px;
+    border: 1px solid var(--kbd-border);
+    border-radius: 5px;
+    background: var(--kbd-bg);
+}
+
+.command-palette-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.command-palette-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.command-palette-option:hover,
+.command-palette-option.active {
+    border-color: var(--border-color);
+    background: var(--dropdown-hover);
+}
+
+.command-palette-option:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.command-palette-option:disabled:hover {
+    border-color: transparent;
+    background: transparent;
+}
+
+.command-palette-option:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+}
+
+.command-palette-option .lucide {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.command-palette-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.command-palette-empty {
+    margin: 0;
+    padding: 28px 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+}

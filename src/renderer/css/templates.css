@@ -191,6 +191,44 @@ body.templates-active .drop-overlay {
     border-color: var(--border-color);
 }
 
+.templates-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: 10px 10px 2px;
+    flex-shrink: 0;
+}
+
+.templates-search .lucide {
+    position: absolute;
+    left: 11px;
+    width: 15px;
+    height: 15px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.templates-search input {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 12px 9px 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    outline: none;
+    background: var(--bg-accent);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+}
+
+.templates-search input::placeholder {
+    color: var(--text-secondary);
+}
+
+.templates-search input:focus {
+    border-color: var(--accent-color);
+}
+
 .templates-list {
     min-height: 0;
     padding: 8px 10px 12px;
@@ -399,6 +437,14 @@ body.templates-active .drop-overlay {
 .template-icon-btn .lucide {
     width: 14px;
     height: 14px;
+}
+
+.template-favorite-btn.active {
+    color: #f4c95d;
+}
+
+.template-favorite-btn.active .lucide {
+    fill: currentColor;
 }
 
 .template-option:hover {

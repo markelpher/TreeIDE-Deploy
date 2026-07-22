@@ -37,6 +37,75 @@
     -webkit-user-select: text;
 }
 
+.discord-presence-connection-bar {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 2200;
+    width: auto;
+    max-width: min(280px, calc(100vw - 48px));
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 9px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
+    color: var(--text-secondary);
+    font: 500 11px/1 var(--font-sans);
+    text-align: left;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(10px);
+    cursor: default;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.discord-presence-connection-bar[hidden] {
+    display: none;
+}
+
+.discord-presence-connection-bar.is-actionable {
+    cursor: pointer;
+}
+
+.discord-presence-connection-bar.is-actionable:hover {
+    color: var(--text-primary);
+    background: var(--bg-accent);
+}
+
+.discord-presence-connection-bar:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.discord-presence-connection-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: #da373c;
+    box-shadow: 0 0 0 3px rgba(218, 55, 60, 0.16);
+}
+
+.discord-presence-connection-bar[data-status='connected'] .discord-presence-connection-dot {
+    background: #23a55a;
+    box-shadow: 0 0 0 3px rgba(35, 165, 90, 0.16);
+}
+
+.discord-presence-connection-bar[data-status='reconnecting'] .discord-presence-connection-dot {
+    background: #f0b232;
+    box-shadow: 0 0 0 3px rgba(240, 178, 50, 0.16);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+#discordPresenceConnectionText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #treeView {
     flex: 1;
     min-width: 0;

@@ -21,6 +21,8 @@ import { createBuildShared } from './modules/build-shared.js';
 import { createBuildStudio } from './modules/build-studio.js';
 import { createTemplatesUi } from './modules/templates-ui.js';
 import { createShortcuts } from './modules/shortcuts.js';
+import { createCommandPalette } from './modules/command-palette.js';
+import { createDiscordPresenceUi } from './modules/discord-presence.js';
 import { createCustomSelect } from './modules/custom-select.js';
 import { createShell } from './modules/shell.js';
 import * as loadProject from './modules/load-project.js';
@@ -116,6 +118,8 @@ export function createApp({ electronAPI }) {
     app.buildStudio = createBuildStudio(app);
     app.templates = createTemplatesUi(app);
     app.shortcuts = createShortcuts(app);
+    app.commandPalette = createCommandPalette(app);
+    app.discordPresence = createDiscordPresenceUi(app);
     app.customSelect = createCustomSelect(app);
     app.shell = createShell(app);
     app.loadProject = loadProject;
@@ -126,6 +130,13 @@ export function createApp({ electronAPI }) {
             app.customSelect.refreshAll();
         }
         app.panelResize?.refreshHandleLabels();
+        if (document.body.classList.contains('templates-active')) {
+            app.templates?.renderTemplateModal();
+        }
+        if (document.getElementById('commandPaletteModal')?.style.display === 'flex') {
+            app.commandPalette?.render();
+        }
+        app.discordPresence?.refresh();
         void app.modals.initializeAppInfo();
     });
 

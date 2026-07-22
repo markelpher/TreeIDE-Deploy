@@ -13,7 +13,7 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Painel de validação** — indentação incorreta, nomes inválidos, irmãos duplicados, caminhos inseguros e estruturas vazias; clique em um aviso para ir à linha
 - **Desfazer / refazer** com até 100 estados de histórico
 - **Abas multi-projeto** com indicadores de modificação, barra de abas rolável e reordenação por arrastar e soltar
-- **Abas de pré-visualização por arquivo** — edite conteúdos iniciais antes de construir; pré-visualização Markdown ao vivo para arquivos `.md`
+- **Abas do editor de arquivos por projeto** — edite conteúdos iniciais antes de construir, reordene abas arrastando e feche automaticamente as abas de arquivos excluídos; pré-visualização Markdown ao vivo para arquivos `.md`
 - **Indentação / desindentação em bloco** com Tab e Shift+Tab, além de Backspace inteligente para blocos de indentação
 - **Navegação por teclado na árvore** — setas, Home, End e Enter
 - **Zoom do editor** — `Ctrl++`, `Ctrl+-` e `Ctrl+0`
@@ -23,14 +23,17 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Build Studio** — fluxo de build em tela cheia com pré-visualização da árvore, conteúdo por arquivo, estatísticas e opções de saída
 - **Três modos de saída** — criar estrutura de pastas no disco, exportar apenas ZIP ou exportar apenas arquivo `.tree`
 - **Saídas combinadas** — opcionalmente exportar ZIP junto com a pasta e incluir o arquivo `.tree` no arquivo
+- **Ação de build conforme o conteúdo** — ao criar uma estrutura com ZIP adicional, o botão informa se criará arquivo, arquivos, pasta, pastas ou uma combinação, seguido de `+ ZIP`
 - **Inspeção pré-build** — verifica a pasta de destino por estrutura existente, `.tree` ou ZIP antes de escrever
 - **Tratamento de conflitos** — escolha pular ou sobrescrever quando arquivos ou pastas já existem
 - **Conteúdo inicial padrão** para 68+ tipos de arquivo (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte e mais)
 - **Placeholders i18n** em arquivos gerados (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
 ### Arquivos e criptografia
+- **Compatibilidade com arquivos Tree IDE 1** — Tree IDE 1 é o formato de arquivo `.tree` de primeira geração usado pelo Tree IDE Legacy; seus arquivos em texto UTF-8 sem cabeçalho continuam totalmente compatíveis, incluindo indentação por tabulações ou `...`
 - **Exportação ZIP** com proteção opcional por senha AES-256 via 7-Zip
-- **Projetos `.tree` criptografados** (formato TREEIDE1 / TREEIDE2, AES-256-GCM + scrypt)
+- **Projetos `.tree` com criptografia de alto padrão** — o TREEIDE2 usa AES-256-GCM autenticado com Argon2id (256 MiB, 4 passagens e 4 vias), enquanto os arquivos de texto simples do Tree IDE Legacy continuam compatíveis como formato de primeira geração
+- **Proteção explícita do `.tree` com senha** — os campos de senha permanecem visíveis, mas desabilitados até a proteção ser marcada; ao ativá-la, o aviso de senha irrecuperável aparece e os valores precisam coincidir antes de salvar
 - **Importação de arquivos** via diálogo ou arrastar e soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` e `.7z`
 - **Solicitação de senha** para ZIP criptografados e arquivos `.tree` protegidos
 - **Carregar pasta como estrutura** — escaneia um diretório existente e transforma em texto editável
@@ -38,6 +41,7 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 ### Templates
 - **19 templates iniciais integrados** — Frontend (HTML, React, Vite), Stacks (Node.js, MVC, Python, PHP), Systems (Go, Java, Kotlin, Rust, Ruby, Swift, Dart) e Native (C, C++, C#)
 - **Tela de Templates** — navegador em tela cheia com três colunas, abas integradas e personalizadas, edição inline da estrutura e pré-visualização ao vivo
+- **Pesquisa e favoritos de templates** — filtro sem distinção de acentos em templates integrados e personalizados, além de favoritos persistidos localmente com ícone de estrela incluído para uso offline
 - **Templates personalizados** — criar em branco, importar do projeto atual, renomear, editar conteúdos inline, exportar ou excluir
 - **Preview Markdown nos templates** — arquivos `.md` exibem o editor e o documento renderizado lado a lado, com atualização em tempo real durante a edição de templates personalizados
 - **Arquivos `.tree-template`** — exportar e importar templates personalizados compartilháveis (JSON `treeide-template` v1)
@@ -54,6 +58,9 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Armazenamento de sessão em IndexedDB** com salvamento automático de abas abertas, conteúdos e nomes de projetos
 - **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
 - **Fontes incluídas** — Inter e JetBrains Mono; ícones Lucide locais (sem CDN)
+- **Paleta de comandos** — use `Ctrl+Shift+P` para acessar 23 ações de projeto, edição, navegação entre abas, build, visualização, atualização e ajuda; comandos contextuais indisponíveis aparecem desabilitados
+- **Melhorias de acessibilidade** — rótulos localizados para leitores de tela, anúncios de resultados, listboxes e abas semânticas, foco visível e navegação por teclado nos fluxos de comandos e templates
+- **Rich Presence opcional do Discord** — estados localizados de editor/arquivo/templates/build/configurações, ícones dedicados por atividade e para inatividade, pausa ao bloquear ou suspender, reconexão e três níveis de privacidade
 
 ### Atualizador automático
 - **Atualizador no app** — verifica GitHub Releases, baixa com progresso e reinicia para instalar
@@ -86,7 +93,7 @@ Pastas podem terminar com `/` para clareza. O Tree IDE também detecta pastas qu
 3. Personalize conteúdos iniciais nas abas de pré-visualização, se necessário
 4. Clique em **Build** para abrir o **Build Studio**
 5. Escolha o modo de saída (pasta, ZIP, `.tree` ou combinado) e confirme o caminho de destino
-6. Opcionalmente salve o projeto como `.tree` ou exporte um arquivo criptografado
+6. Opcionalmente proteja o arquivo `.tree` ou ZIP com senha
 
 Você também pode abrir projetos `.tree`, arquivos compactados ou pastas via arrastar e soltar ou **Arquivo → Abrir**.
 
@@ -100,10 +107,11 @@ Você também pode abrir projetos `.tree`, arquivos compactados ou pastas via ar
 | `Ctrl + Shift + S` | Salvar projeto como |
 | `Ctrl + Alt + S` | Salvar todos os projetos |
 | `Ctrl + B` | Abrir Build Studio |
+| `Ctrl + Shift + P` | Abrir Paleta de comandos |
 | `Ctrl + Z` / `Ctrl + Y` | Desfazer / refazer |
 | `Ctrl + T` | Nova aba |
 | `Ctrl + Tab` / `Ctrl + Shift + Tab` | Próxima / aba anterior |
-| `Ctrl + W` / `Ctrl + Shift + W` | Fechar aba / fechar todas |
+| `Ctrl + W` / `Ctrl + Shift + W` | Fechar aba de projeto / fechar aba de arquivo |
 | `Ctrl + Q` | Sair do app |
 | `Ctrl + R` | Recarregar app |
 | `Ctrl + +` / `Ctrl + -` / `Ctrl + 0` | Zoom in / out / resetar |
@@ -111,6 +119,16 @@ Você também pode abrir projetos `.tree`, arquivos compactados ou pastas via ar
 | `Tab` / `Shift + Tab` | Aumentar / diminuir indentação |
 
 Atalhos são totalmente configuráveis em **Configurações → Atalhos**.
+
+## Rich Presence
+
+Abra **Configurações → Rich Presence** e ative o Rich Presence. A aplicação do Tree IDE no Discord já vem configurada, e o aplicativo do Discord para desktop precisa estar aberto. A Presence começa como Inativo e muda para Editando estrutura somente após uma interação direta com o editor de estrutura. Os estados contextuais abrangem visualização de arquivo, templates, configurações, criação de arquivo, arquivos, estrutura de pastas ou pastas e arquivos, além da exportação genérica de arquivo, sem revelar nomes, caminhos, formatos ou criptografia; cada grupo usa um ícone pequeno dedicado, mantendo o logotipo do Tree IDE como imagem principal.
+
+Escolha a privacidade Básico, Atividade ou Detalhado; somente Detalhado pode incluir o nome do projeto e o tipo de arquivo. Caminhos e conteúdos nunca são enviados. Após cinco minutos sem interação, a Presence volta para Inativo com seu ícone de teclado. Ela é limpa enquanto o Windows está bloqueado ou suspenso e restaurada quando o dispositivo retorna.
+
+O idioma da Presence segue o idioma do Tree IDE por padrão ou pode ser fixado separadamente em inglês, português ou espanhol. O Discord recebe um único texto localizado, portanto todos os observadores veem o idioma escolhido pelo usuário do Tree IDE, sem tradução automática conforme o idioma do Discord de cada observador. Desenvolvedores podem substituir o ID incluído com `TREEIDE_DISCORD_CLIENT_ID`.
+
+Os PNGs contextuais da Presence são versionados em `assets/discord-presence/` e podem ser recriados com `scripts/generate-discord-presence-icons.ps1`.
 
 ## Desenvolvimento
 
@@ -188,8 +206,9 @@ src/
 |   |-- fonts/                  # Fontes Inter e JetBrains Mono
 |-- shared/                     # Helpers compartilhados, i18n, updater
 assets/
-|   preview/
+|   previews/
 |       preview.png             # Screenshots dos READMEs
+|   discord-presence/           # PNGs contextuais versionados da Presence do Discord
 |   icon.png                    # Ícones do app
 |   icon-no-bg.png
 |   icon-no-bg.ico
@@ -207,7 +226,7 @@ docs/
 |       installation.md         # Guia de instalação em inglês
 |       installation.pt-BR.md   # Guia de instalação em português
 |       installation.es.md      # Guia de instalação em espanhol
-scripts/                        # Scripts de build, changelog e CI
+scripts/                        # Scripts de build, changelog, CI e geração dos assets da Presence
 .github/workflows/
 |   windows-build.yml           # Build Windows x64 (NSIS + Portable)
 |   release-finalize.yml        # Traduzir changelogs e publicar release

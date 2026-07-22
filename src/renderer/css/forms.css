@@ -88,6 +88,15 @@ select:focus-visible {
     display: inline-block;
     width: 34px;
     height: 18px;
+    transition: opacity 0.18s ease;
+}
+
+.toggle-switch:has(input:disabled) {
+    opacity: 0.55;
+}
+
+.toggle-switch:has(input:disabled) .slider {
+    cursor: not-allowed;
 }
 
 .toggle-switch input {

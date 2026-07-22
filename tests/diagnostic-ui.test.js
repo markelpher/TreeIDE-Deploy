@@ -9,17 +9,18 @@ describe('diagnostic report UI', () => {
     it('offers a privacy-first report action with screenshot opt-in', () => {
         expect(html).toContain('id="menu-report-problem"');
         expect(html).toContain('id="diagnosticReportModal"');
-        expect(html).toContain('id="diagnosticIncludeLog" type="checkbox" checked');
-        expect(html).toContain('id="diagnosticIncludeScreenshot" type="checkbox"');
-        expect(html).not.toContain('id="diagnosticIncludeScreenshot" type="checkbox" checked');
+        expect(html).toMatch(/<input[^>]*id="diagnosticIncludeLog"[^>]*type="checkbox"[^>]*checked/);
+        expect(html).toMatch(/<input[^>]*id="diagnosticIncludeScreenshot"[^>]*type="checkbox"/);
+        expect(html).not.toMatch(/<input[^>]*id="diagnosticIncludeScreenshot"[^>]*\schecked(?:\s|\/?>)/);
         expect(html).toContain('id="diagnosticRedirectPopup"');
-        expect(html).toContain('id="diagnosticRedirectPopup" class="diagnostic-redirect-popup" role="button" tabindex="0"');
+        expect(html).toMatch(/<div[^>]*id="diagnosticRedirectPopup"[^>]*class="diagnostic-redirect-popup"[^>]*role="button"[^>]*tabindex="0"/);
         expect(html).toContain('data-i18n="diagnostic_redirect_message"');
         expect(html).not.toContain('class="diagnostic-redirect-icon"');
         expect(html).toContain('id="diagnosticDescriptionCount"');
         expect(html).toContain('id="diagnosticIssueTitle"');
         expect(html).toContain('id="diagnosticIssueLabel"');
         expect(html).toContain('class="styled-select diagnostic-title-label"');
+        expect(html).toContain('Click the label to select the issue category');
         expect(html).toContain('id="diagnosticSteps"');
         expect(html).toContain('id="diagnosticExpected"');
         expect(html).toContain('aria-describedby="diagnosticDescriptionHint diagnosticDescriptionCount"');

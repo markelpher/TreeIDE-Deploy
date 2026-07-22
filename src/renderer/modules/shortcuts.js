@@ -24,6 +24,7 @@ const SHORTCUTS_KEY = 'custom_shortcuts';
         zoom_in: { key: '=', ctrl: true, shift: false, alt: false, label: 'zoom_in', category: 'view' },
         zoom_out: { key: '-', ctrl: true, shift: false, alt: false, label: 'zoom_out', category: 'view' },
         zoom_reset: { key: '0', ctrl: true, shift: false, alt: false, label: 'actual_size', category: 'view' },
+        command_palette: { key: 'p', ctrl: true, shift: true, alt: false, label: 'command_palette', category: 'view' },
 
         // Tab operations
         new_tab: { key: 't', ctrl: true, shift: false, alt: false, label: 'new_tab', category: 'tab' },

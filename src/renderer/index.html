@@ -1,812 +1,1207 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tree IDE</title>
+        <link rel="stylesheet" href="css/main.css" />
+        <script>
+            window.__treeideErrors = [];
+            window.onerror = function (msg, url, line, col, err) {
+                var entry = msg + ' at ' + url + ':' + line + ':' + col;
+                if (err && err.stack) entry += '\n' + err.stack;
+                window.__treeideErrors.push(entry);
+                document.title = 'Tree IDE';
+            };
+            window.onunhandledrejection = function (e) {
+                var entry = 'Unhandled Promise: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
+                if (e.reason && e.reason.stack) entry += '\n' + e.reason.stack;
+                window.__treeideErrors.push(entry);
+                document.title = 'Tree IDE';
+            };
+        </script>
+    </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tree IDE</title>
-    <link rel="stylesheet" href="css/main.css">
-    <script>
-        window.__treeideErrors = [];
-        window.onerror = function(msg, url, line, col, err) {
-            var entry = msg + ' at ' + url + ':' + line + ':' + col;
-            if (err && err.stack) entry += '\n' + err.stack;
-            window.__treeideErrors.push(entry);
-            document.title = 'Tree IDE';
-        };
-        window.onunhandledrejection = function(e) {
-            var entry = 'Unhandled Promise: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
-            if (e.reason && e.reason.stack) entry += '\n' + e.reason.stack;
-            window.__treeideErrors.push(entry);
-            document.title = 'Tree IDE';
-        };
-    </script>
-</head>
-
-<body>
-    <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
-        <div class="drop-overlay-content">
-            <i data-lucide="file-up" class="drop-icon" aria-hidden="true"></i>
-            <span data-i18n="drop_file_here">Drop .tree or archive file here</span>
+    <body>
+        <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
+            <div class="drop-overlay-content">
+                <i data-lucide="file-up" class="drop-icon" aria-hidden="true"></i>
+                <span data-i18n="drop_file_here">Drop .tree or archive file here</span>
+            </div>
         </div>
-    </div>
-    <div class="app-header">
-        <div class="menu-bar" role="menubar">
-            <div class="menu-item" id="menu-file">
-                <span class="menu-label" data-i18n="file" role="menuitem" tabindex="0">File</span>
-                <div class="dropdown-content" role="menu">
-                    <div class="dropdown-item" id="menu-new" data-i18n="new" role="menuitem">New <span class="shortcut">Ctrl+N</span></div>
-                    <div class="dropdown-item" id="menu-open" data-i18n="open" role="menuitem">Open... <span class="shortcut">Ctrl+O</span></div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-save" data-i18n="save" role="menuitem">Save <span class="shortcut">Ctrl+S</span></div>
-                    <div class="dropdown-item" id="menu-save-as" data-i18n="save_as" role="menuitem">Save As... <span class="shortcut">Ctrl+Shift+S</span></div>
-                    <div class="dropdown-item hidden" id="menu-save-all" data-i18n="save_all" role="menuitem">Save All</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-settings" data-i18n="settings" role="menuitem">Settings</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-exit" data-i18n="exit" role="menuitem">Exit</div>
+        <div id="commandPaletteModal" class="modal command-palette-modal" role="dialog" aria-modal="true" aria-labelledby="commandPaletteTitle">
+            <div class="command-palette-content">
+                <h2 id="commandPaletteTitle" class="sr-only" data-i18n="command_palette">Command Palette</h2>
+                <div class="command-palette-search">
+                    <i data-lucide="search" aria-hidden="true"></i>
+                    <input
+                        id="commandPaletteInput"
+                        type="text"
+                        role="combobox"
+                        autocomplete="off"
+                        spellcheck="false"
+                        data-i18n-placeholder="command_palette_placeholder"
+                        data-i18n-aria-label="command_palette_search_label"
+                        placeholder="Type a command…"
+                        aria-label="Search commands"
+                        aria-controls="commandPaletteList"
+                        aria-autocomplete="list"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-describedby="commandPaletteStatus"
+                    />
+                    <kbd>Esc</kbd>
+                </div>
+                <div id="commandPaletteList" class="command-palette-list" role="listbox" aria-labelledby="commandPaletteTitle"></div>
+                <p id="commandPaletteEmpty" class="command-palette-empty hidden" role="status" data-i18n="command_palette_empty">No commands found.</p>
+                <p id="commandPaletteStatus" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+            </div>
+        </div>
+        <div class="app-header">
+            <div class="menu-bar" role="menubar">
+                <div class="menu-item" id="menu-file">
+                    <span class="menu-label" data-i18n="file" role="menuitem" tabindex="0">File</span>
+                    <div class="dropdown-content" role="menu">
+                        <div class="dropdown-item" id="menu-new" data-i18n="new" role="menuitem">New <span class="shortcut">Ctrl+N</span></div>
+                        <div class="dropdown-item" id="menu-open" data-i18n="open" role="menuitem">Open... <span class="shortcut">Ctrl+O</span></div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-save" data-i18n="save" role="menuitem">Save <span class="shortcut">Ctrl+S</span></div>
+                        <div class="dropdown-item" id="menu-save-as" data-i18n="save_as" role="menuitem">
+                            Save As... <span class="shortcut">Ctrl+Shift+S</span>
+                        </div>
+                        <div class="dropdown-item hidden" id="menu-save-all" data-i18n="save_all" role="menuitem">Save All</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-settings" data-i18n="settings" role="menuitem">Settings</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-exit" data-i18n="exit" role="menuitem">Exit</div>
+                    </div>
+                </div>
+                <div class="menu-item" id="menu-edit">
+                    <span class="menu-label" data-i18n="edit" role="menuitem" tabindex="0">Edit</span>
+                    <div class="dropdown-content" role="menu">
+                        <div class="dropdown-item" id="menu-undo" data-i18n="undo" role="menuitem">Undo <span class="shortcut">Ctrl+Z</span></div>
+                        <div class="dropdown-item" id="menu-redo" data-i18n="redo" role="menuitem">Redo <span class="shortcut">Ctrl+Y</span></div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-cut" data-i18n="cut" role="menuitem">Cut <span class="shortcut">Ctrl+X</span></div>
+                        <div class="dropdown-item" id="menu-copy" data-i18n="copy" role="menuitem">Copy <span class="shortcut">Ctrl+C</span></div>
+                        <div class="dropdown-item" id="menu-paste" data-i18n="paste" role="menuitem">Paste <span class="shortcut">Ctrl+V</span></div>
+                    </div>
+                </div>
+                <div class="menu-item" id="menu-view">
+                    <span class="menu-label" data-i18n="view" role="menuitem" tabindex="0">View</span>
+                    <div class="dropdown-content" role="menu">
+                        <div class="dropdown-item" id="menu-command-palette" data-i18n="command_palette" role="menuitem">
+                            Command Palette <span class="shortcut">Ctrl+Shift+P</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-reload" data-i18n="reload" role="menuitem">Reload <span class="shortcut">Ctrl+R</span></div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-zoom-in" data-i18n="zoom_in" role="menuitem">Zoom In <span class="shortcut">Ctrl++</span></div>
+                        <div class="dropdown-item" id="menu-zoom-out" data-i18n="zoom_out" role="menuitem">Zoom Out <span class="shortcut">Ctrl+-</span></div>
+                        <div class="dropdown-item" id="menu-zoom-reset" data-i18n="actual_size" role="menuitem">
+                            Actual Size <span class="shortcut">Ctrl+0</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-fullscreen" data-i18n="fullscreen" role="menuitem">
+                            Full Screen <span class="shortcut">F11</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-item" id="menu-window">
+                    <span class="menu-label" data-i18n="window" role="menuitem" tabindex="0">Window</span>
+                    <div class="dropdown-content" role="menu">
+                        <div class="dropdown-item" id="menu-minimize" data-i18n="minimize" role="menuitem">Minimize</div>
+                        <div class="dropdown-item" id="menu-close-win" data-i18n="close" role="menuitem">Close</div>
+                    </div>
+                </div>
+                <div class="menu-item" id="menu-help">
+                    <span class="menu-label" data-i18n="about_menu" role="menuitem" tabindex="0">About</span>
+                    <div class="dropdown-content" role="menu">
+                        <div class="dropdown-item" id="menu-report-problem" data-i18n="report_problem" role="menuitem">Report a problem</div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item" id="menu-credits" data-i18n="about" role="menuitem">About Tree IDE</div>
+                    </div>
                 </div>
             </div>
-            <div class="menu-item" id="menu-edit">
-                <span class="menu-label" data-i18n="edit" role="menuitem" tabindex="0">Edit</span>
-                <div class="dropdown-content" role="menu">
-                    <div class="dropdown-item" id="menu-undo" data-i18n="undo" role="menuitem">Undo <span class="shortcut">Ctrl+Z</span></div>
-                    <div class="dropdown-item" id="menu-redo" data-i18n="redo" role="menuitem">Redo <span class="shortcut">Ctrl+Y</span></div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-cut" data-i18n="cut" role="menuitem">Cut <span class="shortcut">Ctrl+X</span></div>
-                    <div class="dropdown-item" id="menu-copy" data-i18n="copy" role="menuitem">Copy <span class="shortcut">Ctrl+C</span></div>
-                    <div class="dropdown-item" id="menu-paste" data-i18n="paste" role="menuitem">Paste <span class="shortcut">Ctrl+V</span></div>
-                </div>
-            </div>
-            <div class="menu-item" id="menu-view">
-                <span class="menu-label" data-i18n="view" role="menuitem" tabindex="0">View</span>
-                <div class="dropdown-content" role="menu">
-                    <div class="dropdown-item" id="menu-reload" data-i18n="reload" role="menuitem">Reload <span class="shortcut">Ctrl+R</span></div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-zoom-in" data-i18n="zoom_in" role="menuitem">Zoom In <span class="shortcut">Ctrl++</span></div>
-                    <div class="dropdown-item" id="menu-zoom-out" data-i18n="zoom_out" role="menuitem">Zoom Out <span class="shortcut">Ctrl+-</span></div>
-                    <div class="dropdown-item" id="menu-zoom-reset" data-i18n="actual_size" role="menuitem">Actual Size <span class="shortcut">Ctrl+0</span></div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-fullscreen" data-i18n="fullscreen" role="menuitem">Full Screen <span class="shortcut">F11</span></div>
-                </div>
-            </div>
-            <div class="menu-item" id="menu-window">
-                <span class="menu-label" data-i18n="window" role="menuitem" tabindex="0">Window</span>
-                <div class="dropdown-content" role="menu">
-                    <div class="dropdown-item" id="menu-minimize" data-i18n="minimize" role="menuitem">Minimize</div>
-                    <div class="dropdown-item" id="menu-close-win" data-i18n="close" role="menuitem">Close</div>
-                </div>
-            </div>
-            <div class="menu-item" id="menu-help">
-                <span class="menu-label" data-i18n="about_menu" role="menuitem" tabindex="0">About</span>
-                <div class="dropdown-content" role="menu">
-                    <div class="dropdown-item" id="menu-report-problem" data-i18n="report_problem" role="menuitem">Report a problem</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item" id="menu-credits" data-i18n="about" role="menuitem">About Tree IDE</div>
-                </div>
+
+            <div class="window-controls">
+                <button class="control-btn" id="minBtn" aria-label="Minimize"><i data-lucide="minus" aria-hidden="true"></i></button>
+                <button class="control-btn" id="maxBtn" aria-label="Maximize"><i data-lucide="square" aria-hidden="true"></i></button>
+                <button class="control-btn close" id="closeBtn" aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button>
             </div>
         </div>
 
-        <div class="window-controls">
-            <button class="control-btn" id="minBtn" aria-label="Minimize"><i data-lucide="minus" aria-hidden="true"></i></button>
-            <button class="control-btn" id="maxBtn" aria-label="Maximize"><i data-lucide="square" aria-hidden="true"></i></button>
-            <button class="control-btn close" id="closeBtn" aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button>
+        <div class="toolbar" role="toolbar" aria-label="Main toolbar">
+            <button id="templatesBtn" data-i18n="templates">Templates</button>
+            <button id="loadBtn" data-i18n="load">Load</button>
+            <button id="createBtn" data-i18n="build">Build</button>
+            <div class="flex-spacer"></div>
         </div>
-    </div>
 
-    <div class="toolbar" role="toolbar" aria-label="Main toolbar">
-        <button id="templatesBtn" data-i18n="templates">Templates</button>
-        <button id="loadBtn" data-i18n="load">Load</button>
-        <button id="createBtn" data-i18n="build">Build</button>
-        <div class="flex-spacer"></div>
-    </div>
+        <span id="fileName" style="display: none" aria-hidden="true">Untitled</span>
 
-    <span id="fileName" style="display:none" aria-hidden="true">Untitled</span>
-
-    <div class="project-tabs-bar" id="projectTabsBar">
-        <button class="tab-scroll-btn tab-scroll-left" id="projectTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
-            <i data-lucide="chevron-left" aria-hidden="true"></i>
-        </button>
-        <div class="tab-scroll-viewport">
-            <div class="project-tab-list" id="projectTabList" role="tablist" aria-label="Open projects"></div>
-        </div>
-        <button class="tab-scroll-btn tab-scroll-right" id="projectTabScrollRight" type="button" aria-label="Scroll tabs right" tabindex="-1">
-            <i data-lucide="chevron-right" aria-hidden="true"></i>
-        </button>
-    </div>
-
-    <div class="container" id="editorLayout">
-        <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
-        <div id="diagnosticRedirectPopup" class="diagnostic-redirect-popup" role="button" tabindex="0" aria-live="assertive" aria-atomic="true" aria-label="Hide redirect notice" hidden>
-            <div class="diagnostic-redirect-content">
-                <strong id="diagnosticRedirectTitle" data-i18n="diagnostic_redirect_title">Diagnostic package saved</strong>
-                <span id="diagnosticRedirectMessage" data-i18n="diagnostic_redirect_message">Opening GitHub in a few seconds…</span>
-                <div class="diagnostic-redirect-progress" aria-hidden="true"><span></span></div>
+        <div class="project-tabs-bar" id="projectTabsBar">
+            <button class="tab-scroll-btn tab-scroll-left" id="projectTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
+                <i data-lucide="chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="tab-scroll-viewport">
+                <div class="project-tab-list" id="projectTabList" role="tablist" aria-label="Open projects"></div>
             </div>
-        </div>
-        <div id="validationPanel" class="validation-panel" role="alert" aria-live="assertive"></div>
-
-        <div class="editor-shell">
-            <label for="editor" class="sr-only">Project structure editor</label>
-            <textarea id="editor" spellcheck="false" aria-label="Project structure editor"></textarea>
+            <button class="tab-scroll-btn tab-scroll-right" id="projectTabScrollRight" type="button" aria-label="Scroll tabs right" tabindex="-1">
+                <i data-lucide="chevron-right" aria-hidden="true"></i>
+            </button>
         </div>
 
-        <div
-            id="editorTreeResize"
-            class="panel-resize-handle"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize structure editor and tree preview"
-            tabindex="0"
-        ></div>
-
-        <div class="preview-area">
-            <div id="treeView" role="tree" aria-label="Project tree preview"></div>
+        <div class="container" id="editorLayout">
+            <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
             <div
-                id="treeFileResize"
+                id="diagnosticRedirectPopup"
+                class="diagnostic-redirect-popup"
+                role="button"
+                tabindex="0"
+                aria-live="assertive"
+                aria-atomic="true"
+                aria-label="Hide redirect notice"
+                hidden
+            >
+                <div class="diagnostic-redirect-content">
+                    <strong id="diagnosticRedirectTitle" data-i18n="diagnostic_redirect_title">Diagnostic package saved</strong>
+                    <span id="diagnosticRedirectMessage" data-i18n="diagnostic_redirect_message">Opening GitHub in a few seconds…</span>
+                    <div class="diagnostic-redirect-progress" aria-hidden="true"><span></span></div>
+                </div>
+            </div>
+            <div id="validationPanel" class="validation-panel" role="alert" aria-live="assertive"></div>
+
+            <div class="editor-shell">
+                <label for="editor" class="sr-only">Project structure editor</label>
+                <textarea id="editor" spellcheck="false" aria-label="Project structure editor"></textarea>
+            </div>
+
+            <div
+                id="editorTreeResize"
                 class="panel-resize-handle"
                 role="separator"
                 aria-orientation="vertical"
-                aria-label="Resize tree preview and file editor"
+                aria-label="Resize structure editor and tree preview"
                 tabindex="0"
-                hidden
             ></div>
-            <aside id="filePreviewPanel" class="file-preview-panel">
-                <div class="code-tabs-bar" id="codeTabsBar">
-                    <div class="code-tabs-scroll-region">
-                        <button class="tab-scroll-btn tab-scroll-left" id="codeTabScrollLeft" type="button" aria-label="Scroll files left" tabindex="-1">
+
+            <div class="preview-area">
+                <div id="treeView" role="tree" aria-label="Project tree preview"></div>
+                <div
+                    id="treeFileResize"
+                    class="panel-resize-handle"
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize tree preview and file editor"
+                    tabindex="0"
+                    hidden
+                ></div>
+                <aside id="filePreviewPanel" class="file-preview-panel">
+                    <div class="code-tabs-bar" id="codeTabsBar">
+                        <div class="code-tabs-scroll-region">
+                            <button class="tab-scroll-btn tab-scroll-left" id="codeTabScrollLeft" type="button" aria-label="Scroll files left" tabindex="-1">
+                                <i data-lucide="chevron-left" aria-hidden="true"></i>
+                            </button>
+                            <div class="tab-scroll-viewport">
+                                <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                            </div>
+                            <button class="tab-scroll-btn tab-scroll-right" id="codeTabScrollRight" type="button" aria-label="Scroll files right" tabindex="-1">
+                                <i data-lucide="chevron-right" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="code-tabs-trail">
+                            <div id="filePreviewMode" class="file-preview-mode"></div>
+                            <button id="closeFilePreviewBtn" class="modal-close code-tabs-close" type="button" aria-label="Close file preview">
+                                <i data-lucide="x" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="file-preview-body">
+                        <label for="filePreviewEditor" class="sr-only">File content editor</label>
+                        <textarea id="filePreviewEditor" spellcheck="false" aria-label="File content editor"></textarea>
+                        <div id="markdownPreview" class="markdown-preview"></div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <button
+            id="discordPresenceConnectionBar"
+            class="discord-presence-connection-bar"
+            type="button"
+            data-status="disconnected"
+            hidden
+        >
+            <span class="discord-presence-connection-dot" aria-hidden="true"></span>
+            <span id="discordPresenceConnectionText">Disconnected from Discord</span>
+        </button>
+
+        <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+            <div class="modal-content settings-modal-content">
+                <div class="modal-header">
+                    <h2 id="settingsTitle" data-i18n="settings">Settings</h2>
+                    <button class="modal-close" id="closeSettings" aria-label="Close settings"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+                <div class="settings-container">
+                    <div class="modal-sidebar" role="tablist" aria-label="Settings sections">
+                        <button
+                            class="sidebar-tab active"
+                            id="settings-tab-general"
+                            data-tab="general"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="tab-general"
+                        >
+                            <i data-lucide="settings" aria-hidden="true"></i>
+                            <span data-i18n="general">General</span>
+                        </button>
+                        <button
+                            class="sidebar-tab"
+                            id="settings-tab-appearance"
+                            data-tab="appearance"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="tab-appearance"
+                        >
+                            <i data-lucide="palette" aria-hidden="true"></i>
+                            <span data-i18n="appearance">Appearance</span>
+                        </button>
+                        <button
+                            class="sidebar-tab"
+                            id="settings-tab-shortcuts"
+                            data-tab="shortcuts"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="tab-shortcuts"
+                        >
+                            <i data-lucide="keyboard" aria-hidden="true"></i>
+                            <span data-i18n="shortcuts">Shortcuts</span>
+                        </button>
+                        <button class="sidebar-tab" id="settings-tab-discord" data-tab="discord" role="tab" aria-selected="false" aria-controls="tab-discord">
+                            <i data-lucide="square-chart-gantt" aria-hidden="true"></i>
+                            <span data-i18n="discord_presence">Rich Presence</span>
+                        </button>
+                        <button class="sidebar-tab" id="settings-tab-updates" data-tab="updates" role="tab" aria-selected="false" aria-controls="tab-updates">
+                            <i data-lucide="download" aria-hidden="true"></i>
+                            <span data-i18n="updates">Updates</span>
+                        </button>
+                    </div>
+                    <div class="modal-main">
+                        <!-- General Tab -->
+                        <div id="tab-general" class="tab-pane active" role="tabpanel" aria-labelledby="settings-tab-general">
+                            <div class="settings-section">
+                                <h3 data-i18n="general">General</h3>
+                                <div class="settings-row">
+                                    <label data-i18n="language" for="langSelect">Language</label>
+                                    <select id="langSelect" class="styled-select">
+                                        <option value="en" data-i18n="english">English</option>
+                                        <option value="pt" data-i18n="portuguese">Português</option>
+                                        <option value="es" data-i18n="spanish">Español</option>
+                                    </select>
+                                </div>
+                                <div class="settings-row folder-setting-row">
+                                    <label data-i18n="build_folder">Save files in</label>
+                                    <div class="folder-picker">
+                                        <span id="buildFolderPath" class="folder-path" aria-live="polite">No folder selected</span>
+                                        <button id="chooseBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="choose_folder">Choose Folder</button>
+                                        <button id="clearBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="clear_folder">Clear</button>
+                                    </div>
+                                </div>
+                                <div id="buildFolderList" class="folder-path-list"></div>
+                                <div class="settings-row">
+                                    <label data-i18n="session" for="sessionSelect">Session</label>
+                                    <select id="sessionSelect" class="styled-select">
+                                        <option value="restore" data-i18n="session_restore">Restore last session</option>
+                                        <option value="clean" data-i18n="session_clean">Start clean</option>
+                                    </select>
+                                </div>
+                                <p class="settings-hint" data-i18n="session_desc">
+                                    Choose whether to restore your last project on startup or start with a clean workspace.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Appearance Tab -->
+                        <div id="tab-appearance" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-appearance">
+                            <div class="settings-section">
+                                <h3 data-i18n="appearance">Appearance</h3>
+                                <div class="settings-row">
+                                    <label data-i18n="theme" for="themeSelect">Theme</label>
+                                    <select id="themeSelect" class="styled-select">
+                                        <option value="system" data-i18n="theme_system">System</option>
+                                        <option value="dark" data-i18n="theme_dark">Dark</option>
+                                        <option value="light" data-i18n="theme_light">Light</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shortcuts Tab -->
+                        <div id="tab-shortcuts" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-shortcuts">
+                            <div class="settings-section">
+                                <div class="shortcuts-header">
+                                    <p class="settings-hint shortcuts-hint" data-i18n="shortcuts_hint">
+                                        Click on a shortcut to change it. Press Escape to cancel.
+                                    </p>
+                                    <button id="restoreShortcutsBtn" class="restore-shortcuts-btn" data-i18n="restore_defaults">Restore Defaults</button>
+                                </div>
+                                <table class="shortcuts-table">
+                                    <thead>
+                                        <tr>
+                                            <th data-i18n="command">Command</th>
+                                            <th data-i18n="key">Key</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shortcutsTableBody">
+                                        <!-- Populated dynamically by renderer-shortcuts.js -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Discord Tab -->
+                        <div id="tab-discord" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-discord">
+                            <div class="settings-section">
+                                <h3 data-i18n="discord_presence">Rich Presence</h3>
+                                <div class="settings-row">
+                                    <label data-i18n="discord_presence_enable" for="discordPresenceToggle">Enable Rich Presence</label>
+                                    <label class="toggle-switch" for="discordPresenceToggle">
+                                        <input type="checkbox" id="discordPresenceToggle" />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <p class="settings-hint" data-i18n="discord_presence_desc">Show your current Tree IDE activity in the Discord desktop app.</p>
+                                <div class="settings-row">
+                                    <label data-i18n="discord_connection_bar" for="discordPresenceBarToggle">Show connection status bar</label>
+                                    <label class="toggle-switch" for="discordPresenceBarToggle">
+                                        <input type="checkbox" id="discordPresenceBarToggle" checked />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <p class="settings-hint" data-i18n="discord_connection_bar_desc">
+                                    Show the Discord connection status in the lower-right corner.
+                                </p>
+                                <div class="settings-row">
+                                    <label data-i18n="discord_language" for="discordLanguageSelect">Rich Presence language</label>
+                                    <select id="discordLanguageSelect" class="styled-select">
+                                        <option value="app" data-i18n="discord_language_app" selected>Follow app language</option>
+                                        <option value="pt" data-i18n="portuguese">Portuguese</option>
+                                        <option value="en" data-i18n="english">English</option>
+                                        <option value="es" data-i18n="spanish">Spanish</option>
+                                    </select>
+                                </div>
+                                <p class="settings-hint" data-i18n="discord_language_desc">
+                                    Use the Tree IDE language or choose a different language only for Rich Presence.
+                                </p>
+                                <div class="settings-row">
+                                    <label data-i18n="discord_privacy_level" for="discordPrivacySelect">Privacy level</label>
+                                    <select id="discordPrivacySelect" class="styled-select">
+                                        <option value="basic" data-i18n="discord_privacy_basic">Basic</option>
+                                        <option value="activity" data-i18n="discord_privacy_activity" selected>Activity</option>
+                                        <option value="detailed" data-i18n="discord_privacy_detailed">Detailed</option>
+                                    </select>
+                                </div>
+                                <p id="discordPrivacyDescription" class="settings-hint" data-i18n="discord_privacy_activity_desc">
+                                    Shows the current action without revealing project or file names.
+                                </p>
+                                <p class="settings-hint discord-idle-hint" data-i18n="discord_idle_desc">
+                                    After five minutes without interaction, the activity changes to Idle.
+                                </p>
+                                <div class="settings-divider"></div>
+                                <div class="discord-presence-status-row" role="status" aria-live="polite">
+                                    <span class="discord-presence-status-dot" aria-hidden="true"></span>
+                                    <span id="discordPresenceStatus" data-status="disabled" data-i18n="discord_status_disabled">Disabled</span>
+                                </div>
+                                <p class="settings-hint discord-assets-hint" data-i18n="discord_asset_hint">
+                                    The Tree IDE logo and contextual icons are securely hosted by Discord.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Updates Tab -->
+                        <div id="tab-updates" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-updates">
+                            <div class="settings-section">
+                                <h3 data-i18n="updates">Updates</h3>
+                                <p class="update-channel-label" data-i18n="current_version">Current version</p>
+                                <div class="update-hero">
+                                    <div class="update-version-badge" id="settingsCurrentVersion">v---</div>
+                                    <span id="settingsLastChecked" class="update-last-checked"></span>
+                                </div>
+                                <div class="settings-divider"></div>
+                                <p class="update-channel-label" data-i18n="update_channel">Update channel</p>
+                                <div class="update-channel-cards" id="updateChannelCards" role="radiogroup" aria-label="Update channel">
+                                    <button type="button" class="update-channel-card" data-channel="stable" role="radio" aria-checked="true">
+                                        <i data-lucide="check-circle" aria-hidden="true"></i>
+                                        <span class="update-channel-card-title" data-i18n="channel_stable">Stable</span>
+                                        <span class="update-channel-card-desc" data-i18n="channel_stable_desc">Tested and reliable</span>
+                                    </button>
+                                    <button type="button" class="update-channel-card" data-channel="beta" role="radio" aria-checked="false">
+                                        <i data-lucide="download" aria-hidden="true"></i>
+                                        <span class="update-channel-card-title" data-i18n="channel_beta">Beta</span>
+                                        <span class="update-channel-card-desc" data-i18n="channel_beta_desc">Latest features in testing</span>
+                                    </button>
+                                </div>
+                                <div class="settings-divider"></div>
+                                <div class="settings-row">
+                                    <label data-i18n="auto_check_updates" for="autoCheckUpdatesToggle">Check for updates on startup</label>
+                                    <label class="toggle-switch" for="autoCheckUpdatesToggle">
+                                        <input type="checkbox" id="autoCheckUpdatesToggle" checked />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <p class="settings-hint" data-i18n="auto_check_updates_desc">Automatically check for new versions when the app starts.</p>
+                                <div class="settings-divider"></div>
+                                <button id="checkUpdateBtn" class="secondary-btn update-check-btn" data-i18n="check_updates">Check for updates</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+            <div class="modal-content modal-content-centered">
+                <div class="modal-header">
+                    <h2 id="aboutTitle" data-i18n="about_menu">About Tree IDE</h2>
+                    <button class="modal-close" id="closeAbout" aria-label="Close about dialog"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+                <div class="modal-body modal-body-padded">
+                    <h1 class="about-title">Tree IDE</h1>
+                    <p class="about-version" id="aboutVersion">v---</p>
+                    <p class="about-description" data-i18n="credits_desc">A minimalist tool for rapid project structure scaffolding.</p>
+                    <p class="about-license" data-i18n="license">Licensed under MIT License</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="diagnosticReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="diagnosticReportTitle">
+            <div class="modal-content diagnostic-report-modal">
+                <div class="modal-header">
+                    <h2 id="diagnosticReportTitle" data-i18n="report_problem">Report a problem</h2>
+                    <button class="modal-close" id="closeDiagnosticReport" aria-label="Close diagnostic report">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="modal-body diagnostic-report-body">
+                    <div class="diagnostic-privacy">
+                        <div>
+                            <strong data-i18n="diagnostic_privacy_title">Privacy first</strong>
+                            <p data-i18n="diagnostic_privacy">
+                                The text below is sent only to prefill the GitHub draft. The diagnostic ZIP, log and screenshot remain local until you choose to
+                                attach them.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="diagnostic-field">
+                        <div class="diagnostic-field-heading">
+                            <label class="diagnostic-label" for="diagnosticIssueTitle" data-i18n="diagnostic_issue_title">Issue title</label>
+                            <span id="diagnosticIssueTitleCount" class="diagnostic-character-count">0 / 80</span>
+                        </div>
+                        <div class="diagnostic-title-control">
+                            <select id="diagnosticIssueLabel" class="styled-select diagnostic-title-label" aria-label="GitHub issue label">
+                                <option value="bug">[bug]</option>
+                                <option value="documentation">[documentation]</option>
+                                <option value="duplicate">[duplicate]</option>
+                                <option value="enhancement">[enhancement]</option>
+                                <option value="good first issue">[good first issue]</option>
+                                <option value="help wanted">[help wanted]</option>
+                                <option value="invalid">[invalid]</option>
+                                <option value="question">[question]</option>
+                                <option value="wontfix">[wontfix]</option>
+                            </select>
+                            <input
+                                id="diagnosticIssueTitle"
+                                type="text"
+                                maxlength="80"
+                                spellcheck="true"
+                                autocomplete="off"
+                                aria-describedby="diagnosticIssueTitleHint diagnosticIssueTitleCount"
+                                data-i18n-placeholder="diagnostic_issue_title_placeholder"
+                                placeholder="Short summary of the problem"
+                            />
+                        </div>
+                        <p id="diagnosticIssueTitleHint" class="diagnostic-field-hint" data-i18n="diagnostic_issue_title_hint">
+                            Click the label to select the issue category, then use a short and specific title.
+                        </p>
+                    </div>
+                    <div class="diagnostic-field">
+                        <div class="diagnostic-field-heading">
+                            <label class="diagnostic-label" for="diagnosticDescription" data-i18n="diagnostic_description">What happened?</label>
+                            <span id="diagnosticDescriptionCount" class="diagnostic-character-count">0 / 5000</span>
+                        </div>
+                        <textarea
+                            id="diagnosticDescription"
+                            class="diagnostic-description"
+                            maxlength="5000"
+                            spellcheck="true"
+                            autocapitalize="sentences"
+                            aria-describedby="diagnosticDescriptionHint diagnosticDescriptionCount"
+                            data-i18n-placeholder="diagnostic_description_placeholder"
+                            placeholder="Describe what you were doing and what you expected."
+                        ></textarea>
+                        <p id="diagnosticDescriptionHint" class="diagnostic-field-hint" data-i18n="diagnostic_description_hint">
+                            Explain what failed and what you observed.
+                        </p>
+                    </div>
+                    <div class="diagnostic-field">
+                        <div class="diagnostic-field-heading">
+                            <label class="diagnostic-label" for="diagnosticSteps" data-i18n="diagnostic_issue_steps">Steps to reproduce</label>
+                            <span id="diagnosticStepsCount" class="diagnostic-character-count">0 / 3000</span>
+                        </div>
+                        <textarea
+                            id="diagnosticSteps"
+                            class="diagnostic-description diagnostic-description-compact"
+                            maxlength="3000"
+                            spellcheck="true"
+                            autocapitalize="sentences"
+                            aria-describedby="diagnosticStepsCount"
+                            data-i18n-placeholder="diagnostic_steps_placeholder"
+                            placeholder="1. Open…&#10;2. Select…&#10;3. The error occurs…"
+                        ></textarea>
+                    </div>
+                    <div class="diagnostic-field">
+                        <div class="diagnostic-field-heading">
+                            <label class="diagnostic-label" for="diagnosticExpected" data-i18n="diagnostic_issue_expected">Expected behavior</label>
+                            <span id="diagnosticExpectedCount" class="diagnostic-character-count">0 / 2000</span>
+                        </div>
+                        <textarea
+                            id="diagnosticExpected"
+                            class="diagnostic-description diagnostic-description-compact"
+                            maxlength="2000"
+                            spellcheck="true"
+                            autocapitalize="sentences"
+                            aria-describedby="diagnosticExpectedCount"
+                            data-i18n-placeholder="diagnostic_expected_placeholder"
+                            placeholder="Describe what should have happened."
+                        ></textarea>
+                    </div>
+                    <div class="diagnostic-included">
+                        <div class="diagnostic-section-title">
+                            <p class="diagnostic-label" data-i18n="diagnostic_included">Information included</p>
+                        </div>
+                        <ul>
+                            <li data-i18n="diagnostic_system_info">App/runtime versions, OS, architecture and coarse memory information</li>
+                            <li data-i18n="diagnostic_session_info">
+                                Language, theme, update channel and project/error counts — never project names or contents
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="diagnostic-options">
+                        <label class="diagnostic-option">
+                            <input id="diagnosticIncludeLog" type="checkbox" checked />
+                            <span class="diagnostic-option-copy" data-i18n="diagnostic_include_log">Include the recent sanitized app log (up to 256 KB)</span>
+                        </label>
+                        <label class="diagnostic-option diagnostic-screenshot-option">
+                            <input id="diagnosticIncludeScreenshot" type="checkbox" />
+                            <span class="diagnostic-option-copy">
+                                <span data-i18n="diagnostic_include_screenshot">Include a screenshot of the Tree IDE window only</span>
+                                <small class="diagnostic-warning" data-i18n="diagnostic_screenshot_warning"
+                                    >The screenshot may contain project text visible inside the app. It never captures the desktop or other windows.</small
+                                >
+                            </span>
+                        </label>
+                    </div>
+                    <p id="diagnosticReportStatus" class="diagnostic-status" role="status" aria-live="polite"></p>
+                </div>
+                <div class="modal-actions diagnostic-report-actions">
+                    <button id="cancelDiagnosticReport" class="secondary-btn" type="button" data-i18n="cancel">Cancel</button>
+                    <button id="createDiagnosticReport" class="primary-btn" type="button" data-i18n="diagnostic_create">Save package and open issue</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="welcomeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+            <div class="modal-content welcome-modal-content">
+                <div class="modal-header">
+                    <h2 id="welcomeTitle" data-i18n="welcome_title">Welcome to Tree IDE</h2>
+                </div>
+                <div class="modal-body welcome-modal-body">
+                    <p class="welcome-intro" data-i18n="welcome_desc">To get started, please select your preferred language, theme, and build folder.</p>
+
+                    <div class="settings-section welcome-settings-section">
+                        <h3 data-i18n="general">General</h3>
+                        <div class="settings-row">
+                            <label data-i18n="language" for="welcomeLangSelect">Language</label>
+                            <select id="welcomeLangSelect" class="styled-select">
+                                <option value="en" data-i18n="english">English</option>
+                                <option value="pt" data-i18n="portuguese">Português</option>
+                                <option value="es" data-i18n="spanish">Español</option>
+                            </select>
+                        </div>
+                        <div class="settings-row folder-setting-row">
+                            <label data-i18n="build_folder">Save files in</label>
+                            <div class="folder-picker">
+                                <span id="welcomeBuildFolderPath" class="folder-path" aria-live="polite" hidden>No folder selected</span>
+                                <button id="welcomeChooseBuildFolderBtn" class="secondary-btn compact-btn" type="button" data-i18n="choose_folder">
+                                    Choose Folder
+                                </button>
+                            </div>
+                        </div>
+                        <div id="welcomeBuildFolderList" class="folder-path-list"></div>
+                    </div>
+
+                    <div class="settings-section welcome-settings-section">
+                        <h3 data-i18n="appearance">Appearance</h3>
+                        <div class="settings-row">
+                            <label data-i18n="theme" for="welcomeThemeSelect">Theme</label>
+                            <select id="welcomeThemeSelect" class="styled-select">
+                                <option value="system" data-i18n="theme_system">System</option>
+                                <option value="dark" data-i18n="theme_dark">Dark</option>
+                                <option value="light" data-i18n="theme_light">Light</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-section welcome-settings-section">
+                        <h3 data-i18n="session">Session</h3>
+                        <div class="settings-row">
+                            <label data-i18n="session" for="welcomeSessionSelect">Session</label>
+                            <select id="welcomeSessionSelect" class="styled-select">
+                                <option value="restore" data-i18n="session_restore">Restore last session</option>
+                                <option value="clean" data-i18n="session_clean">Start clean</option>
+                            </select>
+                        </div>
+                        <p class="settings-hint" data-i18n="session_desc">
+                            Choose whether to restore your last project on startup or start with a clean workspace.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-actions welcome-modal-actions">
+                    <button id="startBtn" class="primary-btn" data-i18n="start">Get Started</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="templatesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="templatesTitle">
+            <div class="modal-content templates-modal-content">
+                <div class="modal-header">
+                    <h2 id="templatesTitle" data-i18n="templates">Templates</h2>
+                    <button class="modal-close" id="closeTemplatesModal" data-i18n-aria-label="close_templates" aria-label="Close templates">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="templates-browser">
+                    <section class="templates-panel templates-panel-list" data-i18n-aria-label="template_list_panel_label" aria-label="Template list">
+                        <div class="templates-source-tabs" role="tablist" data-i18n-aria-label="template_categories_label" aria-label="Template categories">
+                            <button
+                                type="button"
+                                id="templatesTabBuiltIn"
+                                class="templates-source-tab active"
+                                data-source="builtin"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="templatesList"
+                                data-i18n="template_tab_builtin"
+                            >
+                                Built-in
+                            </button>
+                            <button
+                                type="button"
+                                id="templatesTabCustom"
+                                class="templates-source-tab"
+                                data-source="custom"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="templatesList"
+                                data-i18n="template_tab_custom"
+                            >
+                                Custom
+                            </button>
+                            <button
+                                type="button"
+                                id="templatesTabFavorites"
+                                class="templates-source-tab"
+                                data-source="favorites"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="templatesList"
+                                data-i18n="template_tab_favorites"
+                            >
+                                Favorites
+                            </button>
+                        </div>
+                        <label class="templates-search" for="templatesSearchInput">
+                            <i data-lucide="search" aria-hidden="true"></i>
+                            <input
+                                id="templatesSearchInput"
+                                type="search"
+                                autocomplete="off"
+                                spellcheck="false"
+                                data-i18n-placeholder="template_search_placeholder"
+                                placeholder="Search templates…"
+                                aria-controls="templatesList"
+                                aria-describedby="templatesResultsStatus"
+                            />
+                            <span class="sr-only" data-i18n="template_search_label">Search templates</span>
+                        </label>
+                        <div id="templatesListBody" class="templates-list-body">
+                            <div id="templatesDropHint" class="templates-drop-hint hidden" aria-hidden="true">
+                                <i data-lucide="file-up" aria-hidden="true"></i>
+                                <span data-i18n="template_drop_file">Drop a .tree-template file here</span>
+                            </div>
+                            <div
+                                id="templatesList"
+                                class="templates-list"
+                                role="listbox"
+                                data-i18n-aria-label="available_templates_label"
+                                aria-label="Available templates"
+                            ></div>
+                            <div id="templatesSearchEmpty" class="templates-empty hidden" role="status">
+                                <p data-i18n="template_search_empty">No templates match your search.</p>
+                            </div>
+                            <div id="templatesFavoritesEmpty" class="templates-empty hidden" role="status">
+                                <p data-i18n="template_favorites_empty">Mark templates with a star to find them here.</p>
+                            </div>
+                            <div id="templatesEmptyState" class="templates-empty hidden">
+                                <p data-i18n="template_custom_empty_desc">Create a template here — no need to leave this screen.</p>
+                                <div class="templates-empty-actions">
+                                    <button type="button" id="createBlankTemplateBtn" class="secondary-btn" data-i18n="template_create_blank">
+                                        Start blank
+                                    </button>
+                                    <button type="button" id="importProjectTemplateBtn" class="secondary-btn" data-i18n="template_import_project">
+                                        From current project
+                                    </button>
+                                    <button type="button" id="importTemplateFileEmptyBtn" class="secondary-btn" data-i18n="template_import_file">
+                                        Import .tree-template
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="templatesCustomFooter" class="templates-list-footer hidden">
+                            <button type="button" id="createCustomTemplateBtn" class="template-create-footer-btn">
+                                <i data-lucide="plus" aria-hidden="true"></i>
+                                <span data-i18n="template_create_new">New template</span>
+                            </button>
+                            <div class="templates-footer-actions">
+                                <button
+                                    type="button"
+                                    id="importProjectTemplateFooterBtn"
+                                    class="template-footer-secondary-btn"
+                                    data-i18n="template_import_project"
+                                >
+                                    From current project
+                                </button>
+                                <button type="button" id="importTemplateFileBtn" class="template-footer-secondary-btn" data-i18n="template_import_file">
+                                    Import .tree-template
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    <section
+                        class="templates-panel templates-panel-structure"
+                        data-i18n-aria-label="template_structure_panel_label"
+                        aria-label="Template structure"
+                    >
+                        <p id="templateStructureLabel" class="templates-panel-label" data-i18n="template_panel_structure">Structure</p>
+                        <div id="templateStructureBody" class="template-structure-body">
+                            <textarea
+                                id="templateTreeEditor"
+                                class="template-tree-editor hidden"
+                                spellcheck="false"
+                                aria-labelledby="templateStructureLabel"
+                            ></textarea>
+                            <p id="templateStructurePreviewLabel" class="template-structure-preview-label hidden" data-i18n="template_structure_preview">
+                                Preview
+                            </p>
+                            <div id="templateTreePreview" class="template-tree-preview" tabindex="-1"></div>
+                        </div>
+                    </section>
+                    <section class="templates-panel templates-panel-file" data-i18n-aria-label="template_file_panel_label" aria-label="Template file preview">
+                        <div id="templateFilePanel" class="template-file-panel">
+                            <div class="template-file-header">
+                                <span id="templateFileName" class="template-file-path"></span>
+                                <span id="templateFileMode" class="template-file-mode"></span>
+                            </div>
+                            <div class="template-file-body">
+                                <p id="templateFileEmpty" class="template-file-empty" data-i18n="file_preview_empty">Select a file</p>
+                                <label for="templateFileEditor" class="sr-only" data-i18n="file_preview_editor_label">File content</label>
+                                <textarea
+                                    id="templateFileEditor"
+                                    class="template-file-editor"
+                                    spellcheck="false"
+                                    readonly
+                                    tabindex="-1"
+                                    aria-labelledby="templateFileName"
+                                ></textarea>
+                                <div id="templateMarkdownPreview" class="markdown-preview template-markdown-preview"></div>
+                            </div>
+                            <p id="templatesResultsStatus" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+                        </div>
+                    </section>
+                </div>
+                <div class="modal-actions templates-modal-actions">
+                    <button id="useTemplateBtn" class="primary-btn templates-use-btn" data-i18n="use_template">Use Template</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="releaseUpdateModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="releaseUpdateTitle">
+            <div class="modal-content release-update-modal-content" tabindex="-1">
+                <div class="modal-header">
+                    <h2 id="releaseUpdateTitle" data-i18n="update_available_title">Update available</h2>
+                    <button class="modal-close" id="closeReleaseUpdateModal" aria-label="Close update notification">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="modal-body release-update-body">
+                    <div class="release-update-summary">
+                        <div class="release-update-copy">
+                            <p data-i18n="update_available_msg">A new Tree IDE version is available and ready to download.</p>
+                            <div class="release-update-version">
+                                <span id="releaseUpdateCurrent">v---</span>
+                                <i data-lucide="arrow-right" aria-hidden="true"></i>
+                                <strong id="releaseUpdateLatest">v---</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <section class="release-update-changelog" id="releaseUpdateChangelog" aria-expanded="true" hidden>
+                        <button
+                            class="release-update-changelog-toggle"
+                            id="releaseUpdateChangelogToggle"
+                            type="button"
+                            aria-expanded="true"
+                            aria-controls="releaseUpdateChangelogBody"
+                        >
+                            <span class="release-update-changelog-toggle-label" data-i18n="update_changelog_title">What's new</span>
+                            <i data-lucide="chevron-down" class="release-update-changelog-chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="release-update-changelog-body" id="releaseUpdateChangelogBody">
+                            <div class="release-update-changelog-content" id="releaseUpdateChangelogContent"></div>
+                        </div>
+                    </section>
+                    <div
+                        class="release-update-progress"
+                        id="releaseUpdateProgress"
+                        role="progressbar"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="0"
+                        aria-valuetext="0%"
+                    >
+                        <div class="release-update-progress-bar">
+                            <div class="release-update-progress-fill" id="releaseUpdateProgressFill"></div>
+                        </div>
+                        <span class="release-update-progress-text" id="releaseUpdateProgressText">0%</span>
+                    </div>
+                </div>
+                <div class="release-update-footer">
+                    <div class="modal-actions release-update-actions">
+                        <button id="declineReleaseUpdateBtn" class="secondary-btn" data-i18n="update_decline">Not now</button>
+                        <button id="downloadReleaseUpdateBtn" class="primary-btn update-download-btn">
+                            <span class="update-download-label" id="updateDownloadLabel" data-i18n="update_download_release">Download update</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Dialog: Text prompt -->
+        <div id="promptModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
+            <div class="modal-content modal-content-narrow modal-content-centered">
+                <div class="modal-header">
+                    <h2 id="promptTitle" data-i18n="template_name_prompt">Template name</h2>
+                    <button class="modal-close" id="closePromptModal" aria-label="Close prompt"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+                <div class="modal-body modal-body-compact">
+                    <label id="promptLabel" class="prompt-label" for="promptInput"></label>
+                    <input id="promptInput" class="styled-input" type="text" autocomplete="off" spellcheck="false" />
+                    <div class="modal-actions-centered">
+                        <button id="savePromptBtn" class="primary-btn" data-i18n="button_save">Save</button>
+                        <button id="cancelPromptBtn" class="secondary-btn" data-i18n="button_cancel">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Encrypted file password -->
+        <div id="decryptPasswordModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="decryptPasswordTitle">
+            <div class="modal-content modal-content-narrow decrypt-password-modal">
+                <div class="modal-header">
+                    <h2 id="decryptPasswordTitle" data-i18n="decrypt_password_title">Password required</h2>
+                    <button class="modal-close" id="closeDecryptPasswordModal" aria-label="Close password dialog">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="modal-body modal-body-compact decrypt-password-body">
+                    <p id="decryptPasswordLead" class="decrypt-password-lead"></p>
+                    <div class="decrypt-password-field">
+                        <label id="decryptPasswordLabel" class="decrypt-password-label" for="decryptPasswordInput" data-i18n="decrypt_password_label"
+                            >Password</label
+                        >
+                        <input
+                            id="decryptPasswordInput"
+                            class="styled-input decrypt-password-input"
+                            type="password"
+                            autocomplete="current-password"
+                            spellcheck="false"
+                            data-i18n-placeholder="decrypt_password_placeholder"
+                        />
+                        <p id="decryptPasswordError" class="decrypt-password-error" hidden role="alert"></p>
+                    </div>
+                </div>
+                <div class="modal-actions decrypt-password-actions">
+                    <button id="decryptPasswordSubmit" class="primary-btn" type="button" data-i18n="decrypt_password_unlock">Unlock</button>
+                    <button id="decryptPasswordCancel" class="secondary-btn" type="button" data-i18n="button_cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Dialog: Confirmation -->
+        <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <div class="modal-content modal-content-narrow modal-content-centered">
+                <div class="modal-header">
+                    <h2 id="confirmTitle" data-i18n="confirm_title">Confirmation</h2>
+                    <button class="modal-close" id="closeConfirmModal" aria-label="Close confirmation"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+                <div class="modal-body modal-body-compact">
+                    <p id="confirmMsg" class="confirm-msg">Are you sure?</p>
+                    <div class="modal-actions-centered">
+                        <button id="agreeConfirmBtn" class="primary-btn" data-i18n="yes" autofocus>Yes</button>
+                        <button id="cancelConfirmBtn" class="secondary-btn" data-i18n="no">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Dialog: Unsaved Changes -->
+        <div id="unsavedModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="unsavedTitle">
+            <div class="modal-content modal-content-narrow modal-content-centered">
+                <div class="modal-header">
+                    <h2 id="unsavedTitle" data-i18n="unsaved_changes_title">Unsaved Changes</h2>
+                    <button class="modal-close" id="closeUnsavedModal" aria-label="Close unsaved changes dialog">
+                        <i data-lucide="x" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="modal-body modal-body-compact">
+                    <p data-i18n="unsaved_changes_msg" class="confirm-msg">You have unsaved changes. Do you want to save them before closing?</p>
+                    <div class="modal-actions-stretch">
+                        <button id="saveUnsavedBtn" class="primary-btn" data-i18n="button_save" autofocus>Save</button>
+                        <button id="dontSaveUnsavedBtn" class="secondary-btn" data-i18n="button_dont_save">Don't Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build studio (Option C — full screen) -->
+        <div id="buildStudio" class="build-studio" hidden aria-hidden="true">
+            <header class="build-studio-header">
+                <div class="build-studio-header-top">
+                    <h2 id="buildStudioTitle" data-i18n="build_studio_title">Create Structure</h2>
+                    <button type="button" class="modal-close" id="closeBuildStudio" aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button>
+                </div>
+                <hr class="build-studio-header-divider" aria-hidden="true" />
+                <div class="build-studio-header-meta">
+                    <div id="buildStudioStats" class="build-studio-header-stats" aria-live="polite"></div>
+                    <div id="buildStudioProjectList" class="build-project-tabs-bar" hidden>
+                        <button class="tab-scroll-btn tab-scroll-left" id="buildStudioTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
                             <i data-lucide="chevron-left" aria-hidden="true"></i>
                         </button>
                         <div class="tab-scroll-viewport">
-                            <div class="code-tab-list" id="codeTabList" role="tablist" aria-label="Open files"></div>
+                            <div class="project-tab-list" id="buildStudioTabList" role="tablist" aria-label="Projects to create"></div>
                         </div>
-                        <button class="tab-scroll-btn tab-scroll-right" id="codeTabScrollRight" type="button" aria-label="Scroll files right" tabindex="-1">
+                        <button
+                            class="tab-scroll-btn tab-scroll-right"
+                            id="buildStudioTabScrollRight"
+                            type="button"
+                            aria-label="Scroll tabs right"
+                            tabindex="-1"
+                        >
                             <i data-lucide="chevron-right" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <div class="code-tabs-trail">
-                        <div id="filePreviewMode" class="file-preview-mode"></div>
-                        <button id="closeFilePreviewBtn" class="modal-close code-tabs-close" type="button" aria-label="Close file preview"><i data-lucide="x" aria-hidden="true"></i></button>
-                    </div>
                 </div>
-                <div class="file-preview-body">
-                    <label for="filePreviewEditor" class="sr-only">File content editor</label>
-                    <textarea id="filePreviewEditor" spellcheck="false" aria-label="File content editor"></textarea>
-                    <div id="markdownPreview" class="markdown-preview"></div>
-                </div>
-            </aside>
-        </div>
-    </div>
-
-    <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-        <div class="modal-content settings-modal-content">
-            <div class="modal-header">
-                <h2 id="settingsTitle" data-i18n="settings">Settings</h2>
-                <button class="modal-close" id="closeSettings" aria-label="Close settings"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="settings-container">
-                <div class="modal-sidebar" role="tablist" aria-label="Settings sections">
-                    <button class="sidebar-tab active" id="settings-tab-general" data-tab="general" role="tab" aria-selected="true" aria-controls="tab-general">
-                        <i data-lucide="settings" aria-hidden="true"></i>
-                        <span data-i18n="general">General</span>
-                    </button>
-                    <button class="sidebar-tab" id="settings-tab-appearance" data-tab="appearance" role="tab" aria-selected="false" aria-controls="tab-appearance">
-                        <i data-lucide="palette" aria-hidden="true"></i>
-                        <span data-i18n="appearance">Appearance</span>
-                    </button>
-                    <button class="sidebar-tab" id="settings-tab-shortcuts" data-tab="shortcuts" role="tab" aria-selected="false" aria-controls="tab-shortcuts">
-                        <i data-lucide="keyboard" aria-hidden="true"></i>
-                        <span data-i18n="shortcuts">Shortcuts</span>
-                    </button>
-                    <button class="sidebar-tab" id="settings-tab-updates" data-tab="updates" role="tab" aria-selected="false" aria-controls="tab-updates">
-                        <i data-lucide="download" aria-hidden="true"></i>
-                        <span data-i18n="updates">Updates</span>
-                    </button>
-                </div>
-                <div class="modal-main">
-                    <!-- General Tab -->
-                    <div id="tab-general" class="tab-pane active" role="tabpanel" aria-labelledby="settings-tab-general">
-                        <div class="settings-section">
-                            <h3 data-i18n="general">General</h3>
-                            <div class="settings-row">
-                                <label data-i18n="language" for="langSelect">Language</label>
-                                <select id="langSelect" class="styled-select">
-                                    <option value="en" data-i18n="english">English</option>
-                                    <option value="pt" data-i18n="portuguese">Português</option>
-                                    <option value="es" data-i18n="spanish">Español</option>
-                                </select>
-                            </div>
-                            <div class="settings-row folder-setting-row">
-                                <label data-i18n="build_folder">Save files in</label>
-                                <div class="folder-picker">
-                                    <span id="buildFolderPath" class="folder-path" aria-live="polite">No folder selected</span>
-                                    <button id="chooseBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="choose_folder">Choose Folder</button>
-                                    <button id="clearBuildFolderBtn" class="secondary-btn compact-btn" data-i18n="clear_folder">Clear</button>
-                                </div>
-                            </div>
-                            <div id="buildFolderList" class="folder-path-list"></div>
-                            <div class="settings-row">
-                                <label data-i18n="session" for="sessionSelect">Session</label>
-                                <select id="sessionSelect" class="styled-select">
-                                    <option value="restore" data-i18n="session_restore">Restore last session</option>
-                                    <option value="clean" data-i18n="session_clean">Start clean</option>
-                                </select>
-                            </div>
-                            <p class="settings-hint" data-i18n="session_desc">Choose whether to restore your last project on startup or start with a clean workspace.</p>
+            </header>
+            <div class="build-studio-body">
+                <section class="build-studio-preview" aria-labelledby="buildStudioPreviewLabel">
+                    <p id="buildStudioPreviewLabel" class="build-studio-preview-label" data-i18n="build_studio_preview">Preview</p>
+                    <div class="build-studio-preview-split">
+                        <div class="build-studio-tree-wrap">
+                            <div id="buildStudioTreeView" role="tree" aria-label="Structure preview"></div>
                         </div>
+                        <aside id="buildStudioFilePanel" class="build-studio-file-panel" aria-label="File preview">
+                            <div class="build-studio-file-header">
+                                <span id="buildStudioFilePath" class="build-studio-file-path"></span>
+                                <span id="buildStudioFileMode" class="build-studio-file-mode"></span>
+                            </div>
+                            <div class="build-studio-file-body">
+                                <p id="buildStudioFileEmpty" class="build-studio-file-empty" data-i18n="file_preview_empty">Select a file</p>
+                                <textarea id="buildStudioFileEditor" readonly spellcheck="false" aria-readonly="true" tabindex="-1"></textarea>
+                                <div id="buildStudioMarkdownPreview" class="markdown-preview"></div>
+                            </div>
+                        </aside>
                     </div>
-
-                    <!-- Appearance Tab -->
-                    <div id="tab-appearance" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-appearance">
-                        <div class="settings-section">
-                            <h3 data-i18n="appearance">Appearance</h3>
-                            <div class="settings-row">
-                                <label data-i18n="theme" for="themeSelect">Theme</label>
-                                <select id="themeSelect" class="styled-select">
-                                    <option value="system" data-i18n="theme_system">System</option>
-                                    <option value="dark" data-i18n="theme_dark">Dark</option>
-                                    <option value="light" data-i18n="theme_light">Light</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Shortcuts Tab -->
-                    <div id="tab-shortcuts" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-shortcuts">
-                        <div class="settings-section">
-                            <div class="shortcuts-header">
-                                <p class="settings-hint shortcuts-hint" data-i18n="shortcuts_hint">Click on a shortcut to change it. Press Escape to cancel.</p>
-                                <button id="restoreShortcutsBtn" class="restore-shortcuts-btn" data-i18n="restore_defaults">Restore Defaults</button>
-                            </div>
-                            <table class="shortcuts-table">
-                                <thead>
-                                    <tr>
-                                        <th data-i18n="command">Command</th>
-                                        <th data-i18n="key">Key</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="shortcutsTableBody">
-                                    <!-- Populated dynamically by renderer-shortcuts.js -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Updates Tab -->
-                    <div id="tab-updates" class="tab-pane" role="tabpanel" aria-labelledby="settings-tab-updates">
-                        <div class="settings-section">
-                            <h3 data-i18n="updates">Updates</h3>
-                            <p class="update-channel-label" data-i18n="current_version">Current version</p>
-                            <div class="update-hero">
-                                <div class="update-version-badge" id="settingsCurrentVersion">v---</div>
-                                <span id="settingsLastChecked" class="update-last-checked"></span>
-                            </div>
-                            <div class="settings-divider"></div>
-                            <p class="update-channel-label" data-i18n="update_channel">Update channel</p>
-                            <div class="update-channel-cards" id="updateChannelCards" role="radiogroup" aria-label="Update channel">
-                                <button type="button" class="update-channel-card" data-channel="stable" role="radio" aria-checked="true">
-                                    <i data-lucide="check-circle" aria-hidden="true"></i>
-                                    <span class="update-channel-card-title" data-i18n="channel_stable">Stable</span>
-                                    <span class="update-channel-card-desc" data-i18n="channel_stable_desc">Tested and reliable</span>
-                                </button>
-                                <button type="button" class="update-channel-card" data-channel="beta" role="radio" aria-checked="false">
-                                    <i data-lucide="download" aria-hidden="true"></i>
-                                    <span class="update-channel-card-title" data-i18n="channel_beta">Beta</span>
-                                    <span class="update-channel-card-desc" data-i18n="channel_beta_desc">Latest features in testing</span>
-                                </button>
-                            </div>
-                            <div class="settings-divider"></div>
-                            <div class="settings-row">
-                                <label data-i18n="auto_check_updates" for="autoCheckUpdatesToggle">Check for updates on startup</label>
-                                <label class="toggle-switch" for="autoCheckUpdatesToggle">
-                                    <input type="checkbox" id="autoCheckUpdatesToggle" checked>
-                                    <span class="slider"></span>
+                </section>
+                <section class="build-studio-options" aria-labelledby="buildStudioOptionsLabel">
+                    <p id="buildStudioOptionsLabel" class="build-studio-options-label" data-i18n="build_studio_options">Options</p>
+                    <div class="build-studio-options-body">
+                        <div class="build-studio-options-group">
+                            <p class="build-studio-option-group-label" data-i18n="build_output_mode_label">Output</p>
+                            <div class="build-studio-options-list">
+                                <label class="build-studio-option">
+                                    <input type="radio" id="buildStudioOutputModeStructure" name="buildStudioOutputMode" value="structure" checked />
+                                    <span class="build-studio-option-text">
+                                        <span id="buildStudioOutputStructureTitle" class="build-studio-option-title" data-i18n="build_output_files_and_folders">Create files and folders</span>
+                                        <span id="buildStudioOutputStructureDescription" class="build-studio-option-desc" data-i18n="build_output_files_and_folders_desc"
+                                            >Write files and folders to a destination on your computer.</span
+                                        >
+                                    </span>
+                                </label>
+                                <label class="build-studio-option">
+                                    <input type="radio" id="buildStudioOutputModeZip" name="buildStudioOutputMode" value="zip" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_output_zip">Export only ZIP file</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_output_zip_desc"
+                                            >Save the structure as a .zip file without creating folders on disk.</span
+                                        >
+                                    </span>
+                                </label>
+                                <label class="build-studio-option">
+                                    <input type="radio" id="buildStudioOutputModeTree" name="buildStudioOutputMode" value="tree" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_output_tree">Save only .tree file</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_output_tree_desc"
+                                            >Export only the project structure definition as a .tree file.</span
+                                        >
+                                    </span>
                                 </label>
                             </div>
-                            <p class="settings-hint" data-i18n="auto_check_updates_desc">Automatically check for new versions when the app starts.</p>
-                            <div class="settings-divider"></div>
-                            <button id="checkUpdateBtn" class="secondary-btn update-check-btn" data-i18n="check_updates">Check for updates</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
-        <div class="modal-content modal-content-centered">
-            <div class="modal-header">
-                <h2 id="aboutTitle" data-i18n="about_menu">About Tree IDE</h2>
-                <button class="modal-close" id="closeAbout" aria-label="Close about dialog"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body modal-body-padded">
-                <h1 class="about-title">Tree IDE</h1>
-                <p class="about-version" id="aboutVersion">v---</p>
-                <p class="about-description" data-i18n="credits_desc">A minimalist tool for rapid project structure scaffolding.</p>
-                <p class="about-license" data-i18n="license">Licensed under MIT License</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="diagnosticReportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="diagnosticReportTitle">
-        <div class="modal-content diagnostic-report-modal">
-            <div class="modal-header">
-                <h2 id="diagnosticReportTitle" data-i18n="report_problem">Report a problem</h2>
-                <button class="modal-close" id="closeDiagnosticReport" aria-label="Close diagnostic report"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body diagnostic-report-body">
-                <div class="diagnostic-privacy">
-                    <div>
-                        <strong data-i18n="diagnostic_privacy_title">Privacy first</strong>
-                        <p data-i18n="diagnostic_privacy">The text below is sent only to prefill the GitHub draft. The diagnostic ZIP, log and screenshot remain local until you choose to attach them.</p>
-                    </div>
-                </div>
-                <div class="diagnostic-field">
-                    <div class="diagnostic-field-heading">
-                        <label class="diagnostic-label" for="diagnosticIssueTitle" data-i18n="diagnostic_issue_title">Issue title</label>
-                        <span id="diagnosticIssueTitleCount" class="diagnostic-character-count">0 / 80</span>
-                    </div>
-                    <div class="diagnostic-title-control">
-                        <select id="diagnosticIssueLabel" class="styled-select diagnostic-title-label" aria-label="GitHub issue label">
-                            <option value="bug">[bug]</option>
-                            <option value="documentation">[documentation]</option>
-                            <option value="duplicate">[duplicate]</option>
-                            <option value="enhancement">[enhancement]</option>
-                            <option value="good first issue">[good first issue]</option>
-                            <option value="help wanted">[help wanted]</option>
-                            <option value="invalid">[invalid]</option>
-                            <option value="question">[question]</option>
-                            <option value="wontfix">[wontfix]</option>
-                        </select>
-                        <input id="diagnosticIssueTitle" type="text" maxlength="80" spellcheck="true" autocomplete="off" aria-describedby="diagnosticIssueTitleHint diagnosticIssueTitleCount" data-i18n-placeholder="diagnostic_issue_title_placeholder" placeholder="Short summary of the problem">
-                    </div>
-                    <p id="diagnosticIssueTitleHint" class="diagnostic-field-hint" data-i18n="diagnostic_issue_title_hint">Use a short and specific title.</p>
-                </div>
-                <div class="diagnostic-field">
-                    <div class="diagnostic-field-heading">
-                        <label class="diagnostic-label" for="diagnosticDescription" data-i18n="diagnostic_description">What happened?</label>
-                        <span id="diagnosticDescriptionCount" class="diagnostic-character-count">0 / 5000</span>
-                    </div>
-                    <textarea id="diagnosticDescription" class="diagnostic-description" maxlength="5000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticDescriptionHint diagnosticDescriptionCount" data-i18n-placeholder="diagnostic_description_placeholder" placeholder="Describe what you were doing and what you expected."></textarea>
-                    <p id="diagnosticDescriptionHint" class="diagnostic-field-hint" data-i18n="diagnostic_description_hint">Explain what failed and what you observed.</p>
-                </div>
-                <div class="diagnostic-field">
-                    <div class="diagnostic-field-heading">
-                        <label class="diagnostic-label" for="diagnosticSteps" data-i18n="diagnostic_issue_steps">Steps to reproduce</label>
-                        <span id="diagnosticStepsCount" class="diagnostic-character-count">0 / 3000</span>
-                    </div>
-                    <textarea id="diagnosticSteps" class="diagnostic-description diagnostic-description-compact" maxlength="3000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticStepsCount" data-i18n-placeholder="diagnostic_steps_placeholder" placeholder="1. Open…&#10;2. Select…&#10;3. The error occurs…"></textarea>
-                </div>
-                <div class="diagnostic-field">
-                    <div class="diagnostic-field-heading">
-                        <label class="diagnostic-label" for="diagnosticExpected" data-i18n="diagnostic_issue_expected">Expected behavior</label>
-                        <span id="diagnosticExpectedCount" class="diagnostic-character-count">0 / 2000</span>
-                    </div>
-                    <textarea id="diagnosticExpected" class="diagnostic-description diagnostic-description-compact" maxlength="2000" spellcheck="true" autocapitalize="sentences" aria-describedby="diagnosticExpectedCount" data-i18n-placeholder="diagnostic_expected_placeholder" placeholder="Describe what should have happened."></textarea>
-                </div>
-                <div class="diagnostic-included">
-                    <div class="diagnostic-section-title">
-                        <p class="diagnostic-label" data-i18n="diagnostic_included">Information included</p>
-                    </div>
-                    <ul>
-                        <li data-i18n="diagnostic_system_info">App/runtime versions, OS, architecture and coarse memory information</li>
-                        <li data-i18n="diagnostic_session_info">Language, theme, update channel and project/error counts — never project names or contents</li>
-                    </ul>
-                </div>
-                <div class="diagnostic-options">
-                    <label class="diagnostic-option">
-                        <input id="diagnosticIncludeLog" type="checkbox" checked>
-                        <span class="diagnostic-option-copy" data-i18n="diagnostic_include_log">Include the recent sanitized app log (up to 256 KB)</span>
-                    </label>
-                    <label class="diagnostic-option diagnostic-screenshot-option">
-                        <input id="diagnosticIncludeScreenshot" type="checkbox">
-                        <span class="diagnostic-option-copy">
-                            <span data-i18n="diagnostic_include_screenshot">Include a screenshot of the Tree IDE window only</span>
-                            <small class="diagnostic-warning" data-i18n="diagnostic_screenshot_warning">The screenshot may contain project text visible inside the app. It never captures the desktop or other windows.</small>
-                        </span>
-                    </label>
-                </div>
-                <p id="diagnosticReportStatus" class="diagnostic-status" role="status" aria-live="polite"></p>
-            </div>
-            <div class="modal-actions diagnostic-report-actions">
-                <button id="cancelDiagnosticReport" class="secondary-btn" type="button" data-i18n="cancel">Cancel</button>
-                <button id="createDiagnosticReport" class="primary-btn" type="button" data-i18n="diagnostic_create">Save package and open issue</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="welcomeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
-        <div class="modal-content welcome-modal-content">
-            <div class="modal-header">
-                <h2 id="welcomeTitle" data-i18n="welcome_title">Welcome to Tree IDE</h2>
-            </div>
-            <div class="modal-body welcome-modal-body">
-                <p class="welcome-intro" data-i18n="welcome_desc">To get started, please select your preferred language, theme, and build folder.</p>
-
-                <div class="settings-section welcome-settings-section">
-                    <h3 data-i18n="general">General</h3>
-                    <div class="settings-row">
-                        <label data-i18n="language" for="welcomeLangSelect">Language</label>
-                        <select id="welcomeLangSelect" class="styled-select">
-                            <option value="en" data-i18n="english">English</option>
-                            <option value="pt" data-i18n="portuguese">Português</option>
-                            <option value="es" data-i18n="spanish">Español</option>
-                        </select>
-                    </div>
-                    <div class="settings-row folder-setting-row">
-                        <label data-i18n="build_folder">Save files in</label>
-                        <div class="folder-picker">
-                            <span id="welcomeBuildFolderPath" class="folder-path" aria-live="polite" hidden>No folder selected</span>
-                            <button id="welcomeChooseBuildFolderBtn" class="secondary-btn compact-btn" type="button" data-i18n="choose_folder">Choose Folder</button>
-                        </div>
-                    </div>
-                    <div id="welcomeBuildFolderList" class="folder-path-list"></div>
-                </div>
-
-                <div class="settings-section welcome-settings-section">
-                    <h3 data-i18n="appearance">Appearance</h3>
-                    <div class="settings-row">
-                        <label data-i18n="theme" for="welcomeThemeSelect">Theme</label>
-                        <select id="welcomeThemeSelect" class="styled-select">
-                            <option value="system" data-i18n="theme_system">System</option>
-                            <option value="dark" data-i18n="theme_dark">Dark</option>
-                            <option value="light" data-i18n="theme_light">Light</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-section welcome-settings-section">
-                    <h3 data-i18n="session">Session</h3>
-                    <div class="settings-row">
-                        <label data-i18n="session" for="welcomeSessionSelect">Session</label>
-                        <select id="welcomeSessionSelect" class="styled-select">
-                            <option value="restore" data-i18n="session_restore">Restore last session</option>
-                            <option value="clean" data-i18n="session_clean">Start clean</option>
-                        </select>
-                    </div>
-                    <p class="settings-hint" data-i18n="session_desc">Choose whether to restore your last project on startup or start with a clean workspace.</p>
-                </div>
-            </div>
-            <div class="modal-actions welcome-modal-actions">
-                <button id="startBtn" class="primary-btn" data-i18n="start">Get Started</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="templatesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="templatesTitle">
-        <div class="modal-content templates-modal-content">
-            <div class="modal-header">
-                <h2 id="templatesTitle" data-i18n="templates">Templates</h2>
-                <button class="modal-close" id="closeTemplatesModal" aria-label="Close templates"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="templates-browser">
-                <section class="templates-panel templates-panel-list" aria-label="Template list">
-                    <div class="templates-source-tabs" role="tablist" aria-label="Template categories">
-                        <button type="button" id="templatesTabBuiltIn" class="templates-source-tab active" data-source="builtin" role="tab" aria-selected="true" aria-controls="templatesList" data-i18n="template_tab_builtin">Built-in</button>
-                        <button type="button" id="templatesTabCustom" class="templates-source-tab" data-source="custom" role="tab" aria-selected="false" aria-controls="templatesList" data-i18n="template_tab_custom">Custom</button>
-                    </div>
-                    <div id="templatesListBody" class="templates-list-body">
-                        <div id="templatesDropHint" class="templates-drop-hint hidden" aria-hidden="true">
-                            <i data-lucide="file-up" aria-hidden="true"></i>
-                            <span data-i18n="template_drop_file">Drop a .tree-template file here</span>
-                        </div>
-                        <div id="templatesList" class="templates-list" role="list" aria-label="Available templates"></div>
-                        <div id="templatesEmptyState" class="templates-empty hidden">
-                            <p data-i18n="template_custom_empty_desc">Create a template here — no need to leave this screen.</p>
-                            <div class="templates-empty-actions">
-                                <button type="button" id="createBlankTemplateBtn" class="secondary-btn" data-i18n="template_create_blank">Start blank</button>
-                                <button type="button" id="importProjectTemplateBtn" class="secondary-btn" data-i18n="template_import_project">From current project</button>
-                                <button type="button" id="importTemplateFileEmptyBtn" class="secondary-btn" data-i18n="template_import_file">Import .tree-template</button>
+                        <p id="buildStudioExistingWarning" class="build-studio-warning" hidden></p>
+                        <div id="buildStudioConflictSection" class="build-studio-options-group" hidden>
+                            <p class="build-studio-option-group-label" data-i18n="build_wizard_conflict_label">If files exist in the output folder</p>
+                            <div class="build-studio-options-list">
+                                <label class="build-studio-option" id="buildStudioConflictSkipLabel">
+                                    <input type="radio" id="buildStudioConflictSkip" name="buildStudioConflict" value="skip" checked />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_wizard_conflict_skip">Skip existing items</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_wizard_conflict_skip_desc"
+                                            >Keep what is already on disk and only add what is missing.</span
+                                        >
+                                    </span>
+                                </label>
+                                <label class="build-studio-option" id="buildStudioConflictOverwriteLabel">
+                                    <input type="radio" id="buildStudioConflictOverwrite" name="buildStudioConflict" value="overwrite" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_wizard_conflict_overwrite">Overwrite existing items</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_wizard_conflict_overwrite_desc"
+                                            >Replace structure files, .tree, or ZIP that already exist.</span
+                                        >
+                                    </span>
+                                </label>
                             </div>
                         </div>
-                    </div>
-                    <div id="templatesCustomFooter" class="templates-list-footer hidden">
-                        <button type="button" id="createCustomTemplateBtn" class="template-create-footer-btn">
-                            <i data-lucide="plus" aria-hidden="true"></i>
-                            <span data-i18n="template_create_new">New template</span>
-                        </button>
-                        <div class="templates-footer-actions">
-                            <button type="button" id="importProjectTemplateFooterBtn" class="template-footer-secondary-btn" data-i18n="template_import_project">From current project</button>
-                            <button type="button" id="importTemplateFileBtn" class="template-footer-secondary-btn" data-i18n="template_import_file">Import .tree-template</button>
-                        </div>
-                    </div>
-                </section>
-                <section class="templates-panel templates-panel-structure" aria-label="Template structure">
-                    <p id="templateStructureLabel" class="templates-panel-label" data-i18n="template_panel_structure">Structure</p>
-                    <div id="templateStructureBody" class="template-structure-body">
-                        <textarea id="templateTreeEditor" class="template-tree-editor hidden" spellcheck="false" aria-labelledby="templateStructureLabel"></textarea>
-                        <p id="templateStructurePreviewLabel" class="template-structure-preview-label hidden" data-i18n="template_structure_preview">Preview</p>
-                        <div id="templateTreePreview" class="template-tree-preview" tabindex="-1"></div>
-                    </div>
-                </section>
-                <section class="templates-panel templates-panel-file" aria-label="Template file">
-                    <div id="templateFilePanel" class="template-file-panel">
-                        <div class="template-file-header">
-                            <span id="templateFileName" class="template-file-path"></span>
-                            <span id="templateFileMode" class="template-file-mode"></span>
-                        </div>
-                        <div class="template-file-body">
-                            <p id="templateFileEmpty" class="template-file-empty" data-i18n="file_preview_empty">Select a file</p>
-                            <label for="templateFileEditor" class="sr-only" data-i18n="file_preview_editor_label">File content</label>
-                            <textarea id="templateFileEditor" class="template-file-editor" spellcheck="false" readonly tabindex="-1" aria-labelledby="templateFileName"></textarea>
-                            <div id="templateMarkdownPreview" class="markdown-preview template-markdown-preview"></div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <div class="modal-actions templates-modal-actions">
-                <button id="useTemplateBtn" class="primary-btn templates-use-btn" data-i18n="use_template">Use Template</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="releaseUpdateModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="releaseUpdateTitle">
-        <div class="modal-content release-update-modal-content" tabindex="-1">
-            <div class="modal-header">
-                <h2 id="releaseUpdateTitle" data-i18n="update_available_title">Update available</h2>
-                <button class="modal-close" id="closeReleaseUpdateModal" aria-label="Close update notification"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body release-update-body">
-                <div class="release-update-summary">
-                    <div class="release-update-copy">
-                        <p data-i18n="update_available_msg">A new Tree IDE version is available and ready to download.</p>
-                        <div class="release-update-version">
-                            <span id="releaseUpdateCurrent">v---</span>
-                            <i data-lucide="arrow-right" aria-hidden="true"></i>
-                            <strong id="releaseUpdateLatest">v---</strong>
-                        </div>
-                    </div>
-                </div>
-                <section class="release-update-changelog" id="releaseUpdateChangelog" aria-expanded="true" hidden>
-                    <button class="release-update-changelog-toggle" id="releaseUpdateChangelogToggle" type="button" aria-expanded="true" aria-controls="releaseUpdateChangelogBody">
-                        <span class="release-update-changelog-toggle-label" data-i18n="update_changelog_title">What's new</span>
-                        <i data-lucide="chevron-down" class="release-update-changelog-chevron" aria-hidden="true"></i>
-                    </button>
-                    <div class="release-update-changelog-body" id="releaseUpdateChangelogBody">
-                        <div class="release-update-changelog-content" id="releaseUpdateChangelogContent"></div>
-                    </div>
-                </section>
-                <div class="release-update-progress" id="releaseUpdateProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0%">
-                    <div class="release-update-progress-bar">
-                        <div class="release-update-progress-fill" id="releaseUpdateProgressFill"></div>
-                    </div>
-                    <span class="release-update-progress-text" id="releaseUpdateProgressText">0%</span>
-                </div>
-            </div>
-            <div class="release-update-footer">
-                <div class="modal-actions release-update-actions">
-                    <button id="declineReleaseUpdateBtn" class="secondary-btn" data-i18n="update_decline">Not now</button>
-                    <button id="downloadReleaseUpdateBtn" class="primary-btn update-download-btn">
-                        <span class="update-download-label" id="updateDownloadLabel" data-i18n="update_download_release">Download update</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Dialog: Text prompt -->
-    <div id="promptModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
-        <div class="modal-content modal-content-narrow modal-content-centered">
-            <div class="modal-header">
-                <h2 id="promptTitle" data-i18n="template_name_prompt">Template name</h2>
-                <button class="modal-close" id="closePromptModal" aria-label="Close prompt"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body modal-body-compact">
-                <label id="promptLabel" class="prompt-label" for="promptInput"></label>
-                <input id="promptInput" class="styled-input" type="text" autocomplete="off" spellcheck="false" />
-                <div class="modal-actions-centered">
-                    <button id="savePromptBtn" class="primary-btn" data-i18n="button_save">Save</button>
-                    <button id="cancelPromptBtn" class="secondary-btn" data-i18n="button_cancel">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Encrypted file password -->
-    <div id="decryptPasswordModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="decryptPasswordTitle">
-        <div class="modal-content modal-content-narrow decrypt-password-modal">
-            <div class="modal-header">
-                <h2 id="decryptPasswordTitle" data-i18n="decrypt_password_title">Password required</h2>
-                <button class="modal-close" id="closeDecryptPasswordModal" aria-label="Close password dialog"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body modal-body-compact decrypt-password-body">
-                <p id="decryptPasswordLead" class="decrypt-password-lead"></p>
-                <div class="decrypt-password-field">
-                    <label id="decryptPasswordLabel" class="decrypt-password-label" for="decryptPasswordInput" data-i18n="decrypt_password_label">Password</label>
-                    <input id="decryptPasswordInput" class="styled-input decrypt-password-input" type="password" autocomplete="current-password" spellcheck="false" data-i18n-placeholder="decrypt_password_placeholder">
-                    <p id="decryptPasswordError" class="decrypt-password-error" hidden role="alert"></p>
-                </div>
-            </div>
-            <div class="modal-actions decrypt-password-actions">
-                <button id="decryptPasswordSubmit" class="primary-btn" type="button" data-i18n="decrypt_password_unlock">Unlock</button>
-                <button id="decryptPasswordCancel" class="secondary-btn" type="button" data-i18n="button_cancel">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Dialog: Confirmation -->
-    <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-        <div class="modal-content modal-content-narrow modal-content-centered">
-            <div class="modal-header">
-                <h2 id="confirmTitle" data-i18n="confirm_title">Confirmation</h2>
-                <button class="modal-close" id="closeConfirmModal" aria-label="Close confirmation"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body modal-body-compact">
-                <p id="confirmMsg" class="confirm-msg">Are you sure?</p>
-                <div class="modal-actions-centered">
-                    <button id="agreeConfirmBtn" class="primary-btn" data-i18n="yes" autofocus>Yes</button>
-                    <button id="cancelConfirmBtn" class="secondary-btn" data-i18n="no">No</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Dialog: Unsaved Changes -->
-    <div id="unsavedModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="unsavedTitle">
-        <div class="modal-content modal-content-narrow modal-content-centered">
-            <div class="modal-header">
-                <h2 id="unsavedTitle" data-i18n="unsaved_changes_title">Unsaved Changes</h2>
-                <button class="modal-close" id="closeUnsavedModal" aria-label="Close unsaved changes dialog"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <div class="modal-body modal-body-compact">
-                <p data-i18n="unsaved_changes_msg" class="confirm-msg">You have unsaved changes. Do you want to save them before closing?</p>
-                <div class="modal-actions-stretch">
-                    <button id="saveUnsavedBtn" class="primary-btn" data-i18n="button_save" autofocus>Save</button>
-                    <button id="dontSaveUnsavedBtn" class="secondary-btn" data-i18n="button_dont_save">Don't Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Build studio (Option C — full screen) -->
-    <div id="buildStudio" class="build-studio" hidden aria-hidden="true">
-        <header class="build-studio-header">
-            <div class="build-studio-header-top">
-                <h2 id="buildStudioTitle" data-i18n="build_studio_title">Create Structure</h2>
-                <button type="button" class="modal-close" id="closeBuildStudio" aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button>
-            </div>
-            <hr class="build-studio-header-divider" aria-hidden="true">
-            <div class="build-studio-header-meta">
-                <div id="buildStudioStats" class="build-studio-header-stats" aria-live="polite"></div>
-                <div id="buildStudioProjectList" class="build-project-tabs-bar" hidden>
-                    <button class="tab-scroll-btn tab-scroll-left" id="buildStudioTabScrollLeft" type="button" aria-label="Scroll tabs left" tabindex="-1">
-                        <i data-lucide="chevron-left" aria-hidden="true"></i>
-                    </button>
-                    <div class="tab-scroll-viewport">
-                        <div class="project-tab-list" id="buildStudioTabList" role="tablist" aria-label="Projects to create"></div>
-                    </div>
-                    <button class="tab-scroll-btn tab-scroll-right" id="buildStudioTabScrollRight" type="button" aria-label="Scroll tabs right" tabindex="-1">
-                        <i data-lucide="chevron-right" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-        <div class="build-studio-body">
-            <section class="build-studio-preview" aria-labelledby="buildStudioPreviewLabel">
-                <p id="buildStudioPreviewLabel" class="build-studio-preview-label" data-i18n="build_studio_preview">Preview</p>
-                <div class="build-studio-preview-split">
-                    <div class="build-studio-tree-wrap">
-                        <div id="buildStudioTreeView" role="tree" aria-label="Structure preview"></div>
-                    </div>
-                    <aside id="buildStudioFilePanel" class="build-studio-file-panel" aria-label="File preview">
-                        <div class="build-studio-file-header">
-                            <span id="buildStudioFilePath" class="build-studio-file-path"></span>
-                            <span id="buildStudioFileMode" class="build-studio-file-mode"></span>
-                        </div>
-                        <div class="build-studio-file-body">
-                            <p id="buildStudioFileEmpty" class="build-studio-file-empty" data-i18n="file_preview_empty">Select a file</p>
-                            <textarea id="buildStudioFileEditor" readonly spellcheck="false" aria-readonly="true" tabindex="-1"></textarea>
-                            <div id="buildStudioMarkdownPreview" class="markdown-preview"></div>
-                        </div>
-                    </aside>
-                </div>
-            </section>
-            <section class="build-studio-options" aria-labelledby="buildStudioOptionsLabel">
-                <p id="buildStudioOptionsLabel" class="build-studio-options-label" data-i18n="build_studio_options">Options</p>
-                <div class="build-studio-options-body">
-                    <div class="build-studio-options-group">
-                        <p class="build-studio-option-group-label" data-i18n="build_output_mode_label">Output</p>
-                        <div class="build-studio-options-list">
-                            <label class="build-studio-option">
-                                <input type="radio" id="buildStudioOutputModeStructure" name="buildStudioOutputMode" value="structure" checked>
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_output_structure">Create folder structure</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_output_structure_desc">Write files and folders to a destination on your computer.</span>
-                                </span>
-                            </label>
-                            <label class="build-studio-option">
-                                <input type="radio" id="buildStudioOutputModeZip" name="buildStudioOutputMode" value="zip">
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_output_zip">Export only ZIP file</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_output_zip_desc">Save the structure as a .zip file without creating folders on disk.</span>
-                                </span>
-                            </label>
-                            <label class="build-studio-option">
-                                <input type="radio" id="buildStudioOutputModeTree" name="buildStudioOutputMode" value="tree">
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_output_tree">Save only .tree file</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_output_tree_desc">Export only the project structure definition as a .tree file.</span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                    <p id="buildStudioExistingWarning" class="build-studio-warning" hidden></p>
-                    <div id="buildStudioConflictSection" class="build-studio-options-group" hidden>
-                        <p class="build-studio-option-group-label" data-i18n="build_wizard_conflict_label">If files exist in the output folder</p>
-                        <div class="build-studio-options-list">
-                            <label class="build-studio-option" id="buildStudioConflictSkipLabel">
-                                <input type="radio" id="buildStudioConflictSkip" name="buildStudioConflict" value="skip" checked>
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_wizard_conflict_skip">Skip existing items</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_wizard_conflict_skip_desc">Keep what is already on disk and only add what is missing.</span>
-                                </span>
-                            </label>
-                            <label class="build-studio-option" id="buildStudioConflictOverwriteLabel">
-                                <input type="radio" id="buildStudioConflictOverwrite" name="buildStudioConflict" value="overwrite">
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_wizard_conflict_overwrite">Overwrite existing items</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_wizard_conflict_overwrite_desc">Replace structure files, .tree, or ZIP that already exist.</span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                    <div id="buildStudioStructureSection" class="build-studio-options-group">
-                        <div class="build-studio-destination">
-                            <div class="settings-row folder-setting-row build-studio-folder-row">
-                                <label data-i18n="build_wizard_destination">Destination folder</label>
-                                <div class="folder-picker">
-                                    <button type="button" id="buildStudioChooseFolder" class="secondary-btn compact-btn" data-i18n="build_wizard_choose_folder">Choose folder</button>
+                        <div id="buildStudioStructureSection" class="build-studio-options-group">
+                            <div class="build-studio-destination">
+                                <div class="settings-row folder-setting-row build-studio-folder-row">
+                                    <label data-i18n="build_wizard_destination">Destination folder</label>
+                                    <div class="folder-picker">
+                                        <button
+                                            type="button"
+                                            id="buildStudioChooseFolder"
+                                            class="secondary-btn compact-btn"
+                                            data-i18n="build_wizard_choose_folder"
+                                        >
+                                            Choose folder
+                                        </button>
+                                    </div>
                                 </div>
+                                <div id="buildStudioFolderPath" class="folder-path-list"></div>
                             </div>
-                            <div id="buildStudioFolderPath" class="folder-path-list"></div>
+                            <div class="build-studio-options-list">
+                                <label class="build-studio-option" id="buildStudioAlsoExportZipLabel">
+                                    <input type="checkbox" id="buildStudioAlsoExportZip" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_wizard_export_zip">Also export as ZIP</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_wizard_export_zip_desc"
+                                            >Save a copy of the structure as a .zip file after creating.</span
+                                        >
+                                    </span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="build-studio-options-list">
-                            <label class="build-studio-option" id="buildStudioAlsoExportZipLabel">
-                                <input type="checkbox" id="buildStudioAlsoExportZip">
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_wizard_export_zip">Also export as ZIP</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_wizard_export_zip_desc">Save a copy of the structure as a .zip file after creating.</span>
-                                </span>
-                            </label>
+                        <div id="buildStudioZipExtras" class="build-studio-options-group is-disabled">
+                            <p class="build-studio-option-group-label" data-i18n="build_zip_options_label">ZIP options</p>
+                            <div class="build-studio-options-list">
+                                <label class="build-studio-option" id="buildStudioIncludeTreeInZipLabel">
+                                    <input type="checkbox" id="buildStudioIncludeTreeInZip" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_include_tree_in_zip">Include .tree file in ZIP</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_include_tree_in_zip_desc"
+                                            >Add the structure definition file inside the archive.</span
+                                        >
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="build-password-fields">
+                                <label class="build-password-label" for="buildStudioZipPassword" data-i18n="build_zip_password">ZIP password (optional)</label>
+                                <input
+                                    type="password"
+                                    id="buildStudioZipPassword"
+                                    class="styled-input"
+                                    autocomplete="new-password"
+                                    data-i18n-placeholder="build_password_placeholder"
+                                />
+                                <label class="build-password-label" for="buildStudioZipPasswordConfirm" data-i18n="build_password_confirm"
+                                    >Confirm password</label
+                                >
+                                <input
+                                    type="password"
+                                    id="buildStudioZipPasswordConfirm"
+                                    class="styled-input"
+                                    autocomplete="new-password"
+                                    data-i18n-placeholder="build_password_confirm_placeholder"
+                                />
+                            </div>
+                        </div>
+                        <div id="buildStudioTreeExtras" class="build-studio-options-group is-disabled">
+                            <p class="build-studio-option-group-label" data-i18n="build_tree_options_label">.tree options</p>
+                            <div class="build-studio-options-list">
+                                <label class="build-studio-option" id="buildStudioProtectTreeWithPasswordLabel">
+                                    <input type="checkbox" id="buildStudioProtectTreeWithPassword" />
+                                    <span class="build-studio-option-text">
+                                        <span class="build-studio-option-title" data-i18n="build_tree_protect">Protect .tree with password</span>
+                                        <span class="build-studio-option-desc" data-i18n="build_tree_protect_desc"
+                                            >Encrypt the file using the TREEIDE2 format.</span
+                                        >
+                                    </span>
+                                </label>
+                            </div>
+                            <div id="buildStudioTreePasswordFields" class="build-password-fields is-disabled">
+                                <label class="build-password-label" for="buildStudioTreePassword" data-i18n="build_tree_password"
+                                    >.tree password</label
+                                >
+                                <input
+                                    type="password"
+                                    id="buildStudioTreePassword"
+                                    class="styled-input"
+                                    autocomplete="new-password"
+                                    data-i18n-placeholder="build_password_placeholder"
+                                />
+                                <label class="build-password-label" for="buildStudioTreePasswordConfirm" data-i18n="build_password_confirm"
+                                    >Confirm password</label
+                                >
+                                <input
+                                    type="password"
+                                    id="buildStudioTreePasswordConfirm"
+                                    class="styled-input"
+                                    autocomplete="new-password"
+                                    data-i18n-placeholder="build_password_confirm_placeholder"
+                                />
+                                <p id="buildStudioTreePasswordWarning" class="build-studio-warning" data-i18n="build_tree_password_warning" hidden>
+                                    This file will be encrypted. If you lose the password, it cannot be decrypted or opened.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <div id="buildStudioZipExtras" class="build-studio-options-group is-disabled">
-                        <p class="build-studio-option-group-label" data-i18n="build_zip_options_label">ZIP options</p>
-                        <div class="build-studio-options-list">
-                            <label class="build-studio-option" id="buildStudioIncludeTreeInZipLabel">
-                                <input type="checkbox" id="buildStudioIncludeTreeInZip">
-                                <span class="build-studio-option-text">
-                                    <span class="build-studio-option-title" data-i18n="build_include_tree_in_zip">Include .tree file in ZIP</span>
-                                    <span class="build-studio-option-desc" data-i18n="build_include_tree_in_zip_desc">Add the structure definition file inside the archive.</span>
-                                </span>
-                            </label>
-                        </div>
-                        <div class="build-password-fields">
-                            <label class="build-password-label" for="buildStudioZipPassword" data-i18n="build_zip_password">ZIP password (optional)</label>
-                            <input type="password" id="buildStudioZipPassword" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
-                            <label class="build-password-label" for="buildStudioZipPasswordConfirm" data-i18n="build_password_confirm">Confirm password</label>
-                            <input type="password" id="buildStudioZipPasswordConfirm" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
-                        </div>
-                    </div>
-                    <div id="buildStudioTreeExtras" class="build-studio-options-group is-disabled">
-                        <p class="build-studio-option-group-label" data-i18n="build_tree_options_label">.tree options</p>
-                        <div class="build-password-fields">
-                            <label class="build-password-label" for="buildStudioTreePassword" data-i18n="build_tree_password">Encrypt .tree with password (optional)</label>
-                            <input type="password" id="buildStudioTreePassword" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_placeholder">
-                            <label class="build-password-label" for="buildStudioTreePasswordConfirm" data-i18n="build_password_confirm">Confirm password</label>
-                            <input type="password" id="buildStudioTreePasswordConfirm" class="styled-input" autocomplete="new-password" data-i18n-placeholder="build_password_confirm_placeholder">
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </div>
+            <footer class="build-studio-footer">
+                <button type="button" id="buildStudioCancel" class="secondary-btn" data-i18n="build_studio_cancel">Cancel</button>
+                <button type="button" id="buildStudioCreate" class="primary-btn" data-i18n="build_studio_create">Create</button>
+            </footer>
         </div>
-        <footer class="build-studio-footer">
-            <button type="button" id="buildStudioCancel" class="secondary-btn" data-i18n="build_studio_cancel">Cancel</button>
-            <button type="button" id="buildStudioCreate" class="primary-btn" data-i18n="build_studio_create">Create</button>
-        </footer>
-    </div>
 
-    <script type="module" src="main.js"></script>
-</body>
-
+        <script type="module" src="main.js"></script>
+    </body>
 </html>

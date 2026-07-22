@@ -1,11 +1,10 @@
-import crypto from 'node:crypto';
 import {
-    TREE_ENCRYPTED_V1_MAGIC,
     TREE_ENCRYPTED_V2_MAGIC,
     decryptTreeContent,
     encryptTreeContent,
     isEncryptedTreeContent
 } from '../src/main/project/treeCrypto.js';
+import { parseEditorContent } from '../src/shared/helpers.js';
 
 describe('treeCrypto', () => {
     const sample = 'src/\n    index.js\nREADME.md';
@@ -15,14 +14,16 @@ describe('treeCrypto', () => {
         expect(isEncryptedTreeContent(encryptTreeContent(sample, 'secret'))).toBe(true);
     });
 
-    it('encrypts with TREEIDE2 header and strong scrypt parameters', () => {
+    it('encrypts with a TREEIDE2 authenticated Argon2id profile', () => {
         const encrypted = encryptTreeContent(sample, 'my-password');
         expect(encrypted.startsWith(`${TREE_ENCRYPTED_V2_MAGIC}\n`)).toBe(true);
         const [, headerLine] = encrypted.split('\n');
         const header = JSON.parse(headerLine);
         expect(header.cipher).toBe('aes-256-gcm');
-        expect(header.kdf).toBe('scrypt');
-        expect(header.n).toBe(262144);
+        expect(header.kdf).toBe('argon2id');
+        expect(header.memory).toBe(262144);
+        expect(header.passes).toBe(4);
+        expect(header.parallelism).toBe(4);
         expect(header.salt).toBe(32);
     });
 
@@ -37,21 +38,32 @@ describe('treeCrypto', () => {
         expect(() => decryptTreeContent(encrypted, 'wrong')).toThrow();
     });
 
-    it('returns plain content when not encrypted', () => {
-        expect(decryptTreeContent(sample, 'ignored')).toBe(sample);
+    it('authenticates the TREEIDE2 cryptographic header', () => {
+        const encrypted = encryptTreeContent(sample, 'right');
+        const tampered = encrypted.replace(
+            '"v":2,"kdf":"argon2id"',
+            '"kdf":"argon2id","v":2'
+        );
+        expect(() => decryptTreeContent(tampered, 'right')).toThrow();
     });
 
-    it('decrypts legacy TREEIDE1 files', () => {
-        const salt = crypto.randomBytes(16);
-        const iv = crypto.randomBytes(12);
-        const key = crypto.scryptSync('legacy-pass', salt, 32);
-        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-        const encrypted = Buffer.concat([cipher.update(sample, 'utf8'), cipher.final()]);
-        const tag = cipher.getAuthTag();
-        const payload = Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
-        const legacy = `${TREE_ENCRYPTED_V1_MAGIC}\n${payload}\n`;
-
-        expect(isEncryptedTreeContent(legacy)).toBe(true);
-        expect(decryptTreeContent(legacy, 'legacy-pass')).toBe(sample);
+    it('keeps original Legacy plaintext files unchanged', () => {
+        const legacyTabs = 'tabs/\n\tcontroller/\n\tmodels/\n\t\tUser.py';
+        const legacyDots = 'dots/\n...controller/\n......User.py';
+        expect(isEncryptedTreeContent(legacyTabs)).toBe(false);
+        expect(isEncryptedTreeContent(legacyDots)).toBe(false);
+        expect(decryptTreeContent(legacyTabs, 'ignored')).toBe(legacyTabs);
+        expect(decryptTreeContent(legacyDots, 'ignored')).toBe(legacyDots);
+        expect(parseEditorContent(legacyTabs)).toEqual({
+            'tabs/': {
+                'controller/': {},
+                'models/': { 'User.py': {} }
+            }
+        });
+        expect(parseEditorContent(legacyDots)).toEqual({
+            'dots/': {
+                'controller/': { 'User.py': {} }
+            }
+        });
     });
 });

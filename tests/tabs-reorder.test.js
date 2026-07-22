@@ -12,17 +12,18 @@ globalThis.localStorage = {
     removeItem(k) { delete this._data[k]; }
 };
 
-const tabs = createTabs({
+const app = {
     state: {},
     dom: { bindRefs() {} },
     helpers,
     i18n: { t: (key) => key },
     toast: { showToast: () => {} },
     icons: { refreshIcons: () => {} },
-    tree: { parseEditorContent: () => ({}) },
-    editor: {},
+    tree: { parseEditorContent: () => ({}), getFilePathsFromTree: () => [] },
+    editor: { openFilePreview: vi.fn(), closeFilePreview: vi.fn() },
     validation: {}
-});
+};
+const tabs = createTabs(app);
 
 function makeTab(id, name) {
     return {
@@ -70,5 +71,72 @@ describe('reorderProjectTab', () => {
         tabs.reorderProjectTab('c', 'a', true);
         const parsed = JSON.parse(localStorage.getItem('autosave_tabs'));
         expect(parsed.projectTabs.map((t) => t.id)).toEqual(['c', 'a', 'b']);
+    });
+});
+
+describe('file editor tabs', () => {
+    beforeEach(() => {
+        localStorage._data = {};
+        app.editor.openFilePreview.mockClear();
+        app.editor.closeFilePreview.mockClear();
+        tabs.projectTabs = [makeTab('a', 'Alpha')];
+        tabs.activeProjectTabId = 'a';
+        tabs.saveCurrentTabState = () => {};
+        app.state.activePreviewPath = '';
+        document.body.innerHTML = '<div id="codeTabList"></div>';
+    });
+
+    it('reorders open file tabs without changing the active file', () => {
+        const tab = tabs.projectTabs[0];
+        tab.openFileTabs = [{ path: 'a.js' }, { path: 'b.js' }, { path: 'c.js' }];
+        tab.activeFileTabPath = 'b.js';
+
+        expect(tabs.reorderFileTab('c.js', 'a.js', true)).toBe(true);
+        expect(tab.openFileTabs.map((ft) => ft.path)).toEqual(['c.js', 'a.js', 'b.js']);
+        expect(tab.activeFileTabPath).toBe('b.js');
+
+        const parsed = JSON.parse(localStorage.getItem('autosave_tabs'));
+        expect(parsed.projectTabs[0].openFileTabs.map((ft) => ft.path)).toEqual(['c.js', 'a.js', 'b.js']);
+    });
+
+    it('removes every stale tab and keeps valid tabs in their current order', () => {
+        const tab = tabs.projectTabs[0];
+        tab.openFileTabs = [
+            { path: 'kept-a.js' },
+            { path: 'deleted-a.js' },
+            { path: 'kept-b.js' },
+            { path: 'deleted-b.js' }
+        ];
+        tab.activeFileTabPath = 'kept-b.js';
+        app.state.activePreviewPath = 'kept-b.js';
+
+        expect(tabs.reconcileOpenFileTabs(tab, new Set(['kept-a.js', 'kept-b.js']))).toBe(true);
+        expect(tab.openFileTabs.map((ft) => ft.path)).toEqual(['kept-a.js', 'kept-b.js']);
+        expect(tab.activeFileTabPath).toBe('kept-b.js');
+        expect(app.editor.openFilePreview).not.toHaveBeenCalled();
+    });
+
+    it('opens the nearest valid tab when the active file is deleted', () => {
+        const tab = tabs.projectTabs[0];
+        tab.openFileTabs = [{ path: 'a.js' }, { path: 'deleted.js' }, { path: 'c.js' }];
+        tab.activeFileTabPath = 'deleted.js';
+
+        tabs.reconcileOpenFileTabs(tab, new Set(['a.js', 'c.js']));
+
+        expect(tab.openFileTabs.map((ft) => ft.path)).toEqual(['a.js', 'c.js']);
+        expect(tab.activeFileTabPath).toBe('c.js');
+        expect(app.editor.openFilePreview).toHaveBeenCalledWith('c.js');
+    });
+
+    it('closes the file preview when no open file still exists', () => {
+        const tab = tabs.projectTabs[0];
+        tab.openFileTabs = [{ path: 'deleted.js' }];
+        tab.activeFileTabPath = 'deleted.js';
+
+        tabs.reconcileOpenFileTabs(tab, new Set());
+
+        expect(tab.openFileTabs).toEqual([]);
+        expect(tab.activeFileTabPath).toBeNull();
+        expect(app.editor.closeFilePreview).toHaveBeenCalledOnce();
     });
 });

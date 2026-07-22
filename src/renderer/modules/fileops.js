@@ -171,6 +171,11 @@ const defaultFileLangs = {};
             }
         });
 
+        const activeTab = app.tabs.getActiveTab();
+        if (activeTab) {
+            app.tabs.reconcileOpenFileTabs?.(activeTab, filePaths);
+        }
+
         persistFileContents();
     }
 
