@@ -202,10 +202,10 @@ export function createModals(app) {
         }
     }
 
-    async function checkReleaseUpdateOnStartup() {
+    async function checkReleaseUpdateOnStartup(channel = localStorage.getItem('update_channel') || 'stable') {
         if (!app.electronAPI || !app.electronAPI.checkReleaseUpdate) {return;}
         try {
-            const result = await app.electronAPI.checkReleaseUpdate();
+            const result = await app.electronAPI.checkReleaseUpdate(channel);
             handleUpdateCheckResult(result);
         } catch (err) {
             console.warn('Release update check failed:', err);

@@ -3,6 +3,7 @@
  */
 
 import { createRequire } from 'node:module';
+import https from 'node:https';
 import path from 'node:path';
 import { existsSync, readFileSync, unlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { ipcMain, app, shell } from 'electron';
@@ -14,7 +15,6 @@ import {
 import { getUpdateInstallMode, isInAppUpdateInstallSupported } from '../../shared/updateInstall.js';
 import { normalizeDownloadPercent } from '../../shared/updateProgress.js';
 import {
-    isReleaseFinalized,
     normalizeReleaseNotesEntries,
 } from '../../shared/releaseFinalize.js';
 
@@ -28,6 +28,16 @@ let lastDownloadedUpdateVersion = '';
 const PENDING_UPDATE_INSTALL_FILE = 'pending-update-install.json';
 
 let lastAvailableUpdateInfo = null;
+let selectedUpdateChannel = 'stable';
+let activeUpdateCheck = null;
+let activeUpdateCheckChannel = null;
+const UPDATE_CHECK_RETRY_DELAYS_MS = [500, 1500];
+const UPDATE_CHECK_HEADERS = {
+    'Cache-Control': 'no-cache, no-store, max-age=0',
+    Pragma: 'no-cache',
+};
+const UPDATE_REPOSITORY = { owner: 'markelpher', repo: 'treeide-deploy' };
+const UPDATE_RELEASES_API = `https://api.github.com/repos/${UPDATE_REPOSITORY.owner}/${UPDATE_REPOSITORY.repo}/releases?per_page=20`;
 
 
 function getPendingUpdateInstallPath() {
@@ -47,7 +57,8 @@ function readPendingUpdateInstall() {
 }
 
 function normalizeSemver(value) {
-    return semver.coerce(value);
+    const raw = String(value || '').trim().replace(/^v/i, '');
+    return semver.parse(raw) || semver.coerce(raw);
 }
 
 export function isInstalledUpdateVersion(currentVersion, targetVersion) {
@@ -223,8 +234,8 @@ function buildUpdatePayload(base) {
 /** @returns {boolean} True only when latest is strictly newer than current. */
 export function isUpdateNewer(latestVersion, currentVersion) {
     if (!latestVersion || !currentVersion) { return false; }
-    const latest = semver.coerce(latestVersion);
-    const current = semver.coerce(currentVersion);
+    const latest = normalizeSemver(latestVersion);
+    const current = normalizeSemver(currentVersion);
     if (!latest || !current) { return false; }
     return semver.gt(latest, current);
 }
@@ -235,20 +246,125 @@ export function getUpdateCheckStatus(info, currentVersion) {
         return { ok: false, error: 'update_metadata_missing' };
     }
     const updateAvailable = isUpdateNewer(latestVersion, currentVersion);
-    if (updateAvailable && !isReleaseFinalized(info?.releaseNotes)) {
-        return {
-            ok: false,
-            error: 'update_release_pending',
-            currentVersion,
-            latestVersion,
-        };
-    }
     return {
         ok: true,
         updateAvailable,
         currentVersion,
         latestVersion,
     };
+}
+
+export function normalizeUpdateChannel(channel) {
+    return channel === 'beta' ? 'beta' : 'stable';
+}
+
+export function configureUpdateChannel(updater, channel, currentVersion = app.getVersion()) {
+    const normalizedChannel = normalizeUpdateChannel(channel);
+    if (!updater) { return normalizedChannel; }
+
+    const isBeta = normalizedChannel === 'beta';
+    updater.allowPrerelease = isBeta;
+    updater.channel = isBeta ? 'beta' : 'latest';
+    updater.allowDowngrade = !isBeta && Boolean(semver.prerelease(currentVersion));
+    updater.requestHeaders = {
+        ...(updater.requestHeaders || {}),
+        ...UPDATE_CHECK_HEADERS,
+    };
+    return normalizedChannel;
+}
+
+export function isRetryableUpdateError(errorKey) {
+    return [
+        'update_metadata_missing',
+        'update_repo_inaccessible',
+        'update_network_error',
+    ].includes(errorKey);
+}
+
+export function selectLatestUpdateRelease(releases, channel = 'stable') {
+    const normalizedChannel = normalizeUpdateChannel(channel);
+    return (Array.isArray(releases) ? releases : [])
+        .filter((release) => release && !release.draft)
+        .filter((release) => normalizedChannel === 'beta' || !release.prerelease)
+        .map((release) => {
+            const version = normalizeSemver(release.tag_name || release.name);
+            if (!version) { return null; }
+            const metadataChannel = release.prerelease ? 'beta' : 'latest';
+            const metadataName = `${metadataChannel}.yml`;
+            const hasMetadata = Array.isArray(release.assets)
+                && release.assets.some((asset) => asset?.name === metadataName);
+            if (!hasMetadata) { return null; }
+            return {
+                version: version.version,
+                tag: release.tag_name || `v${version.version}`,
+                metadataChannel,
+            };
+        })
+        .filter(Boolean)
+        .sort((left, right) => semver.rcompare(left.version, right.version))[0] || null;
+}
+
+function requestJson(url) {
+    return new Promise((resolve, reject) => {
+        const request = https.get(url, {
+            headers: {
+                'User-Agent': 'TreeIDE-Updater',
+                Accept: 'application/vnd.github+json',
+                ...UPDATE_CHECK_HEADERS,
+            },
+        }, (response) => {
+            let body = '';
+            response.setEncoding('utf8');
+            response.on('data', (chunk) => {
+                body += chunk;
+                if (body.length > 2 * 1024 * 1024) {
+                    request.destroy(new Error('GitHub update response is too large'));
+                }
+            });
+            response.on('end', () => {
+                if (response.statusCode < 200 || response.statusCode >= 300) {
+                    reject(new Error(`GitHub releases request failed with HTTP ${response.statusCode}`));
+                    return;
+                }
+                try {
+                    resolve(JSON.parse(body));
+                } catch (err) {
+                    reject(new Error(`Invalid GitHub releases response: ${err?.message || String(err)}`));
+                }
+            });
+        });
+        request.setTimeout(10000, () => request.destroy(new Error('GitHub releases request timed out')));
+        request.on('error', reject);
+    });
+}
+
+function configureGitHubUpdateProvider(updater) {
+    if (typeof updater?.setFeedURL !== 'function') { return; }
+    updater.setFeedURL({
+        provider: 'github',
+        owner: UPDATE_REPOSITORY.owner,
+        repo: UPDATE_REPOSITORY.repo,
+    });
+}
+
+async function checkGitHubReleaseFallback(currentVersion, channel) {
+    const releases = await requestJson(`${UPDATE_RELEASES_API}&cacheBust=${Date.now()}`);
+    const release = selectLatestUpdateRelease(releases, channel);
+    if (!release || !isUpdateNewer(release.version, currentVersion)) { return null; }
+
+    log.info(`GitHub API found newer ${channel} release ${release.version}; bypassing stale latest-release metadata.`);
+    autoUpdater.allowPrerelease = normalizeUpdateChannel(channel) === 'beta';
+    autoUpdater.channel = release.metadataChannel;
+    autoUpdater.setFeedURL({
+        provider: 'generic',
+        url: `https://github.com/${UPDATE_REPOSITORY.owner}/${UPDATE_REPOSITORY.repo}/releases/download/${encodeURIComponent(release.tag)}`,
+        channel: release.metadataChannel,
+    });
+    return autoUpdater.checkForUpdates();
+}
+
+function waitForUpdateRetry(delayMs) {
+    return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 try {
@@ -258,6 +374,7 @@ try {
     autoUpdater.allowPrerelease = false;
     autoUpdater.autoInstallOnAppQuit = false;
     autoUpdater.autoRunAppAfterInstall = true;
+    configureUpdateChannel(autoUpdater, selectedUpdateChannel);
     // Ensure downloaded updates are applied immediately on Windows (NSIS)
     try {
         if (autoUpdater.updateConfigPath) {
@@ -272,7 +389,7 @@ try {
     log.warn('electron-updater not available:', err.message);
 }
 
-async function checkReleaseUpdate() {
+async function checkReleaseUpdateOnce() {
     if (!autoUpdater) {
         return { ok: false, error: 'update_unavailable' };
     }
@@ -281,18 +398,28 @@ async function checkReleaseUpdate() {
         return { ok: false, error: 'update_unavailable' };
     }
 
-    log.info('Checking for updates.');
-    const result = await autoUpdater.checkForUpdates();
+    configureGitHubUpdateProvider(autoUpdater);
+    configureUpdateChannel(autoUpdater, selectedUpdateChannel);
+    log.info(`Checking for updates on ${selectedUpdateChannel} channel.`);
+    let result = await autoUpdater.checkForUpdates();
     const info = result?.updateInfo;
     const currentVersion = app.getVersion();
-    const status = getUpdateCheckStatus(info, currentVersion);
+    let status = getUpdateCheckStatus(info, currentVersion);
+    if (status.ok && !status.updateAvailable) {
+        const fallbackResult = await checkGitHubReleaseFallback(currentVersion, selectedUpdateChannel);
+        if (fallbackResult?.updateInfo) {
+            result = fallbackResult;
+            status = getUpdateCheckStatus(result.updateInfo, currentVersion);
+        }
+    }
+    const resolvedInfo = result?.updateInfo;
     if (!status.ok) {
         log.warn('Update provider returned no version information.');
         return status;
     }
 
     const { latestVersion, updateAvailable } = status;
-    if (updateAvailable) { lastAvailableUpdateInfo = info; }
+    if (updateAvailable) { lastAvailableUpdateInfo = resolvedInfo; }
     if (updateAvailable) { cleanupSupersededPendingUpdate(latestVersion); }
     const downloadedUpdate = updateAvailable ? getPendingDownloadedUpdate(latestVersion, currentVersion) : null;
 
@@ -302,12 +429,62 @@ async function checkReleaseUpdate() {
 
     return buildUpdatePayload({
         ...status,
-        releaseName: normalizeReleaseName(info?.releaseName, latestVersion),
-        releaseNotes: updateAvailable ? normalizeReleaseNotesEntries(info?.releaseNotes) : [],
-        assetName: updateAvailable ? (info?.files?.[0]?.url || '') : '',
+        releaseName: normalizeReleaseName(resolvedInfo?.releaseName, latestVersion),
+        releaseNotes: updateAvailable ? normalizeReleaseNotesEntries(resolvedInfo?.releaseNotes) : [],
+        assetName: updateAvailable ? (resolvedInfo?.files?.[0]?.url || '') : '',
         downloaded: !!downloadedUpdate,
         downloadedInstallerPath: downloadedUpdate?.installerPath || '',
     });
+}
+
+async function checkReleaseUpdateWithRetry() {
+    let lastResult = null;
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= UPDATE_CHECK_RETRY_DELAYS_MS.length; attempt += 1) {
+        try {
+            lastResult = await checkReleaseUpdateOnce();
+            lastError = null;
+            if (lastResult?.updateAvailable) { return lastResult; }
+            if (lastResult?.ok === false && !isRetryableUpdateError(lastResult?.error)) { return lastResult; }
+            if (attempt >= 1 || attempt === UPDATE_CHECK_RETRY_DELAYS_MS.length) { return lastResult; }
+        } catch (err) {
+            lastError = err;
+            const errorKey = getUpdateErrorMessage(err);
+            if (!isRetryableUpdateError(errorKey) || attempt === UPDATE_CHECK_RETRY_DELAYS_MS.length) {
+                throw err;
+            }
+            log.warn(`Update check attempt ${attempt + 1} failed with ${errorKey}; retrying.`);
+        }
+
+        const delayMs = UPDATE_CHECK_RETRY_DELAYS_MS[attempt];
+        if (delayMs) { await waitForUpdateRetry(delayMs); }
+    }
+
+    if (lastError) { throw lastError; }
+    return lastResult || { ok: false, error: 'update_unavailable' };
+}
+
+async function checkReleaseUpdate(channel) {
+    const requestedChannel = normalizeUpdateChannel(channel || selectedUpdateChannel);
+    if (activeUpdateCheck) {
+        if (activeUpdateCheckChannel === requestedChannel) { return activeUpdateCheck; }
+        try {
+            await activeUpdateCheck;
+        } catch {
+            // A check for the previous channel failed; continue with the requested channel.
+        }
+    }
+
+    selectedUpdateChannel = configureUpdateChannel(autoUpdater, requestedChannel);
+    activeUpdateCheckChannel = requestedChannel;
+    activeUpdateCheck = checkReleaseUpdateWithRetry();
+    try {
+        return await activeUpdateCheck;
+    } finally {
+        activeUpdateCheck = null;
+        activeUpdateCheckChannel = null;
+    }
 }
 
 export function registerUpdaterEvents(getMainWindow) {
@@ -318,7 +495,7 @@ export function registerUpdaterEvents(getMainWindow) {
         const currentVersion = app.getVersion();
         const status = getUpdateCheckStatus(info, currentVersion);
         if (!status.ok) {
-            log.info(`Ignoring update ${info?.version || 'unknown'} — localized release notes are not finalized.`);
+            log.info(`Ignoring update ${info?.version || 'unknown'} — update metadata is incomplete.`);
             return;
         }
         if (!status.updateAvailable) {
@@ -326,6 +503,7 @@ export function registerUpdaterEvents(getMainWindow) {
             return;
         }
         cleanupSupersededPendingUpdate(info.version);
+        lastAvailableUpdateInfo = info;
         const downloadedUpdate = getPendingDownloadedUpdate(info.version, currentVersion);
         log.info(`Update available: ${info.version}`);
         getMainWindow()?.webContents.send('release-update-available', buildUpdatePayload({
@@ -384,15 +562,14 @@ export function registerUpdaterEvents(getMainWindow) {
 
 export function registerUpdateIpc(isReadyToCloseRef, getMainWindow = () => null) {
     ipcMain.handle('set-update-channel', (event, channel) => {
-        if (!autoUpdater) { return; }
-        const isBeta = channel === 'beta';
-        autoUpdater.allowPrerelease = isBeta;
-        log.info(`Update channel set to: ${channel} (allowPrerelease=${isBeta})`);
+        selectedUpdateChannel = configureUpdateChannel(autoUpdater, channel);
+        log.info(`Update channel set to: ${selectedUpdateChannel}`);
+        return { ok: Boolean(autoUpdater), channel: selectedUpdateChannel };
     });
 
-    ipcMain.handle('check-release-update', async () => {
+    ipcMain.handle('check-release-update', async (event, channel) => {
         try {
-            return await checkReleaseUpdate();
+            return await checkReleaseUpdate(channel);
         } catch (err) {
             return { ok: false, error: getUpdateErrorMessage(err) };
         }

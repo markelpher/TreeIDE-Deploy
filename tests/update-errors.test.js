@@ -14,11 +14,13 @@ describe('getUpdateErrorMessage', () => {
 
     it('maps GitHub feed failures to update_repo_inaccessible', () => {
         expect(getUpdateErrorMessage(new Error('Unable to find latest version on GitHub'))).toBe('update_repo_inaccessible');
+        expect(getUpdateErrorMessage(new Error('GitHub releases request failed with HTTP 403'))).toBe('update_repo_inaccessible');
     });
 
     it('maps network errors to update_network_error', () => {
         expect(getUpdateErrorMessage(new Error('net::ERR_INTERNET_DISCONNECTED'))).toBe('update_network_error');
         expect(getUpdateErrorMessage(new Error('getaddrinfo ENOTFOUND github.com'))).toBe('update_network_error');
+        expect(getUpdateErrorMessage(new Error('GitHub releases request timed out'))).toBe('update_network_error');
     });
 
     it('falls back to update_failed for unknown errors', () => {

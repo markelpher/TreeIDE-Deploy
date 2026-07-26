@@ -1540,7 +1540,8 @@ export function createShell(app) {
                     checkUpdateBtn.disabled = true;
                     checkUpdateBtn.textContent = app.i18n.t('checking_updates') || 'Checking...';
                     try {
-                        const result = await app.electronAPI.checkReleaseUpdate();
+                        const channel = localStorage.getItem('update_channel') || 'stable';
+                        const result = await app.electronAPI.checkReleaseUpdate(channel);
                         app.modals.handleUpdateCheckResult(result);
                     } catch (e) {
                         console.warn('Release update check failed:', e);
@@ -1666,10 +1667,12 @@ export function createShell(app) {
         }
 
         const autoCheckEnabled = localStorage.getItem('auto_check_updates') !== 'false';
+        const updateChannel = localStorage.getItem('update_channel') || 'stable';
+        await app.electronAPI.setUpdateChannel?.(updateChannel);
         await app.modals.initializeAppInfo();
         app.modals.bindReleaseUpdateEvents();
         if (autoCheckEnabled) {
-            setTimeout(() => app.modals.checkReleaseUpdateOnStartup(), 1200);
+            setTimeout(() => app.modals.checkReleaseUpdateOnStartup(updateChannel), 1200);
         }
 
         const minBtn = document.getElementById('minBtn');

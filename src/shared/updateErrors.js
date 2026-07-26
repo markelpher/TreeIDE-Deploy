@@ -37,6 +37,8 @@ export function getUpdateErrorMessage(err) {
         || message.includes('authentication token')
         || message.includes('unable to find latest version')
         || message.includes('no published versions')
+        || message.includes('github releases request failed')
+        || message.includes('invalid github releases response')
     ) {
         return 'update_repo_inaccessible';
     }
@@ -56,6 +58,7 @@ export function getUpdateErrorMessage(err) {
         || message.includes('etimedout')
         || message.includes('econnrefused')
         || message.includes('socket hang up')
+        || message.includes('timed out')
     ) {
         return 'update_network_error';
     }

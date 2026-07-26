@@ -5,9 +5,13 @@ import { app } from 'electron';
 import {
     cleanupPendingUpdateInstall,
     cleanupSupersededPendingUpdate,
+    configureUpdateChannel,
     getUpdateCheckStatus,
     isInstalledUpdateVersion,
+    isRetryableUpdateError,
     isUpdateNewer,
+    normalizeUpdateChannel,
+    selectLatestUpdateRelease,
 } from '../src/main/ipc/updates.js';
 
 describe('isUpdateNewer', () => {
@@ -27,6 +31,12 @@ describe('isUpdateNewer', () => {
         expect(isUpdateNewer('v2.0.50', '2.0.49')).toBe(true);
         expect(isUpdateNewer('2.0.49', 'v2.0.49')).toBe(false);
     });
+
+    it('preserves prerelease precedence for beta versions', () => {
+        expect(isUpdateNewer('2.0.110-beta.2', '2.0.110-beta.1')).toBe(true);
+        expect(isUpdateNewer('2.0.110', '2.0.110-beta.2')).toBe(true);
+        expect(isUpdateNewer('2.0.110-beta.1', '2.0.110')).toBe(false);
+    });
 });
 
 describe('getUpdateCheckStatus', () => {
@@ -45,13 +55,13 @@ describe('getUpdateCheckStatus', () => {
         });
     });
 
-    it('reports a newer release as pending while translations are incomplete', () => {
+    it('offers a newer release even while localized notes are still being finalized', () => {
         expect(getUpdateCheckStatus({
             version: '2.0.107',
             releaseNotes: [{ locale: 'en', notes: 'English notes' }],
         }, '2.0.106')).toEqual({
-            ok: false,
-            error: 'update_release_pending',
+            ok: true,
+            updateAvailable: true,
             currentVersion: '2.0.106',
             latestVersion: '2.0.107',
         });
@@ -71,6 +81,82 @@ describe('getUpdateCheckStatus', () => {
             ok: false,
             error: 'update_metadata_missing',
         });
+    });
+});
+
+describe('update channel configuration', () => {
+    it('normalizes unknown channels to stable', () => {
+        expect(normalizeUpdateChannel('beta')).toBe('beta');
+        expect(normalizeUpdateChannel('nightly')).toBe('stable');
+    });
+
+    it('applies channel and no-cache headers atomically', () => {
+        const updater = { requestHeaders: { 'User-Agent': 'TreeIDE' } };
+        expect(configureUpdateChannel(updater, 'beta', '2.0.109')).toBe('beta');
+        expect(updater).toMatchObject({
+            channel: 'beta',
+            allowPrerelease: true,
+            allowDowngrade: false,
+            requestHeaders: {
+                'User-Agent': 'TreeIDE',
+                'Cache-Control': 'no-cache, no-store, max-age=0',
+                Pragma: 'no-cache',
+            },
+        });
+
+        expect(configureUpdateChannel(updater, 'stable', '2.0.110-beta.1')).toBe('stable');
+        expect(updater.channel).toBe('latest');
+        expect(updater.allowPrerelease).toBe(false);
+        expect(updater.allowDowngrade).toBe(true);
+    });
+
+    it('retries only failures that can be temporary', () => {
+        expect(isRetryableUpdateError('update_metadata_missing')).toBe(true);
+        expect(isRetryableUpdateError('update_network_error')).toBe(true);
+        expect(isRetryableUpdateError('update_failed')).toBe(false);
+    });
+
+    it('selects the newest release with matching updater metadata', () => {
+        const releases = [
+            {
+                tag_name: 'v2.0.110-beta.1',
+                draft: false,
+                prerelease: true,
+                assets: [{ name: 'beta.yml' }],
+            },
+            {
+                tag_name: 'v2.0.109',
+                draft: false,
+                prerelease: false,
+                assets: [{ name: 'latest.yml' }],
+            },
+            {
+                tag_name: 'v2.0.111',
+                draft: true,
+                prerelease: false,
+                assets: [{ name: 'latest.yml' }],
+            },
+        ];
+
+        expect(selectLatestUpdateRelease(releases, 'stable')).toEqual({
+            version: '2.0.109',
+            tag: 'v2.0.109',
+            metadataChannel: 'latest',
+        });
+        expect(selectLatestUpdateRelease(releases, 'beta')).toEqual({
+            version: '2.0.110-beta.1',
+            tag: 'v2.0.110-beta.1',
+            metadataChannel: 'beta',
+        });
+    });
+
+    it('ignores releases that cannot be installed by electron-updater', () => {
+        expect(selectLatestUpdateRelease([{
+            tag_name: 'v2.0.110',
+            draft: false,
+            prerelease: false,
+            assets: [{ name: 'setup.exe' }],
+        }], 'stable')).toBeNull();
     });
 });
 
