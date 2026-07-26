@@ -54,13 +54,13 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **Informes de problemas estructurados** — completa el título de la issue, la descripción, los pasos para reproducir y el comportamiento esperado en un formulario localizado con campos autoajustables dentro de la app
 - **Integración con labels de GitHub** — elige una label de la lista actual del repositorio usando el mismo dropdown personalizado de la app; el borrador localizado se abre con título, cuerpo Markdown y label completos para revisión
 - **Diagnóstico con privacidad primero** — guarda un ZIP local con metadatos permitidos del sistema/app, errores sanitizados del renderer y registros limitados a la ejecución actual; se excluyen nombres y contenidos de proyectos
-- **Captura opcional solo de la app** — captura únicamente la ventana de Tree IDE después del consentimiento explícito; ZIP, registro y captura permanecen locales hasta que los adjuntes manualmente
+- **Capturas interactivas solo de la app** — después del consentimiento explícito, el formulario de la issue deja espacio a un selector de región al estilo Windows o a la captura de la ventana completa de Tree IDE; usa `Shift+P` incluso con la barra plegada, mientras las instrucciones y los controles despejan la pantalla automáticamente durante la selección; abre las miniaturas en tamaño ampliado y elimina imágenes no deseadas antes de guardar hasta 10 capturas en el ZIP local; el escritorio y otras ventanas nunca se capturan
 - **Almacenamiento de sesión en IndexedDB** con guardado automático de pestañas abiertas, contenidos y nombres de proyectos
 - **Modos de sesión** — restaurar la última sesión al iniciar o siempre empezar limpio
 - **Fuentes incluidas** — Inter y JetBrains Mono; iconos Lucide locales (sin CDN)
-- **Paleta de comandos** — usa `Ctrl+Shift+P` para acceder a 23 acciones de proyecto, edición, navegación entre pestañas, creación, vista, actualización y ayuda; los comandos contextuales no disponibles aparecen deshabilitados
+- **Paleta de comandos** — usa `Ctrl+Shift+P` para acceder a 23 acciones de proyecto, edición, navegación entre pestañas, creación, vista, actualización y ayuda; los comandos contextuales no disponibles aparecen deshabilitados y los iconos Lucide específicos de cada acción están disponibles sin conexión
 - **Mejoras de accesibilidad** — etiquetas localizadas para lectores de pantalla, anuncios de resultados, listboxes y pestañas semánticas, foco visible y navegación por teclado en los flujos de comandos y plantillas
-- **Rich Presence opcional de Discord** — estados localizados de editor/archivo/plantillas/build/configuración, iconos dedicados por actividad y para inactividad, pausa al bloquear o suspender, reconexión y tres niveles de privacidad
+- **Rich Presence opcional de Discord** — desactivado de forma predeterminada, con las opciones dependientes bloqueadas hasta activarlo; estados localizados de editor/archivo/plantillas/build/configuración, iconos dedicados por actividad y para inactividad, pausa al bloquear o suspender, reconexión y tres niveles de privacidad
 
 ### Actualizador automático
 - **Actualizador en la app** — consulta GitHub Releases, descarga con progreso y reinicia para instalar

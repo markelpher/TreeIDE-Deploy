@@ -94,6 +94,15 @@ describe('command palette', () => {
         expect(document.activeElement).toBe(input);
         expect(input.getAttribute('aria-expanded')).toBe('true');
         expect(input.getAttribute('aria-activedescendant')).toBe('commandPaletteOption0');
+        expect(document.querySelector('[data-command-index="0"] i')?.dataset.lucide).toBe('folder-plus');
+        expect(document.querySelector('[data-command-index="5"] i')?.dataset.lucide).toBe('rotate-ccw');
+        expect(document.querySelector('[data-command-index="6"] i')?.dataset.lucide).toBe('rotate-cw');
+        expect(document.querySelector('[data-command-index="11"] i')?.dataset.lucide).toBe('square-x');
+        expect(document.querySelector('[data-command-index="15"] i')?.dataset.lucide).toBe('refresh-ccw');
+        expect(document.querySelector('[data-command-index="16"] i')?.dataset.lucide).toBe('zoom-in');
+        expect(document.querySelector('[data-command-index="17"] i')?.dataset.lucide).toBe('zoom-out');
+        expect(document.querySelector('[data-command-index="19"] i')?.dataset.lucide).toBe('expand');
+        expect(document.querySelector('[data-command-index="21"] i')?.dataset.lucide).toBe('info');
         expect(document.getElementById('commandPaletteStatus').textContent).toBe('23 commands found.');
 
         input.value = 'templates';

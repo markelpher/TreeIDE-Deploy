@@ -22,6 +22,8 @@ const require = createRequire(import.meta.url);
 const AdmZip = require('adm-zip');
 const MAX_LOG_BYTES = 256 * 1024;
 const MAX_LOG_SCAN_BYTES = 2 * 1024 * 1024;
+const MAX_DIAGNOSTIC_SCREENSHOTS = 10;
+const MAX_SCREENSHOT_BYTES = 20 * 1024 * 1024;
 const FALLBACK_REPOSITORY_LABELS = [
     { name: 'bug', color: 'd73a4a', description: "Something isn't working" },
     { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
@@ -172,6 +174,47 @@ function registerAppInfoHandlers(getMainWindow) {
         }
     });
 
+    ipcMain.handle('capture-app-screenshot', async (event, options = {}) => {
+        const win = getMainWindow();
+        if (!isMainWindowSender(event, win) || typeof win.capturePage !== 'function') {
+            return { error: 'screenshot-unavailable' };
+        }
+
+        try {
+            let image = await win.capturePage();
+            if (!image || image.isEmpty?.()) {
+                return { error: 'screenshot-empty' };
+            }
+            const rect = options?.rect;
+            const viewport = options?.viewport;
+            const hasValidSelection = rect
+                && viewport
+                && [rect.x, rect.y, rect.width, rect.height, viewport.width, viewport.height]
+                    .every((value) => Number.isFinite(value))
+                && rect.width >= 8
+                && rect.height >= 8
+                && viewport.width > 0
+                && viewport.height > 0;
+            if (hasValidSelection) {
+                const imageSize = image.getSize();
+                const scaleX = imageSize.width / viewport.width;
+                const scaleY = imageSize.height / viewport.height;
+                const x = Math.max(0, Math.round(rect.x * scaleX));
+                const y = Math.max(0, Math.round(rect.y * scaleY));
+                const width = Math.min(imageSize.width - x, Math.round(rect.width * scaleX));
+                const height = Math.min(imageSize.height - y, Math.round(rect.height * scaleY));
+                if (width < 1 || height < 1) {
+                    return { error: 'screenshot-selection-empty' };
+                }
+                image = image.crop({ x, y, width, height });
+            }
+            return { ok: true, data: image.toPNG() };
+        } catch (err) {
+            log.error('Failed to capture app screenshot:', err);
+            return { error: 'screenshot-failed' };
+        }
+    });
+
     ipcMain.handle('create-diagnostic-report', async (event, options = {}) => {
         const win = getMainWindow();
         if (!isMainWindowSender(event, win)) { return { error: 'invalid-sender' }; }
@@ -192,7 +235,13 @@ function registerAppInfoHandlers(getMainWindow) {
                 process.cwd(),
             ].filter(Boolean);
             const includeLog = options.includeLog !== false;
-            const includeScreenshot = options.includeScreenshot === true;
+            const screenshots = (Array.isArray(options.screenshots) ? options.screenshots : [])
+                .slice(0, MAX_DIAGNOSTIC_SCREENSHOTS)
+                .map((value) => Buffer.isBuffer(value) ? value : Buffer.from(value || []))
+                .filter((value) => value.length > 8
+                    && value.length <= MAX_SCREENSHOT_BYTES
+                    && value.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])));
+            const includeScreenshot = screenshots.length > 0;
             const report = buildDiagnosticReport({
                 appVersion: app.getVersion(),
                 isPackaged: app.isPackaged,
@@ -250,12 +299,10 @@ function registerAppInfoHandlers(getMainWindow) {
                 }
             }
 
-            if (includeScreenshot && typeof win.capturePage === 'function') {
-                const image = await win.capturePage();
-                if (image && !image.isEmpty?.()) {
-                    zip.addFile('app-window.png', image.toPNG());
-                }
-            }
+            screenshots.forEach((image, index) => {
+                const suffix = screenshots.length === 1 ? '' : `-${String(index + 1).padStart(2, '0')}`;
+                zip.addFile(`app-window${suffix}.png`, image);
+            });
 
             zip.writeZip(saveResult.filePath);
             log.info('Diagnostic report saved locally.');

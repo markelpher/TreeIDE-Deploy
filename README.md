@@ -54,13 +54,13 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Structured problem reports** — enter the issue title, description, reproduction steps, and expected behavior in an auto-growing, localized form inside the app
 - **GitHub label integration** — choose from the repository's live label list in the same custom dropdown used by the app; the localized issue draft opens with its title, Markdown body, and label already filled in for review
 - **Privacy-first diagnostics** — save a local ZIP with allowlisted system/app metadata, sanitized renderer errors, and logs limited to the current app execution; project names and contents are excluded
-- **Optional app-only screenshot** — capture only the Tree IDE window after explicit opt-in; the diagnostic ZIP, log, and screenshot remain local until you attach them manually
+- **Interactive app-only screenshots** — after explicit opt-in, the issue form steps aside for a Windows-style region selector or a full Tree IDE window capture; use `Shift+P` even with the toolbar collapsed, while instructions and controls automatically clear the screen during selection; open thumbnails at full size and remove unwanted images before saving up to 10 captures in the local diagnostic ZIP; the desktop and other windows are never captured
 - **IndexedDB session storage** with autosave of open tabs, file contents, and project names
 - **Session modes** — restore the last session on launch or always start clean
 - **Bundled fonts** — Inter and JetBrains Mono; Lucide icons bundled locally (no CDN)
-- **Command Palette** — use `Ctrl+Shift+P` to access 23 project, editing, tab navigation, build, view, update, and help actions; unavailable contextual tab commands are shown disabled
+- **Command Palette** — use `Ctrl+Shift+P` to access 23 project, editing, tab navigation, build, view, update, and help actions; unavailable contextual tab commands are shown disabled, and action-specific Lucide icons are bundled offline
 - **Accessibility improvements** — localized screen-reader labels, live result announcements, semantic listboxes and tabs, visible focus, and keyboard navigation for command and template workflows
-- **Optional Rich Presence** — localized contextual editor/file/template/build/settings states, dedicated activity and idle icons, five-minute idle detection, automatic pause on lock or suspend, reconnect, and three privacy levels
+- **Optional Rich Presence** — disabled by default, with dependent settings locked until enabled; localized contextual editor/file/template/build/settings states, dedicated activity and idle icons, five-minute idle detection, automatic pause on lock or suspend, reconnect, and three privacy levels
 
 ### Auto-updater
 - **In-app auto-updater** — check GitHub Releases, download with progress, and restart to install

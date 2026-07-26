@@ -1019,6 +1019,353 @@ export function createShell(app) {
             steps: document.getElementById('diagnosticSteps')?.value || '',
             expected: document.getElementById('diagnosticExpected')?.value || ''
         });
+        const diagnosticCaptureToolbar = document.getElementById('diagnosticCaptureToolbar');
+        const diagnosticCaptureRegion = document.getElementById('diagnosticCaptureRegion');
+        const diagnosticCaptureFull = document.getElementById('diagnosticCaptureFull');
+        const diagnosticCaptureDone = document.getElementById('diagnosticCaptureDone');
+        const diagnosticCaptureCancel = document.getElementById('diagnosticCaptureCancel');
+        const diagnosticCaptureHide = document.getElementById('diagnosticCaptureHide');
+        const diagnosticCaptureRestore = document.getElementById('diagnosticCaptureRestore');
+        const diagnosticCaptureRestoreCount = document.getElementById('diagnosticCaptureRestoreCount');
+        const diagnosticCaptureCount = document.getElementById('diagnosticCaptureCount');
+        const diagnosticCaptureStatus = document.getElementById('diagnosticCaptureStatus');
+        const diagnosticCapturePreviews = document.getElementById('diagnosticCapturePreviews');
+        const diagnosticCaptureViewer = document.getElementById('diagnosticCaptureViewer');
+        const diagnosticCaptureViewerImage = document.getElementById('diagnosticCaptureViewerImage');
+        const diagnosticCaptureViewerIndex = document.getElementById('diagnosticCaptureViewerIndex');
+        const diagnosticCaptureViewerPrevious = document.getElementById('diagnosticCaptureViewerPrevious');
+        const diagnosticCaptureViewerNext = document.getElementById('diagnosticCaptureViewerNext');
+        const diagnosticCaptureViewerClose = document.getElementById('diagnosticCaptureViewerClose');
+        const diagnosticCaptureSelection = document.getElementById('diagnosticCaptureSelection');
+        const diagnosticSelectionRect = document.getElementById('diagnosticSelectionRect');
+        const diagnosticSelectionSize = document.getElementById('diagnosticSelectionSize');
+        const MAX_DIAGNOSTIC_SCREENSHOTS = 10;
+        let diagnosticCaptureSession = null;
+        let diagnosticSelectionStart = null;
+        let diagnosticCaptureViewerPosition = 0;
+        const getDiagnosticSelectionBounds = (start, end) => ({
+            x: Math.min(start.x, end.x),
+            y: Math.min(start.y, end.y),
+            width: Math.abs(end.x - start.x),
+            height: Math.abs(end.y - start.y)
+        });
+        const renderDiagnosticSelection = (bounds) => {
+            if (!diagnosticSelectionRect || !diagnosticSelectionSize) {
+                return;
+            }
+            diagnosticSelectionRect.hidden = false;
+            diagnosticSelectionRect.style.left = `${bounds.x}px`;
+            diagnosticSelectionRect.style.top = `${bounds.y}px`;
+            diagnosticSelectionRect.style.width = `${bounds.width}px`;
+            diagnosticSelectionRect.style.height = `${bounds.height}px`;
+            diagnosticSelectionSize.textContent = `${Math.round(bounds.width)} × ${Math.round(bounds.height)}`;
+        };
+        const closeDiagnosticSelection = () => {
+            diagnosticSelectionStart = null;
+            if (diagnosticCaptureSelection) {
+                diagnosticCaptureSelection.hidden = true;
+                diagnosticCaptureSelection.classList.remove('is-dragging');
+            }
+            if (diagnosticSelectionRect) {
+                diagnosticSelectionRect.hidden = true;
+            }
+            diagnosticCaptureToolbar?.classList.remove('is-selecting');
+            diagnosticCaptureRestore?.classList.remove('is-selecting');
+        };
+        const setDiagnosticCaptureToolbarCollapsed = (collapsed) => {
+            if (!diagnosticCaptureSession || !diagnosticCaptureToolbar || !diagnosticCaptureRestore) {
+                return;
+            }
+            diagnosticCaptureToolbar.hidden = collapsed;
+            diagnosticCaptureRestore.hidden = !collapsed;
+            if (collapsed) {
+                diagnosticCaptureRestore.focus();
+            } else {
+                diagnosticCaptureRegion?.focus();
+            }
+        };
+        const closeDiagnosticCaptureViewer = () => {
+            if (diagnosticCaptureViewer) {
+                diagnosticCaptureViewer.hidden = true;
+            }
+        };
+        const showDiagnosticCaptureViewer = (index) => {
+            const screenshots = diagnosticCaptureSession?.screenshots || [];
+            if (!screenshots.length || !diagnosticCaptureViewer || !diagnosticCaptureViewerImage) {
+                return;
+            }
+            diagnosticCaptureViewerPosition = (index + screenshots.length) % screenshots.length;
+            const entry = screenshots[diagnosticCaptureViewerPosition];
+            diagnosticCaptureViewerImage.src = entry.url;
+            diagnosticCaptureViewerImage.alt = `${app.i18n.t('diagnostic_capture_view')} ${diagnosticCaptureViewerPosition + 1}`;
+            if (diagnosticCaptureViewerIndex) {
+                diagnosticCaptureViewerIndex.textContent = `${diagnosticCaptureViewerPosition + 1} / ${screenshots.length}`;
+            }
+            if (diagnosticCaptureViewerPrevious) {
+                diagnosticCaptureViewerPrevious.disabled = screenshots.length < 2;
+            }
+            if (diagnosticCaptureViewerNext) {
+                diagnosticCaptureViewerNext.disabled = screenshots.length < 2;
+            }
+            diagnosticCaptureViewer.hidden = false;
+            diagnosticCaptureViewerClose?.focus();
+        };
+        const renderDiagnosticCapturePreviews = () => {
+            if (!diagnosticCapturePreviews) {
+                return;
+            }
+            const screenshots = diagnosticCaptureSession?.screenshots || [];
+            diagnosticCapturePreviews.replaceChildren(...screenshots.map((entry, index) => {
+                const preview = document.createElement('div');
+                preview.className = 'diagnostic-capture-preview';
+                const open = document.createElement('button');
+                open.type = 'button';
+                open.className = 'diagnostic-capture-preview-open';
+                open.setAttribute('aria-label', `${app.i18n.t('diagnostic_capture_view')} ${index + 1}`);
+                const image = document.createElement('img');
+                image.src = entry.url;
+                image.alt = `${app.i18n.t('diagnostic_capture_title')} ${index + 1}`;
+                open.append(image);
+                open.addEventListener('click', () => showDiagnosticCaptureViewer(index));
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'diagnostic-capture-preview-remove';
+                remove.setAttribute('aria-label', `${app.i18n.t('diagnostic_capture_remove')} ${index + 1}`);
+                remove.textContent = app.i18n.t('diagnostic_capture_remove');
+                remove.addEventListener('click', () => {
+                    if (!diagnosticCaptureSession) {
+                        return;
+                    }
+                    const [removed] = diagnosticCaptureSession.screenshots.splice(index, 1);
+                    if (removed?.url) {
+                        URL.revokeObjectURL(removed.url);
+                    }
+                    updateDiagnosticCaptureControls();
+                });
+                preview.append(open, remove);
+                return preview;
+            }));
+        };
+        const updateDiagnosticCaptureControls = () => {
+            const count = diagnosticCaptureSession?.screenshots.length || 0;
+            const isCapturing = diagnosticCaptureSession?.isCapturing === true;
+            if (diagnosticCaptureCount) {
+                diagnosticCaptureCount.textContent = `${count} / ${MAX_DIAGNOSTIC_SCREENSHOTS}`;
+            }
+            if (diagnosticCaptureRestoreCount) {
+                diagnosticCaptureRestoreCount.textContent = `${count} / ${MAX_DIAGNOSTIC_SCREENSHOTS}`;
+            }
+            if (diagnosticCaptureRegion) {
+                diagnosticCaptureRegion.disabled = isCapturing || count >= MAX_DIAGNOSTIC_SCREENSHOTS;
+            }
+            if (diagnosticCaptureFull) {
+                diagnosticCaptureFull.disabled = isCapturing || count >= MAX_DIAGNOSTIC_SCREENSHOTS;
+            }
+            if (diagnosticCaptureDone) {
+                diagnosticCaptureDone.disabled = isCapturing || count === 0;
+            }
+            renderDiagnosticCapturePreviews();
+        };
+        const settleDiagnosticCapture = (entries) => {
+            if (!diagnosticCaptureSession) {
+                return;
+            }
+            const { resolve, screenshots } = diagnosticCaptureSession;
+            const result = entries === null ? null : entries.map((entry) => entry.data);
+            screenshots.forEach((entry) => URL.revokeObjectURL(entry.url));
+            diagnosticCaptureSession = null;
+            closeDiagnosticSelection();
+            closeDiagnosticCaptureViewer();
+            if (diagnosticCaptureToolbar) {
+                diagnosticCaptureToolbar.hidden = true;
+                diagnosticCaptureToolbar.classList.remove('is-capturing');
+            }
+            if (diagnosticCaptureRestore) {
+                diagnosticCaptureRestore.hidden = true;
+                diagnosticCaptureRestore.classList.remove('is-capturing');
+            }
+            if (diagnosticModal) {
+                diagnosticModal.style.display = 'flex';
+            }
+            resolve(result);
+        };
+        const beginDiagnosticCapture = () => new Promise((resolve) => {
+            diagnosticCaptureSession = { screenshots: [], isCapturing: false, resolve };
+            if (diagnosticModal) {
+                diagnosticModal.style.display = 'none';
+            }
+            if (diagnosticCaptureStatus) {
+                diagnosticCaptureStatus.textContent = '';
+            }
+            if (diagnosticCaptureToolbar) {
+                diagnosticCaptureToolbar.hidden = false;
+            }
+            if (diagnosticCaptureRestore) {
+                diagnosticCaptureRestore.hidden = true;
+            }
+            updateDiagnosticCaptureControls();
+            diagnosticCaptureRegion?.focus();
+            requestAnimationFrame(() => diagnosticCaptureRegion?.click());
+        });
+        const takeDiagnosticScreenshot = async (rect = null) => {
+            if (!diagnosticCaptureSession || !app.electronAPI?.captureAppScreenshot) {
+                return;
+            }
+            diagnosticCaptureSession.isCapturing = true;
+            updateDiagnosticCaptureControls();
+            if (diagnosticCaptureStatus) {
+                diagnosticCaptureStatus.textContent = '';
+            }
+            diagnosticCaptureToolbar?.classList.add('is-capturing');
+            diagnosticCaptureRestore?.classList.add('is-capturing');
+            if (diagnosticCaptureSelection) {
+                diagnosticCaptureSelection.hidden = true;
+            }
+            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            const result = await app.electronAPI.captureAppScreenshot(rect ? {
+                rect,
+                viewport: { width: window.innerWidth, height: window.innerHeight }
+            } : {});
+            diagnosticCaptureToolbar?.classList.remove('is-capturing');
+            diagnosticCaptureRestore?.classList.remove('is-capturing');
+            if (!diagnosticCaptureSession) {
+                return;
+            }
+            diagnosticCaptureSession.isCapturing = false;
+            if (result?.ok && result.data && diagnosticCaptureSession) {
+                const blob = new window.Blob([result.data], { type: 'image/png' });
+                diagnosticCaptureSession.screenshots.push({
+                    data: result.data,
+                    url: URL.createObjectURL(blob)
+                });
+            } else if (diagnosticCaptureStatus) {
+                diagnosticCaptureStatus.textContent = app.i18n.t('diagnostic_capture_failed');
+            }
+            updateDiagnosticCaptureControls();
+            if (diagnosticCaptureToolbar?.hidden) {
+                diagnosticCaptureRestore?.focus();
+            } else {
+                diagnosticCaptureRegion?.focus();
+            }
+        };
+        diagnosticCaptureRegion?.addEventListener('click', () => {
+            if (!diagnosticCaptureSession || diagnosticCaptureSession.isCapturing) {
+                return;
+            }
+            if (diagnosticCaptureStatus) {
+                diagnosticCaptureStatus.textContent = '';
+            }
+            diagnosticSelectionStart = null;
+            if (diagnosticSelectionRect) {
+                diagnosticSelectionRect.hidden = true;
+            }
+            if (diagnosticCaptureSelection) {
+                diagnosticCaptureSelection.hidden = false;
+                diagnosticCaptureSelection.focus();
+            }
+        });
+        diagnosticCaptureFull?.addEventListener('click', () => void takeDiagnosticScreenshot());
+        diagnosticCaptureHide?.addEventListener('click', () => setDiagnosticCaptureToolbarCollapsed(true));
+        diagnosticCaptureRestore?.addEventListener('click', () => setDiagnosticCaptureToolbarCollapsed(false));
+        diagnosticCaptureSelection?.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0 || !diagnosticCaptureSession?.screenshots) {
+                return;
+            }
+            diagnosticSelectionStart = { x: event.clientX, y: event.clientY };
+            diagnosticCaptureSelection.classList.add('is-dragging');
+            diagnosticCaptureToolbar?.classList.add('is-selecting');
+            diagnosticCaptureRestore?.classList.add('is-selecting');
+            diagnosticCaptureSelection.setPointerCapture?.(event.pointerId);
+            renderDiagnosticSelection({ x: event.clientX, y: event.clientY, width: 0, height: 0 });
+        });
+        diagnosticCaptureSelection?.addEventListener('pointermove', (event) => {
+            if (!diagnosticSelectionStart) {
+                return;
+            }
+            renderDiagnosticSelection(getDiagnosticSelectionBounds(
+                diagnosticSelectionStart,
+                { x: event.clientX, y: event.clientY }
+            ));
+        });
+        diagnosticCaptureSelection?.addEventListener('pointerup', (event) => {
+            if (!diagnosticSelectionStart) {
+                return;
+            }
+            const bounds = getDiagnosticSelectionBounds(
+                diagnosticSelectionStart,
+                { x: event.clientX, y: event.clientY }
+            );
+            diagnosticCaptureSelection.releasePointerCapture?.(event.pointerId);
+            diagnosticSelectionStart = null;
+            if (bounds.width < 8 || bounds.height < 8) {
+                if (diagnosticSelectionRect) {
+                    diagnosticSelectionRect.hidden = true;
+                }
+                diagnosticCaptureSelection.classList.remove('is-dragging');
+                diagnosticCaptureToolbar?.classList.remove('is-selecting');
+                diagnosticCaptureRestore?.classList.remove('is-selecting');
+                return;
+            }
+            closeDiagnosticSelection();
+            void takeDiagnosticScreenshot(bounds);
+        });
+        diagnosticCaptureSelection?.addEventListener('pointercancel', closeDiagnosticSelection);
+        diagnosticCaptureDone?.addEventListener('click', () => {
+            settleDiagnosticCapture(diagnosticCaptureSession ? [...diagnosticCaptureSession.screenshots] : []);
+        });
+        diagnosticCaptureCancel?.addEventListener('click', () => settleDiagnosticCapture(null));
+        diagnosticCaptureViewerClose?.addEventListener('click', closeDiagnosticCaptureViewer);
+        diagnosticCaptureViewerPrevious?.addEventListener('click', () => {
+            showDiagnosticCaptureViewer(diagnosticCaptureViewerPosition - 1);
+        });
+        diagnosticCaptureViewerNext?.addEventListener('click', () => {
+            showDiagnosticCaptureViewer(diagnosticCaptureViewerPosition + 1);
+        });
+        diagnosticCaptureViewer?.addEventListener('click', (event) => {
+            if (event.target === diagnosticCaptureViewer) {
+                closeDiagnosticCaptureViewer();
+            }
+        });
+        window.addEventListener('keydown', (event) => {
+            if (!diagnosticCaptureSession) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (diagnosticCaptureViewer && !diagnosticCaptureViewer.hidden) {
+                    closeDiagnosticCaptureViewer();
+                } else if (diagnosticCaptureSelection && !diagnosticCaptureSelection.hidden) {
+                    closeDiagnosticSelection();
+                    diagnosticCaptureRegion?.focus();
+                } else if (!diagnosticCaptureSession.isCapturing) {
+                    settleDiagnosticCapture(null);
+                }
+                return;
+            }
+            if (diagnosticCaptureViewer && !diagnosticCaptureViewer.hidden && event.key === 'ArrowLeft') {
+                event.preventDefault();
+                showDiagnosticCaptureViewer(diagnosticCaptureViewerPosition - 1);
+                return;
+            }
+            if (diagnosticCaptureViewer && !diagnosticCaptureViewer.hidden && event.key === 'ArrowRight') {
+                event.preventDefault();
+                showDiagnosticCaptureViewer(diagnosticCaptureViewerPosition + 1);
+                return;
+            }
+            if (diagnosticCaptureViewer && !diagnosticCaptureViewer.hidden) {
+                return;
+            }
+            const isDiagnosticCaptureShortcut = event.shiftKey
+                && !event.ctrlKey
+                && !event.altKey
+                && !event.metaKey
+                && event.code === 'KeyP';
+            if (isDiagnosticCaptureShortcut && !event.repeat && !diagnosticCaptureSession.isCapturing) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                diagnosticCaptureRegion?.click();
+            }
+        }, true);
         const closeDiagnosticReport = () => {
             if (diagnosticModal) {
                 app.modals.closeModalAnimated(diagnosticModal);
@@ -1103,14 +1450,28 @@ export function createShell(app) {
                 submit.disabled = true;
             }
             if (status) {
-                status.textContent = app.i18n.t('diagnostic_creating');
+                status.textContent = includeScreenshot
+                    ? app.i18n.t('diagnostic_capture_hint')
+                    : app.i18n.t('diagnostic_creating');
             }
+            let screenshots = [];
             if (includeScreenshot) {
-                diagnosticModal.style.visibility = 'hidden';
-                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                screenshots = await beginDiagnosticCapture();
+                if (!screenshots) {
+                    if (submit) {
+                        submit.disabled = false;
+                    }
+                    if (status) {
+                        status.textContent = '';
+                    }
+                    return;
+                }
+                payload.screenshots = screenshots;
+                if (status) {
+                    status.textContent = app.i18n.t('diagnostic_creating');
+                }
             }
             const result = await app.electronAPI.createDiagnosticReport(payload);
-            diagnosticModal.style.visibility = '';
             if (submit) {
                 submit.disabled = false;
             }

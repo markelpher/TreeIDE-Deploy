@@ -197,10 +197,25 @@ export function createDiscordPresenceUi(app) {
 
     function syncControlAvailability() {
         const controls = getControls();
-        if (controls.statusBar) {
-            controls.statusBar.disabled = !isEnabled();
-        }
+        const disabled = !isEnabled();
+        [controls.statusBar, controls.privacy, controls.language].forEach((control) => {
+            if (control) {
+                control.disabled = disabled;
+            }
+        });
         app.customSelect?.refreshAll?.();
+        [controls.privacy, controls.language].forEach((control) => {
+            if (!control?.id) {
+                return;
+            }
+            const customSelect = document.querySelector(`.custom-select[data-for="${control.id}"]`);
+            const trigger = customSelect?.querySelector('.custom-select-trigger');
+            customSelect?.classList.toggle('is-disabled', disabled);
+            trigger?.setAttribute('aria-disabled', String(disabled));
+            if (trigger) {
+                trigger.tabIndex = disabled ? -1 : 0;
+            }
+        });
     }
 
     async function configure() {
@@ -383,6 +398,9 @@ export function createDiscordPresenceUi(app) {
             return;
         }
         initialized = true;
+        if (localStorage.getItem(STORAGE_KEYS.enabled) === null) {
+            localStorage.setItem(STORAGE_KEYS.enabled, 'false');
+        }
         const controls = getControls();
         if (controls.enabled) {
             controls.enabled.checked = isEnabled();

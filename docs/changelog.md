@@ -1,4 +1,4 @@
-## What's new in v2.0.108
+## What's new in v2.0.109
 
 Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
@@ -55,6 +55,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Accessible template actions** — favorite, rename, edit, export, and delete controls expose localized labels and state through `aria-pressed`, `aria-selected`, and live regions
 
 #### Rich Presence
+- **Privacy-first default** — Discord Rich Presence now starts disabled, and its status bar, language, and privacy controls remain unavailable until the user explicitly enables the integration
 - **Ready-to-use Discord RPC** — Tree IDE ships with its public Discord Application ID, automatically connects to the running desktop client, reports connection status, retries after disconnects, and requires no setup from the user
 - **Specific activity states** — Editing Structure, Editing Code, Editing Text, Viewing File, Browsing Templates, Customizing Template, Settings, and build-aware Creating File, Creating Files, Creating Folder, Creating Folders, Creating File and Folder, or Creating Files and Folders states; the Build Studio option uses the same dynamic title and description, while `.tree` outputs remain available for valid flat projects and exports use one generic Exporting File state.
 - **Editor-aware idle state** — Presence starts as Idle and only reports Editing Structure after direct interaction with the structure editor; five minutes without interaction returns to Idle with a keyboard icon
@@ -98,7 +99,8 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Clean localized issue draft** — open GitHub automatically after a visible redirect delay with the title, Markdown sections, and selected label already filled in for review; click the popup or press Enter/Space to hide the notice without changing the timer, and the issue is never submitted automatically
 - **Current-execution logs** — include only log entries from the latest app launch, separated into main-process and renderer sections, capped at 256 KB, and stamped with a localized 12-hour time, day period, and timezone
 - **Sanitized diagnostic package** — redact local paths, email addresses, IP addresses, and URL secrets while excluding project names and contents
-- **Optional Tree IDE screenshot** — capture only the current app window after explicit opt-in, never the desktop or other windows
+- **Interactive screenshots** — after explicit opt-in, hide the issue form and capture a selected region or the full app window, keep taking screenshots with `Shift+P` even when the floating toolbar is collapsed, and automatically hide instructions and controls while dragging so they cannot cover the selected content
+- **Screenshot review before saving** — collect up to 10 captures, open thumbnail previews at full size, remove unwanted images, and write every retained PNG to the local diagnostic ZIP; the desktop and other windows are never captured
 - **Local-first attachments** — save the ZIP to the path chosen by the user without opening File Explorer or uploading it; logs and screenshots remain local until manually attached
 - **Safer report modal** — text selection and dragging no longer dismiss the dialog, fields resize automatically, light/dark theme contrast follows the rest of the app, and the form resets after success, Cancel, or closing with the X button
 

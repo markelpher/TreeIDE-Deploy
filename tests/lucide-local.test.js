@@ -22,4 +22,28 @@ describe('offline Lucide bundle', () => {
 
         expect(document.querySelector('svg.lucide-square-chart-gantt')).toBeTruthy();
     });
+
+    it('renders the About info icon from the local icon map', () => {
+        document.body.innerHTML = '<i data-lucide="info"></i>';
+        const { createIcons } = installLucide();
+        createIcons();
+        expect(document.querySelector('svg.lucide-info')).toBeTruthy();
+    });
+
+    it('renders the reload icon from the local icon map', () => {
+        document.body.innerHTML = '<i data-lucide="refresh-ccw"></i>';
+        const { createIcons } = installLucide();
+        createIcons();
+        expect(document.querySelector('svg.lucide-refresh-ccw')).toBeTruthy();
+    });
+
+    it.each(['folder-plus', 'rotate-ccw', 'rotate-cw', 'square-x', 'zoom-in', 'zoom-out', 'expand'])(
+        'renders the %s command icon from the local icon map',
+        (iconName) => {
+            document.body.innerHTML = `<i data-lucide="${iconName}"></i>`;
+            const { createIcons } = installLucide();
+            createIcons();
+            expect(document.querySelector(`svg.lucide-${iconName}`)).toBeTruthy();
+        }
+    );
 });

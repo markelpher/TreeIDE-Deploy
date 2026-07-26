@@ -405,17 +405,11 @@
                                 <p id="discordPrivacyDescription" class="settings-hint" data-i18n="discord_privacy_activity_desc">
                                     Shows the current action without revealing project or file names.
                                 </p>
-                                <p class="settings-hint discord-idle-hint" data-i18n="discord_idle_desc">
-                                    After five minutes without interaction, the activity changes to Idle.
-                                </p>
                                 <div class="settings-divider"></div>
                                 <div class="discord-presence-status-row" role="status" aria-live="polite">
                                     <span class="discord-presence-status-dot" aria-hidden="true"></span>
                                     <span id="discordPresenceStatus" data-status="disabled" data-i18n="discord_status_disabled">Disabled</span>
                                 </div>
-                                <p class="settings-hint discord-assets-hint" data-i18n="discord_asset_hint">
-                                    The Tree IDE logo and contextual icons are securely hosted by Discord.
-                                </p>
                             </div>
                         </div>
 
@@ -488,7 +482,7 @@
                         <div>
                             <strong data-i18n="diagnostic_privacy_title">Privacy first</strong>
                             <p data-i18n="diagnostic_privacy">
-                                The text below is sent only to prefill the GitHub draft. The diagnostic ZIP, log and screenshot remain local until you choose to
+                                The text below is sent only to prefill the GitHub draft. The diagnostic ZIP, log and screenshots remain local until you choose to
                                 attach them.
                             </p>
                         </div>
@@ -595,9 +589,9 @@
                         <label class="diagnostic-option diagnostic-screenshot-option">
                             <input id="diagnosticIncludeScreenshot" type="checkbox" />
                             <span class="diagnostic-option-copy">
-                                <span data-i18n="diagnostic_include_screenshot">Include a screenshot of the Tree IDE window only</span>
+                                <span data-i18n="diagnostic_include_screenshot">Choose screenshots from inside Tree IDE</span>
                                 <small class="diagnostic-warning" data-i18n="diagnostic_screenshot_warning"
-                                    >The screenshot may contain project text visible inside the app. It never captures the desktop or other windows.</small
+                                    >After continuing, navigate freely inside the app and take up to 10 screenshots. The desktop and other windows are never captured.</small
                                 >
                             </span>
                         </label>
@@ -607,6 +601,73 @@
                 <div class="modal-actions diagnostic-report-actions">
                     <button id="cancelDiagnosticReport" class="secondary-btn" type="button" data-i18n="cancel">Cancel</button>
                     <button id="createDiagnosticReport" class="primary-btn" type="button" data-i18n="diagnostic_create">Save package and open issue</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="diagnosticCaptureSelection" class="diagnostic-capture-selection" tabindex="-1" hidden>
+            <div class="diagnostic-selection-instruction">
+                <strong data-i18n="diagnostic_selection_title">Select an area</strong>
+                <span data-i18n="diagnostic_selection_hint">Drag around what you want to capture. Press Esc to cancel the selection.</span>
+            </div>
+            <div id="diagnosticSelectionRect" class="diagnostic-selection-rect" hidden>
+                <span id="diagnosticSelectionSize" class="diagnostic-selection-size"></span>
+            </div>
+        </div>
+
+        <div id="diagnosticCaptureToolbar" class="diagnostic-capture-toolbar" role="toolbar" aria-labelledby="diagnosticCaptureTitle" hidden>
+            <div class="diagnostic-capture-toolbar-main">
+                <div class="diagnostic-capture-copy">
+                    <strong id="diagnosticCaptureTitle" data-i18n="diagnostic_capture_title">Screenshot mode</strong>
+                    <span data-i18n="diagnostic_capture_hint">Navigate inside Tree IDE and capture only what helps explain the problem.</span>
+                    <span class="diagnostic-capture-shortcut-hint">
+                        <kbd>Shift+P</kbd>
+                        <span data-i18n="diagnostic_capture_shortcut_hint">Select an area even when the bar is hidden</span>
+                    </span>
+                </div>
+                <span id="diagnosticCaptureCount" class="diagnostic-capture-count" aria-live="polite">0 / 10</span>
+                <div class="diagnostic-capture-actions">
+                    <button id="diagnosticCaptureRegion" class="primary-btn" type="button" aria-keyshortcuts="Shift+P">
+                        <span data-i18n="diagnostic_capture_region">Select area</span>
+                    </button>
+                    <button id="diagnosticCaptureFull" class="secondary-btn" type="button" data-i18n="diagnostic_capture_full">Full window</button>
+                    <button id="diagnosticCaptureHide" class="secondary-btn" type="button" data-i18n="diagnostic_capture_hide">Hide bar</button>
+                    <button id="diagnosticCaptureCancel" class="secondary-btn" type="button" data-i18n="cancel">Cancel</button>
+                    <button id="diagnosticCaptureDone" class="primary-btn" type="button" disabled data-i18n="diagnostic_capture_done">Finish and save package</button>
+                </div>
+            </div>
+            <span id="diagnosticCaptureStatus" class="diagnostic-capture-status" role="status" aria-live="assertive"></span>
+            <div
+                id="diagnosticCapturePreviews"
+                class="diagnostic-capture-previews"
+                aria-label="Captured screenshots"
+                data-i18n-aria-label="diagnostic_capture_previews"
+            ></div>
+        </div>
+
+        <button
+            id="diagnosticCaptureRestore"
+            class="diagnostic-capture-restore"
+            type="button"
+            aria-keyshortcuts="Shift+P"
+            hidden
+        >
+            <span data-i18n="diagnostic_capture_show">Show capture bar</span>
+            <span id="diagnosticCaptureRestoreCount" class="diagnostic-capture-restore-count">0 / 10</span>
+            <kbd>Shift+P</kbd>
+        </button>
+
+        <div id="diagnosticCaptureViewer" class="diagnostic-capture-viewer" role="dialog" aria-modal="true" aria-labelledby="diagnosticCaptureViewerTitle" hidden>
+            <div class="diagnostic-capture-viewer-panel">
+                <div class="diagnostic-capture-viewer-header">
+                    <strong id="diagnosticCaptureViewerTitle" data-i18n="diagnostic_capture_viewer_title">Screenshot preview</strong>
+                    <span id="diagnosticCaptureViewerIndex">1 / 1</span>
+                </div>
+                <img id="diagnosticCaptureViewerImage" alt="" />
+                <div class="diagnostic-capture-viewer-actions">
+                    <button id="diagnosticCaptureViewerPrevious" class="secondary-btn" type="button" data-i18n="diagnostic_capture_previous">Previous</button>
+                    <button id="diagnosticCaptureViewerNext" class="secondary-btn" type="button" data-i18n="diagnostic_capture_next">Next</button>
+                    <button id="diagnosticCaptureViewerClose" class="primary-btn" type="button" data-i18n="close">Close</button>
                 </div>
             </div>
         </div>

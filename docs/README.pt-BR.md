@@ -54,13 +54,13 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Relatórios de problemas estruturados** — preencha título da issue, descrição, passos para reproduzir e comportamento esperado em um formulário localizado e com campos autoajustáveis dentro do app
 - **Integração com labels do GitHub** — escolha uma label da lista atual do repositório usando o mesmo dropdown personalizado do app; o rascunho localizado abre com título, corpo Markdown e label preenchidos para revisão
 - **Diagnóstico com privacidade em primeiro lugar** — salve um ZIP local com metadados permitidos do sistema/app, erros sanitizados do renderer e logs limitados à execução atual; nomes e conteúdos de projetos ficam de fora
-- **Captura opcional somente do app** — capture apenas a janela do Tree IDE após consentimento explícito; ZIP, log e captura permanecem locais até você anexá-los manualmente
+- **Capturas interativas somente do app** — após consentimento explícito, o formulário da issue dá lugar a um seletor de região no estilo Windows ou à captura da janela inteira do Tree IDE; use `Shift+P` mesmo com a barra recolhida, enquanto instruções e controles liberam a tela automaticamente durante a seleção; abra miniaturas em tamanho ampliado e remova imagens indesejadas antes de salvar até 10 capturas no ZIP local; a área de trabalho e outras janelas nunca são capturadas
 - **Armazenamento de sessão em IndexedDB** com salvamento automático de abas abertas, conteúdos e nomes de projetos
 - **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
 - **Fontes incluídas** — Inter e JetBrains Mono; ícones Lucide locais (sem CDN)
-- **Paleta de comandos** — use `Ctrl+Shift+P` para acessar 23 ações de projeto, edição, navegação entre abas, build, visualização, atualização e ajuda; comandos contextuais indisponíveis aparecem desabilitados
+- **Paleta de comandos** — use `Ctrl+Shift+P` para acessar 23 ações de projeto, edição, navegação entre abas, build, visualização, atualização e ajuda; comandos contextuais indisponíveis aparecem desabilitados, e ícones Lucide específicos para cada ação ficam disponíveis offline
 - **Melhorias de acessibilidade** — rótulos localizados para leitores de tela, anúncios de resultados, listboxes e abas semânticas, foco visível e navegação por teclado nos fluxos de comandos e templates
-- **Rich Presence opcional do Discord** — estados localizados de editor/arquivo/templates/build/configurações, ícones dedicados por atividade e para inatividade, pausa ao bloquear ou suspender, reconexão e três níveis de privacidade
+- **Rich Presence opcional do Discord** — desativado por padrão, com opções dependentes bloqueadas até a ativação; estados localizados de editor/arquivo/templates/build/configurações, ícones dedicados por atividade e para inatividade, pausa ao bloquear ou suspender, reconexão e três níveis de privacidade
 
 ### Atualizador automático
 - **Atualizador no app** — verifica GitHub Releases, baixa com progresso e reinicia para instalar

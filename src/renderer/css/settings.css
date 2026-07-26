@@ -62,6 +62,21 @@
     opacity: 0.58;
 }
 
+.settings-row:has(> select:disabled) > label,
+.settings-row:has(> select:disabled) + .settings-hint {
+    color: var(--text-secondary);
+    opacity: 0.58;
+}
+
+.settings-row > .custom-select.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.settings-row > .custom-select.is-disabled .custom-select-trigger {
+    cursor: not-allowed;
+}
+
 .settings-row > .custom-select,
 .settings-row > select.styled-select,
 .settings-row > .toggle-switch,
@@ -279,14 +294,6 @@
 
 #tab-discord .settings-divider {
     margin: 4px 0 18px;
-}
-
-#tab-discord .discord-idle-hint {
-    margin-top: -12px;
-}
-
-#tab-discord .discord-assets-hint {
-    margin: 2px 0 0;
 }
 
 /* Settings Modal Redesign */

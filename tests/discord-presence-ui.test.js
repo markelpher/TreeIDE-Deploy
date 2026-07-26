@@ -86,6 +86,36 @@ describe('Discord Presence UI states', () => {
         document.body.className = '';
     });
 
+    it('starts disabled and locks every dependent setting until enabled', async () => {
+        const app = createTestApp();
+        const presence = createDiscordPresenceUi(app);
+        await presence.init();
+
+        const enabled = document.getElementById('discordPresenceToggle');
+        const statusBar = document.getElementById('discordPresenceBarToggle');
+        const language = document.getElementById('discordLanguageSelect');
+        const privacy = document.getElementById('discordPrivacySelect');
+
+        expect(localStorage.getItem('discord_presence_enabled')).toBe('false');
+        expect(enabled.checked).toBe(false);
+        expect(statusBar.disabled).toBe(true);
+        expect(language.disabled).toBe(true);
+        expect(privacy.disabled).toBe(true);
+        expect(app.electronAPI.configureDiscordPresence).toHaveBeenCalledWith(
+            expect.objectContaining({ enabled: false })
+        );
+
+        enabled.checked = true;
+        enabled.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(statusBar.disabled).toBe(false);
+        expect(language.disabled).toBe(false);
+        expect(privacy.disabled).toBe(false);
+        await vi.waitFor(() => expect(app.electronAPI.configureDiscordPresence).toHaveBeenLastCalledWith(
+            expect.objectContaining({ enabled: true })
+        ));
+        presence.disconnectObserver();
+    });
+
     it('detects editor, file, template, and build states', () => {
         const app = createTestApp();
         const presence = createDiscordPresenceUi(app);

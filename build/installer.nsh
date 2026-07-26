@@ -3,6 +3,37 @@
 !include nsDialogs.nsh
 !include WinMessages.nsh
 
+!macro TreeIdeAlignHeaderControls
+  System::Store "S"
+  GetDlgItem $0 $HWNDPARENT 1037
+  GetDlgItem $1 $HWNDPARENT 1038
+  ${If} $0 != 0
+  ${AndIf} $1 != 0
+    System::Call 'USER32::GetWindowRect(psr0,@r2)'
+    System::Call 'USER32::MapWindowPoints(p0,p$HWNDPARENT,pr2,i2)'
+    System::Call '*$2(i.r3,i.r4,i.r5,i.r6)'
+    IntOp $5 $5 - $3
+    IntOp $6 $6 - $4
+    System::Free $2
+
+    System::Call 'USER32::GetWindowRect(psr1,@r2)'
+    System::Call 'USER32::MapWindowPoints(p0,p$HWNDPARENT,pr2,i2)'
+    System::Call '*$2(i.r7)'
+    System::Free $2
+
+    System::Call 'USER32::SetWindowPos(pr0,p0,ir7,ir4,ir5,ir6,i0x14)'
+  ${EndIf}
+  System::Store "L"
+!macroend
+
+!macro customInstallmode
+  !ifdef BUILD_UNINSTALLER
+    Call un.TreeIdeAlignHeader
+  !else
+    Call TreeIdeAlignHeader
+  !endif
+!macroend
+
 !ifdef DISPLAY_LANG_SELECTOR
   !undef DISPLAY_LANG_SELECTOR
 !endif
@@ -172,6 +203,7 @@ Var TreeIdeIsFinishPage
 Var TreeIdeDirInput
 Var TreeIdeSpaceRequiredLabel
 Var TreeIdeSpaceAvailableLabel
+Var TreeIdeInstallProgressHighWater
 
 
 Function TreeIdeInitSystemLanguage
@@ -195,6 +227,7 @@ Function TreeIdeSetHeader
   GetDlgItem $R6 $HWNDPARENT 1038
   SendMessage $R5 ${WM_SETTEXT} 0 "STR:$R8"
   SendMessage $R6 ${WM_SETTEXT} 0 "STR:$R9"
+  Call TreeIdeAlignHeader
 FunctionEnd
 
 Function TreeIdeRefreshWizardButtons
@@ -289,12 +322,49 @@ Function TreeIdeApplySpaceLabels
     SendMessage $2 ${WM_SETTEXT} 0 "STR:$(treeIdeSpaceAvailable)"
   ${EndIf}
 FunctionEnd
+
+Function TreeIdeAlignHeader
+  !insertmacro TreeIdeAlignHeaderControls
+FunctionEnd
+
+Function TreeIdeStabilizeInstallProgress
+  FindWindow $0 "#32770" "" $HWNDPARENT
+  ${If} $0 == 0
+    Return
+  ${EndIf}
+
+  GetDlgItem $1 $0 1004
+  ${If} $1 == 0
+    Return
+  ${EndIf}
+
+  SendMessage $1 ${PBM_GETRANGE} 0 0 $2
+  SendMessage $1 ${PBM_GETPOS} 0 0 $3
+  ${If} $2 <= 0
+    Return
+  ${EndIf}
+
+  IntOp $4 $2 * 98
+  IntOp $4 $4 / 100
+  ${If} $3 > $4
+    StrCpy $3 $4
+  ${EndIf}
+
+  ${If} $3 < $TreeIdeInstallProgressHighWater
+    SendMessage $1 ${PBM_SETPOS} $TreeIdeInstallProgressHighWater 0
+  ${Else}
+    StrCpy $TreeIdeInstallProgressHighWater $3
+    SendMessage $1 ${PBM_SETPOS} $3 0
+  ${EndIf}
+FunctionEnd
+
 Function TreeIdeFinishPagePre
   StrCpy $TreeIdeIsFinishPage "1"
 FunctionEnd
 
 Function TreeIdeFinishPageShow
   nsDialogs::KillTimer /NOUNLOAD TreeIdeApplySpaceLabels
+  nsDialogs::KillTimer /NOUNLOAD TreeIdeStabilizeInstallProgress
   Call TreeIdeUpdateWindowTitle
   Call TreeIdeRefreshWizardButtons
   Call TreeIdeApplyPageTexts
@@ -303,11 +373,15 @@ FunctionEnd
 
 Function TreeIdeOnPageShow
   nsDialogs::KillTimer /NOUNLOAD TreeIdeApplySpaceLabels
+  nsDialogs::KillTimer /NOUNLOAD TreeIdeStabilizeInstallProgress
   Call TreeIdeUpdateWindowTitle
   Call TreeIdeRefreshWizardButtons
   Call TreeIdeApplyPageTexts
   Call TreeIdeApplySpaceLabels
+  StrCpy $TreeIdeInstallProgressHighWater 0
+  Call TreeIdeStabilizeInstallProgress
   ${NSD_CreateTimer} TreeIdeApplySpaceLabels 50
+  ${NSD_CreateTimer} TreeIdeStabilizeInstallProgress 25
   StrCpy $TreeIdeIsFinishPage "0"
 FunctionEnd
 
@@ -464,9 +538,9 @@ Function TreeIdeDesktopShortcutPre
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0u 0u 300u 30u "$(treeIdeShortcutIntro)"
+  ${NSD_CreateLabel} 0u 0u 300u 18u "$(treeIdeShortcutIntro)"
   Pop $0
-  ${NSD_CreateCheckbox} 0u 42u 300u 18u "$(treeIdeShortcutOption)"
+  ${NSD_CreateCheckbox} 0u 24u 300u 18u "$(treeIdeShortcutOption)"
   Pop $TreeIdeDesktopShortcutCheckbox
   ${If} $TreeIdeDesktopShortcutRequested == "1"
     ${NSD_Check} $TreeIdeDesktopShortcutCheckbox
@@ -614,6 +688,11 @@ Function un.TreeIdeSetHeader
   GetDlgItem $R6 $HWNDPARENT 1038
   SendMessage $R5 ${WM_SETTEXT} 0 "STR:$R8"
   SendMessage $R6 ${WM_SETTEXT} 0 "STR:$R9"
+  Call un.TreeIdeAlignHeader
+FunctionEnd
+
+Function un.TreeIdeAlignHeader
+  !insertmacro TreeIdeAlignHeaderControls
 FunctionEnd
 
 Function un.TreeIdeRefreshWizardButtons

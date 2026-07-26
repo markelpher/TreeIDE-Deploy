@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     cancelClose: () => ipcRenderer.send('cancel-close'),
     forceClose: () => ipcRenderer.send('force-close'),
     saveErrorLog: wrapInvoke('save-error-log'),
+    captureAppScreenshot: wrapInvoke('capture-app-screenshot'),
     createDiagnosticReport: wrapInvoke('create-diagnostic-report'),
     getRepositoryLabels: wrapInvoke('get-repository-labels'),
     configureDiscordPresence: wrapInvoke('discord-presence-configure'),

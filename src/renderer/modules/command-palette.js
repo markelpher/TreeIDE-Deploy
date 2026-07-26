@@ -43,7 +43,7 @@ export function createCommandPalette(app) {
 
     function getCommands() {
         return [
-            { id: 'new_project', label: 'new', icon: 'file-plus-2', run: () => app.tabs.createTab({ name: app.i18n.t('untitled') }) },
+            { id: 'new_project', label: 'new', icon: 'folder-plus', run: () => app.tabs.createTab({ name: app.i18n.t('untitled') }) },
             { id: 'open_project', label: 'open', icon: 'folder-open', run: () => app.fileops.handleLoadUnified() },
             { id: 'save_project', label: 'save', icon: 'save', run: () => app.fileops.saveProject(false) },
             { id: 'save_as', label: 'save_as', icon: 'save-all', run: () => app.fileops.saveProject(true) },
@@ -54,8 +54,8 @@ export function createCommandPalette(app) {
                 enabled: () => getProjectTabs().some((tab) => tab.isModified),
                 run: () => clickElement('menu-save-all')
             },
-            { id: 'undo', label: 'undo', icon: 'restore', run: () => clickElement('menu-undo') },
-            { id: 'redo', label: 'redo', icon: 'arrow-right', run: () => clickElement('menu-redo') },
+            { id: 'undo', label: 'undo', icon: 'rotate-ccw', run: () => clickElement('menu-undo') },
+            { id: 'redo', label: 'redo', icon: 'rotate-cw', run: () => clickElement('menu-redo') },
             { id: 'new_tab', label: 'new_tab', icon: 'plus', run: () => app.tabs.createTab({ name: app.i18n.t('untitled') }) },
             {
                 id: 'next_tab',
@@ -81,20 +81,20 @@ export function createCommandPalette(app) {
             {
                 id: 'close_file_tab',
                 label: 'close_file_tab',
-                icon: 'file',
+                icon: 'square-x',
                 enabled: () => Boolean(getActiveProjectTab()?.activeFileTabPath),
                 run: closeActiveFileTab
             },
             { id: 'build', label: 'build', icon: 'hammer', run: () => document.getElementById('createBtn')?.click() },
             { id: 'templates', label: 'templates', icon: 'layout-template', run: () => app.templates.openTemplatesModal() },
             { id: 'settings', label: 'settings', icon: 'settings', run: () => document.getElementById('menu-settings')?.click() },
-            { id: 'reload', label: 'reload', icon: 'restore', run: () => clickElement('menu-reload') },
-            { id: 'zoom_in', label: 'zoom_in', icon: 'plus', run: () => clickElement('menu-zoom-in') },
-            { id: 'zoom_out', label: 'zoom_out', icon: 'minus', run: () => clickElement('menu-zoom-out') },
+            { id: 'reload', label: 'reload', icon: 'refresh-ccw', run: () => clickElement('menu-reload') },
+            { id: 'zoom_in', label: 'zoom_in', icon: 'zoom-in', run: () => clickElement('menu-zoom-in') },
+            { id: 'zoom_out', label: 'zoom_out', icon: 'zoom-out', run: () => clickElement('menu-zoom-out') },
             { id: 'zoom_reset', label: 'actual_size', icon: 'maximize', run: () => clickElement('menu-zoom-reset') },
-            { id: 'fullscreen', label: 'fullscreen', icon: 'maximize', run: () => document.getElementById('menu-fullscreen')?.click() },
+            { id: 'fullscreen', label: 'fullscreen', icon: 'expand', run: () => document.getElementById('menu-fullscreen')?.click() },
             { id: 'check_updates', label: 'check_updates', icon: 'download', run: () => clickElement('checkUpdateBtn') },
-            { id: 'about', label: 'about', icon: 'file-text', run: () => clickElement('menu-credits') },
+            { id: 'about', label: 'about', icon: 'info', run: () => clickElement('menu-credits') },
             { id: 'report_problem', label: 'report_problem', icon: 'message-square-warning', run: () => document.getElementById('menu-report-problem')?.click() }
         ];
     }

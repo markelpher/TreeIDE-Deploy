@@ -23,6 +23,22 @@ describe('diagnostic report UI', () => {
         expect(html).toContain('Click the label to select the issue category');
         expect(html).toContain('id="diagnosticSteps"');
         expect(html).toContain('id="diagnosticExpected"');
+        expect(html).toContain('id="diagnosticCaptureToolbar"');
+        expect(html).toContain('id="diagnosticCaptureSelection"');
+        expect(html).toContain('id="diagnosticSelectionRect"');
+        expect(html).toContain('id="diagnosticCaptureRegion"');
+        expect(html).toContain('id="diagnosticCaptureFull"');
+        expect(html).toContain('id="diagnosticCapturePreviews"');
+        expect(html).toContain('id="diagnosticCaptureHide"');
+        expect(html).toContain('id="diagnosticCaptureRestore"');
+        expect(html).toContain('id="diagnosticCaptureViewer"');
+        expect(html).toContain('id="diagnosticCaptureViewerImage"');
+        expect(html).toContain('id="diagnosticCaptureDone"');
+        const captureUiMarkup = html.slice(
+            html.indexOf('id="diagnosticCaptureToolbar"'),
+            html.indexOf('id="welcomeModal"')
+        );
+        expect(captureUiMarkup).not.toContain('data-lucide=');
         expect(html).toContain('aria-describedby="diagnosticDescriptionHint diagnosticDescriptionCount"');
         expect(html).not.toContain('data-lucide="shield-check"');
         expect(shellSource).toContain('getDiagnosticIssueDetails');
@@ -35,6 +51,30 @@ describe('diagnostic report UI', () => {
         expect(shellSource).toContain('discardDiagnosticReport');
         expect(shellSource).toContain("customSelect?.style.removeProperty('width')");
         expect(shellSource).toContain('diagnosticFields.forEach(updateDiagnosticField)');
+        expect(shellSource).toContain('beginDiagnosticCapture');
+        expect(shellSource).toContain('captureAppScreenshot');
+        expect(shellSource).toContain('getDiagnosticSelectionBounds');
+        expect(shellSource).toContain('renderDiagnosticCapturePreviews');
+        expect(shellSource).toContain('setDiagnosticCaptureToolbarCollapsed');
+        expect(shellSource).toContain('showDiagnosticCaptureViewer');
+        expect(shellSource).toContain("diagnostic-capture-preview-open");
+        expect(shellSource).toContain("URL.createObjectURL(blob)");
+        expect(shellSource).toContain("requestAnimationFrame(() => diagnosticCaptureRegion?.click())");
+        expect(html).toContain('aria-keyshortcuts="Shift+P"');
+        expect(html).toContain('<kbd>Shift+P</kbd>');
+        expect(html).not.toMatch(/id="diagnosticCaptureRegion"(?:(?!<\/button>)[\s\S])*<kbd>/);
+        expect(shellSource).toContain("event.code === 'KeyP'");
+        expect(shellSource).toContain('event.stopImmediatePropagation()');
+        expect(shellSource).not.toContain("event.code === 'KeyS'");
+        expect(shellSource).toContain('payload.screenshots = screenshots');
+        expect(shellSource).not.toContain("diagnosticModal.style.visibility = 'hidden'");
+        expect(modalStyles).toContain('.diagnostic-capture-toolbar.is-capturing');
+        expect(modalStyles).toContain('.diagnostic-capture-selection');
+        expect(modalStyles).toContain('.diagnostic-capture-selection.is-dragging .diagnostic-selection-instruction');
+        expect(modalStyles).toContain('.diagnostic-capture-toolbar.is-selecting');
+        expect(modalStyles).toContain('.diagnostic-capture-restore.is-selecting');
+        expect(modalStyles).toContain('.diagnostic-selection-rect');
+        expect(modalStyles).toContain('.diagnostic-capture-preview');
         expect(modalStyles).toMatch(/\.diagnostic-description\s*\{[^}]*resize:\s*none/s);
         expect(modalStyles).toMatch(/\.diagnostic-title-label\s*\{[^}]*box-sizing:\s*content-box/s);
         expect(modalStyles).toContain('.diagnostic-label-custom-select-options');
