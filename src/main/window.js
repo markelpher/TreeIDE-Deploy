@@ -10,6 +10,83 @@ import log from 'electron-log';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const APP_NAME = 'Tree IDE';
+const RENDERER_READY_FALLBACK_MS = 30000;
+const windowVisibilityControllers = new WeakMap();
+
+function createWindowVisibilityController(win, {
+    fallbackDelayMs = RENDERER_READY_FALLBACK_MS,
+    onReveal = () => {},
+    onFallback = () => {}
+} = {}) {
+    let nativeReady = false;
+    let rendererReady = false;
+    let revealRequested = true;
+    let initialRevealDone = false;
+    let fallbackTimer = null;
+
+    const clearFallback = () => {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+    };
+
+    const reveal = () => {
+        if (!nativeReady || !rendererReady || !revealRequested || win.isDestroyed?.()) {
+            return false;
+        }
+        if (win.isMinimized?.()) {
+            win.restore();
+        }
+        if (!initialRevealDone) {
+            win.maximize();
+        }
+        win.show();
+        win.focus();
+        initialRevealDone = true;
+        revealRequested = false;
+        clearFallback();
+        onReveal();
+        return true;
+    };
+
+    return {
+        markNativeReady() {
+            nativeReady = true;
+            if (!rendererReady && fallbackDelayMs > 0 && !fallbackTimer) {
+                fallbackTimer = setTimeout(() => {
+                    fallbackTimer = null;
+                    rendererReady = true;
+                    onFallback();
+                    reveal();
+                }, fallbackDelayMs);
+            }
+            return reveal();
+        },
+        markRendererReady() {
+            rendererReady = true;
+            clearFallback();
+            return reveal();
+        },
+        requestReveal() {
+            revealRequested = true;
+            return reveal();
+        },
+        dispose() {
+            clearFallback();
+        }
+    };
+}
+
+function focusWindowWhenReady(win) {
+    if (!win || win.isDestroyed?.()) { return false; }
+    const controller = windowVisibilityControllers.get(win);
+    if (controller) {
+        return controller.requestReveal();
+    }
+    if (win.isMinimized?.()) { win.restore(); }
+    win.show();
+    win.focus();
+    return true;
+}
 
 function getAppIconPath() {
     const assetsDir = path.join(__dirname, '..', '..', 'assets');
@@ -89,6 +166,11 @@ function createWindow({ app, isReadyToCloseRef }) {
     const updateWindowState = () => {
         mainWindow.webContents.send('window-state-changed', mainWindow.isMaximized());
     };
+    const visibilityController = createWindowVisibilityController(mainWindow, {
+        onReveal: updateWindowState,
+        onFallback: () => log.warn('Renderer readiness timed out; showing the window as a recovery fallback.')
+    });
+    windowVisibilityControllers.set(mainWindow, visibilityController);
 
     mainWindow.on('maximize', updateWindowState);
     mainWindow.on('unmaximize', updateWindowState);
@@ -100,9 +182,13 @@ function createWindow({ app, isReadyToCloseRef }) {
     });
 
     mainWindow.once('ready-to-show', () => {
-        mainWindow.show();
-        mainWindow.maximize();
-        updateWindowState();
+        visibilityController.markNativeReady();
+    });
+
+    mainWindow.webContents.on('ipc-message', (_event, channel) => {
+        if (channel === 'renderer-ready') {
+            visibilityController.markRendererReady();
+        }
     });
 
     mainWindow.webContents.once('did-finish-load', () => {
@@ -132,6 +218,8 @@ function createWindow({ app, isReadyToCloseRef }) {
 
     mainWindow.on('closed', () => {
         clearTimeout(closeFallbackTimer);
+        visibilityController.dispose();
+        windowVisibilityControllers.delete(mainWindow);
         delete isReadyToCloseRef.cancelPendingClose;
     });
 
@@ -143,5 +231,7 @@ export {
     getAppIconPath,
     getWindowIcon,
     lockWindowTitle,
-    createWindow
+    createWindow,
+    createWindowVisibilityController,
+    focusWindowWhenReady
 };

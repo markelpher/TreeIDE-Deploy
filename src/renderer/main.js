@@ -1,7 +1,15 @@
 import './css/main.css';
 import { createApp } from './createApp.js';
 
-window.addEventListener('DOMContentLoaded', () => {
+function waitForInterfacePaint() {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
     const app = createApp({ electronAPI: window.electronAPI });
-    void app.shell.bootstrap();
+    await app.shell.bootstrap();
+    await waitForInterfacePaint();
+    window.electronAPI?.rendererReady?.();
 });

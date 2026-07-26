@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     windowClose: () => ipcRenderer.send('window-close'),
     windowReload: () => ipcRenderer.send('window-reload'),
     windowDevTools: () => ipcRenderer.send('window-dev-tools'),
+    rendererReady: () => ipcRenderer.send('renderer-ready'),
     onWindowStateChanged: (callback) => { ipcRenderer.removeAllListeners('window-state-changed'); ipcRenderer.on('window-state-changed', (event, value) => callback(value)); },
     getAppInfo: wrapInvoke('get-app-info'),
     getCurrentReleaseInfo: wrapInvoke('get-current-release-info'),

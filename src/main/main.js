@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { app, powerMonitor } from 'electron';
 import log from 'electron-log';
-import { createWindow, APP_NAME } from './window.js';
+import { createWindow, focusWindowWhenReady, APP_NAME } from './window.js';
 import { registerUpdaterEvents, registerUpdateIpc } from './ipc/updates.js';
 import { registerProjectIpc } from './ipc/project.js';
 import { registerAppIpc } from './ipc/app.js';
@@ -109,10 +109,7 @@ const discordPresence = createDiscordPresence({
 });
 
 function focusMainWindow() {
-    if (!mainWindow || mainWindow.isDestroyed?.()) { return; }
-    if (mainWindow.isMinimized?.()) { mainWindow.restore(); }
-    mainWindow.show();
-    mainWindow.focus();
+    focusWindowWhenReady(mainWindow);
 }
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock?.() ?? true;

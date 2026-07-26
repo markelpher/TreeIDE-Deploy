@@ -1669,7 +1669,10 @@ export function createShell(app) {
         const autoCheckEnabled = localStorage.getItem('auto_check_updates') !== 'false';
         const updateChannel = localStorage.getItem('update_channel') || 'stable';
         await app.electronAPI.setUpdateChannel?.(updateChannel);
-        await app.modals.initializeAppInfo();
+        // Remote release metadata is not required to make the editor usable.
+        // Fetch it in the background so a slow connection cannot hold the
+        // first installed launch behind an invisible window.
+        void app.modals.initializeAppInfo();
         app.modals.bindReleaseUpdateEvents();
         if (autoCheckEnabled) {
             setTimeout(() => app.modals.checkReleaseUpdateOnStartup(updateChannel), 1200);

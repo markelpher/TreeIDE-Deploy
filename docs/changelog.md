@@ -1,4 +1,4 @@
-## What's new in v2.0.110
+## What's new in v2.0.111
 
 Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
@@ -85,6 +85,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 
 #### UI & first-run experience
 - **Custom frameless window** with minimize, maximize, and close controls
+- **Clean first installed launch** — the app stays hidden until the restored interface has finished its first paint, while online release metadata loads in the background instead of exposing a frozen startup screen
 - **Menu bar** — File, Edit, View, Window, and About
 - **Welcome modal** on first run — redesigned layout with hero header, grouped setting cards (General, Appearance, Session), and a pinned **Get Started** button
 - **Settings modal** with tabs: General, Appearance, Shortcuts, and Updates
