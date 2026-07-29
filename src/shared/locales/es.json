@@ -224,7 +224,7 @@
     "settings": "Configuración",
     "general": "General",
     "welcome_title": "Bienvenido a Tree IDE",
-    "welcome_desc": "Para empezar, selecciona tu idioma, tema y carpeta de creación preferidos.",
+    "welcome_desc": "Para empezar, elige el idioma, el tema, la carpeta de creación y el tipo de sesión.",
     "start": "Comenzar",
     "appearance": "Apariencia",
     "theme_dark": "Oscuro",
