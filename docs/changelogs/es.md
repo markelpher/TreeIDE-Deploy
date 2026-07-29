@@ -1,149 +1,149 @@
 <!-- Generado automáticamente por Release Finalize — no editar manualmente. Fuente: docs/changelog.md -->
 
-## Qué hay de nuevo en v2.0.111
+## Qué hay de nuevo en v2.0.112
 
-Tree IDE v2 es una reescritura completa y expansión de la app original [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). La misma idea central — diseñar estructuras de carpetas en texto plano, previsualizarlas en tiempo real y generar proyectos — ahora con una nueva arquitectura, herramientas más completas y versiones disponibles solo para Windows.
+Tree IDE v2 es una reescritura completa y expansión de la aplicación original [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). La idea central se mantiene: diseña estructuras de carpetas en texto plano, prévisualízalas en tiempo real y genera proyectos, ahora con una arquitectura renovada, herramientas más completas y lanzamientos exclusivos para Windows.
 
 ### Añadido
 
 #### Instalación, almacenamiento y protección de paquetes
-- **Opciones explícitas para conservar datos** — al instalar manualmente sobre una versión existente de Tree IDE y al desinstalar, ahora se muestran opciones claras de Conservar o Eliminar, con Conservar seleccionado por defecto
-- **Instalador detecta primera instalación** — se omite la elección de datos cuando no existe un perfil previo de Tree IDE ni datos del actualizador, y no interrumpe actualizaciones automáticas silenciosas
-- **Flujo de datos asistido correcto** — instalaciones manuales sobre una versión existente y la desinstalación muestran las opciones de Conservar/Eliminar; las actualizaciones silenciosas dentro de la app omiten el aviso y conservan los datos
-- **La bienvenida sigue la elección de datos** — el proceso de inicio se presenta al crear un perfil nuevo o tras seleccionar Eliminar, mientras elegir Conservar mantiene el estado de bienvenida completado
-- **Acción final correcta en el desinstalador** — la última página ahora etiqueta el botón principal como Finalizar en inglés, portugués y español, en vez de Siguiente
-- **Paquete de producción protegido** — el código de la aplicación permanece organizado en `app.asar`, ahora con validación de integridad de Electron ASAR y con la carga restringida al archivo validado
-- **Runtime Windows x64 optimizado** — se eliminó el toolchain Squirrel no usado y los binarios de 7-Zip para sistemas distintos a Windows/x64 de los archivos distribuidos de la aplicación
-- **Limpieza opcional completa** — al eliminar datos se incluyen preferencias, caché, registros, sesión guardada, carpetas de perfil actual y legado, y datos del actualizador
+- **Opciones explícitas para conservación de datos** — al instalar manualmente sobre una versión existente de Tree IDE o desinstalar ahora aparecen claras las opciones Conservar o Eliminar, con Conservar seleccionada por defecto
+- **Instalación reconoce primera vez** — la opción de datos se omite si no existen perfiles anteriores de Tree IDE ni datos del actualizador, y no interrumpe las actualizaciones automáticas silenciosas
+- **Flujo de datos asistido corregido** — las instalaciones manuales sobre una versión existente y la desinstalación ahora muestran las opciones Conservar/Eliminar; las actualizaciones silenciosas dentro de la app omiten el mensaje y conservan los datos
+- **Bienvenida sigue la elección de datos** — la introducción se muestra para un perfil nuevo o tras elegir Eliminar, mientras que seleccionar Conservar preserva el estado de bienvenida completada
+- **Acción correcta al finalizar el desinstalador** — la última página ahora etiqueta su botón principal como Finalizar en vez de Siguiente en inglés, portugués y español
+- **Paquete de producción protegido** — el código de la aplicación se mantiene organizado en `app.asar`, ahora con validación de integridad Electron ASAR y carga restringida solo al archivo validado
+- **Ejecución ligera en Windows x64** — se eliminaron la cadena de herramientas de empaquetado Squirrel no utilizada y los binarios de 7-Zip no correspondientes a Windows/x64 de los archivos distribuidos
+- **Limpieza opcional completa** — al eliminar datos se cubren preferencias, caché, registros, sesión guardada, carpetas de perfil actual y legado, y datos del actualizador
 
 #### Build Studio y salida de proyectos
-- **Build Studio** — flujo de construcción a pantalla completa con previsualización en vivo del árbol, previsualización de contenido por archivo, estadísticas y opciones de salida
-- **Tres modos de salida** — crear estructura de carpetas en disco, exportar solo ZIP, o exportar solo archivo de proyecto `.tree`
-- **Salidas combinadas** — opción de exportar ZIP junto con la construcción de carpetas y de incluir el archivo `.tree` dentro del ZIP
-- **Botón de creación consciente del contenido y ZIP** — las construcciones combinadas de carpeta y ZIP ahora etiquetan la acción como Crear Archivo, Archivos, Carpeta, Carpetas, Archivo y Carpeta, o Archivos y Carpetas seguido de `+ ZIP`, según la estructura seleccionada
-- **Inspección previa a la construcción** — escanea la carpeta destino para detectar estructura existente, archivos `.tree` o ZIP antes de escribir
-- **Gestión de conflictos** — permite elegir entre omitir o sobrescribir cuando archivos o carpetas ya existen
-- **Contenido inicial predeterminado** para más de 68 tipos de archivo (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte y más)
-- **Marcadores i18n** en archivos generados (`{hello}`, `{lang}`, `{projectName}`, etc.)
+- **Build Studio** — flujo de compilación a pantalla completa con vista previa dinámica del árbol, previsualización de contenido por archivo, estadísticas y opciones de salida
+- **Tres modos de salida** — crear la estructura de carpetas en disco, exportar solo un ZIP o exportar solo un archivo de proyecto `.tree`
+- **Salidas combinadas** — opcionalmente exporta un ZIP junto con la creación de carpetas, e incluye el archivo `.tree` dentro del archivo ZIP
+- **Botón para crear con ZIP según el contenido** — la acción para carpetas+ZIP ahora se etiqueta como Crear Archivo, Archivos, Carpeta, Carpetas, Archivo y Carpeta, o Archivos y Carpetas seguidos de `+ ZIP`, según la estructura seleccionada
+- **Inspección previa a la compilación** — escanea la carpeta destino para detectar estructura existente, archivos `.tree` o ZIP antes de escribir
+- **Gestión de conflictos** — permite elegir entre omitir o sobrescribir cuando ya existen archivos o carpetas
+- **Contenido inicial predeterminado** para más de 68 tipos de archivos (HTML, CSS, JS/TS/JSX/TSX, Python, Go, Rust, Docker, Terraform, Vue, Svelte y más)
+- **Marcadores de i18n** en archivos generados (`{hello}`, `{lang}`, `{projectName}`, etc.)
 
-#### Archivos y cifrado
-- **Compatibilidad con archivos Tree IDE 1** — Tree IDE 1 reconoce el formato `.tree` de primera generación utilizado por Tree IDE Legacy; los archivos UTF-8 originales sin encabezado siguen siendo legibles con estilos de tabulación y `...`
+#### Archivos comprimidos y cifrado
+- **Compatibilidad con archivos de Tree IDE 1** — Tree IDE 1 identifica el formato de archivos `.tree` de primera generación usado por Tree IDE Legacy; los archivos originales en UTF-8 sin encabezados siguen siendo legibles con tabulaciones y el estilo de sangría `...`
 - **Exportación ZIP** con protección opcional por contraseña AES-256 a través de 7-Zip
-- **Proyectos `.tree` cifrados de alta seguridad** — TREEIDE2 emplea AES-256-GCM autenticado con Argon2id (256 MiB, 4 ciclos, 4 canales), autentica su encabezado criptográfico y mantiene legible el formato original sin encabezado como generación 1
-- **Protección explícita de archivos `.tree`** — una casilla dedicada habilita los campos de contraseña y confirmación (habitualmente desactivados), explica que se aplicará el cifrado TREEIDE2 y muestra la advertencia de contraseña irrecuperable solo al seleccionar la protección
-- **Importación de archivos comprimidos** mediante diálogo o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, y `.7z`
-- **Solicitudes de contraseña** para archivos ZIP cifrados y archivos `.tree` cifrados
-- **Cargar carpeta como estructura** — analiza un directorio existente y lo transforma en texto editable del árbol
+- **Proyectos `.tree` cifrados de alta seguridad** — TREEIDE2 emplea AES-256-GCM autenticado con Argon2id (256 MiB, 4 pasadas, 4 canales), autentica su encabezado criptográfico y permite leer el formato original sin encabezado de Tree IDE Legacy como generación 1
+- **Protección explícita de archivos `.tree`** — una casilla específica activa los campos de contraseña y confirmación (inicialmente deshabilitados), explica que se aplicará el cifrado TREEIDE2 y muestra la advertencia de contraseña irrecuperable solo mientras se selecciona la protección
+- **Importación de archivos comprimidos** mediante diálogo de archivos o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` y `.7z`
+- **Solicitudes de contraseña** para archivos ZIP y archivos `.tree` cifrados
+- **Cargar carpeta como estructura** — analiza un directorio existente y lo convierte en texto de árbol editable
 
 #### Plantillas
-- **19 plantillas de inicio integradas** agrupadas por categoría:
-  - Frontend: HTML, HTML & CSS, HTML/CSS/JS, React, Vite + React
+- **19 plantillas iniciales integradas** agrupadas por categoría:
+  - Frontend: HTML, HTML y CSS, HTML/CSS/JS, React, Vite + React
   - Stacks: Node.js, MVC, Python, PHP
   - Sistemas: Go, Java, Kotlin, Rust, Ruby, Swift, Dart
   - Nativo: C, C++, C#
-- **Pantalla de plantillas** — navegador de tres columnas a pantalla completa con pestañas para integradas y personalizadas, edición en línea de estructura y previsualización en vivo del árbol
-- **Plantillas personalizadas** — crear en blanco, importar del proyecto actual, renombrar, editar contenido de archivos en línea, abrir en el editor principal, exportar o eliminar sin salir de la pantalla
-- **Archivos `.tree-template`** — exportar e importar plantillas personalizadas compartibles (`treeide-template` v1 en JSON) mediante diálogos nativos o exportación por fila en la lista de personalizadas
-- **Pie de plantillas personalizadas** — cuando existen plantillas personalizadas: **Nueva plantilla**, **Del proyecto actual**, e **Importar .tree-template**; el estado vacío ofrece inicio en blanco, importación de proyecto y de archivos
-- **Previsualización por archivo** — al hacer clic en un archivo en la previsualización de estructura se abre un panel de editor monoespaciado a pantalla completa con distintivo del tipo de archivo (mismo formato para plantillas integradas y personalizadas)
-- **Búsqueda de plantillas** — filtra plantillas integradas y personalizadas al escribir, con coincidencia insensible a mayúsculas y acentos, y mensajes localizados para resultados vacíos
-- **Favoritos de plantillas** — marca plantillas con una estrella Lucide incluida localmente, explora los favoritos en una pestaña dedicada y conserva la selección entre sesiones de la aplicación
+- **Pantalla de plantillas** — navegador de pantalla completa con tres columnas, pestañas para plantillas integradas y personalizadas, edición de estructura en línea y vista previa en vivo del árbol
+- **Plantillas personalizadas** — crear en blanco, importar desde el proyecto actual, renombrar, editar contenidos por archivo en línea, abrir en el editor principal, exportar o eliminar sin salir de la pantalla
+- **Archivos `.tree-template`** — exportar e importar plantillas personalizadas compartibles (JSON `treeide-template` v1) mediante diálogos nativos de guardar/abrir o exportación por fila en la lista personalizada
+- **Pie de plantillas personalizadas** — si existen plantillas personalizadas: **Nueva plantilla**, **Desde proyecto actual** e **Importar .tree-template**; estado vacío ofrece comenzar en blanco, importar de proyecto e importar archivo
+- **Vista previa por archivo** — al hacer clic en un archivo de la estructura aparece un panel de edición mono-espacio a ancho completo con distintivo de tipo de archivo (misma disposición de panel único para integradas y personalizadas)
+- **Búsqueda de plantillas** — filtra plantillas integradas y personalizadas en tiempo real, sin distinguir mayúsculas/minúsculas ni tildes, y muestra comentarios localizados cuando no haya resultados
+- **Favoritos de plantillas** — marca plantillas con una estrella Lucide incluida, navega en una pestaña de Favoritos dedicada y mantiene la selección entre sesiones de la app
 
 #### Paleta de comandos y accesibilidad
-- **Paleta de comandos ampliada** — usa `Ctrl+Shift+P` para buscar entre 23 acciones, agregando Guardar todo, Deshacer, Rehacer, Nueva pestaña, pestaña de proyecto siguiente/anterior, cerrar pestaña de proyecto/archivo, Recargar, controles de zoom, Buscar actualizaciones y Acerca de, además de los comandos existentes de proyecto, construcción, ajustes, pantalla completa y reportes
-- **Comandos según contexto** — Guardar todo y acciones de pestaña de proyecto/archivo permanecen visibles para descubrimiento, pero están desactivadas cuando la sesión actual no puede ejecutarlas de forma segura
-- **Flujo de comandos con teclado** — flechas cambian el comando activo, Enter lo ejecuta, Escape cierra la paleta y el enfoque vuelve al control anterior
-- **Mejor soporte para lectores de pantalla** — nombres accesibles localizados, patrones semánticos de combobox/listbox/pestañas, seguimiento de descendiente activo, conteo en vivo de resultados y anuncios de estado más claros en comandos y plantillas
-- **Acciones accesibles de plantillas** — controles de favorito, renombrar, editar, exportar y eliminar exponen etiquetas y estados localizados usando `aria-pressed`, `aria-selected` y regiones en vivo
+- **Paleta de comandos ampliada** — usa `Ctrl+Shift+P` para buscar entre 23 acciones, agregando Guardar todo, Deshacer, Rehacer, Nueva pestaña, siguiente/anterior pestaña de proyecto, cerrar pestaña de proyecto/archivo, Recargar, controles de zoom, Buscar actualizaciones y Acerca de a los comandos ya existentes de proyecto, compilación, configuración, pantalla completa y reportes
+- **Comandos contextuales** — Guardar todo y las acciones de pestañas de proyecto/archivo permanecen visibles para descubribilidad, pero están deshabilitadas cuando la sesión actual no puede ejecutarlas de forma segura
+- **Flujo de comandos orientado al teclado** — flechas para cambiar de comando activo, Enter para ejecutar, Escape para cerrar la paleta y el enfoque regresa al control previo
+- **Mejor soporte para lectores de pantalla** — nombres accesibles localizados, patrones semánticos combobox/listbox/tabs, seguimiento de elemento activo, conteo de resultados en vivo y avisos de estado más claros para comandos y plantillas
+- **Acciones de plantilla accesibles** — controles para favorito, renombrar, editar, exportar y eliminar exponen etiquetas y estados localizados mediante `aria-pressed`, `aria-selected` y regiones en vivo
 
 #### Rich Presence
-- **Privacidad por defecto** — Discord Rich Presence ahora inicia desactivado, y su barra de estado, idioma y controles de privacidad no se muestran hasta que el usuario habilita explícitamente la integración
-- **Discord RPC listo para usar** — Tree IDE incluye su ID de aplicación pública de Discord, conecta automáticamente al cliente de escritorio, reporta estado de conexión, reintenta tras desconexiones y no requiere configuración del usuario
-- **Estados de actividad específicos** — Editando estructura, Editando código, Editando texto, Viendo archivo, Explorando plantillas, Personalizando plantilla, Configuración y, según construcción, Creando archivo, Creando archivos, Creando carpeta, Creando carpetas, Creando archivo y carpeta, o Creando archivos y carpetas; la opción en Build Studio usa el mismo título y descripción dinámica, mientras las salidas `.tree` quedan disponibles para proyectos válidos y las exportaciones emplean un estado genérico Exportando archivo.
-- **Estado de inactividad según editor** — Presence inicia como Inactivo y solo reporta Editando estructura tras interactuar directamente con el editor de estructura; cinco minutos sin interacción retornan a Inactivo con un icono de teclado
-- **Tres niveles de privacidad** — Básico solo muestra Tree IDE, Actividad agrega la acción actual, y Detallado puede también mostrar el nombre del proyecto y tipo de archivo; nunca se comparten rutas ni contenidos de archivos
-- **Presence consciente de energía** — bloqueo y suspensión borran la actividad, mientras desbloqueo y reanudación la restauran automáticamente
-- **Presence localizado** — sigue el idioma de Tree IDE o permite elegir inglés, portugués o español de forma independiente; el ajuste actualiza el RPC de inmediato y se conserva entre sesiones
-- **Explicación del alcance de localización** — Discord recibe una carga de actividad localizada, por lo que todos los espectadores ven el idioma de Presence seleccionado por quien publica, no una traducción según el idioma de Discord del espectador
+- **Privacidad por defecto** — Discord Rich Presence ahora inicia desactivado, y su barra de estado, idioma y controles de privacidad no están disponibles hasta que el usuario habilita explícitamente la integración
+- **RPC de Discord listo para usar** — Tree IDE incluye su ID de aplicación pública de Discord, se conecta automáticamente con el cliente de escritorio, informa el estado de la conexión, reintenta tras desconexiones y no requiere configuración por parte del usuario
+- **Estados de actividad específicos** — Editando estructura, Editando código, Editando texto, Viendo archivo, Explorando plantillas, Personalizando plantilla, Configuración y, consciente de compilación, Creando archivo, Creando archivos, Creando carpeta, Creando carpetas, Creando archivo y carpeta, o Creando archivos y carpetas; la opción Build Studio usa el mismo título y descripción dinámicos, mientras que las salidas `.tree` están disponibles para proyectos planos válidos y las exportaciones usan un estado genérico Exportando archivo.
+- **Estado inactivo sensible al editor** — la presencia empieza como Inactivo y solo informa Editando estructura tras interactuar directamente con el editor; cinco minutos de inactividad devuelven a Inactivo con un ícono de teclado
+- **Tres niveles de privacidad** — Básico solo muestra Tree IDE, Actividad añade la acción actual, y Detallado puede mostrar también el nombre del proyecto y tipo de archivo; nunca se comparten rutas ni contenidos de archivos
+- **Presence consciente de energía** — al bloquear o suspender se borra la actividad, al desbloquear o reanudar se restaura automáticamente
+- **Presence localizada** — sigue el idioma de Tree IDE o permite elegir inglés, portugués o español de forma independiente; la configuración actualiza el RPC de inmediato y persiste entre sesiones
+- **Explicación sobre el alcance de localización** — Discord recibe una sola cadena de actividad localizada, por lo que todos ven el idioma escogido por el usuario emisor en Presence, sin traducir dinámicamente al idioma de Discord del espectador
 
 #### Editor, árbol y validación
-- **Panel de validación** — identifica mala indentación, nombres inválidos, duplicados, rutas inseguras y estructuras vacías; haz clic en una advertencia para saltar a la línea
-- **Deshacer / rehacer** con hasta 100 estados en historial
-- **Pestañas para múltiples proyectos** con indicadores de modificación, barra de pestañas desplazable y reordenación por arrastrar y soltar
-- **Pestañas de editor de archivos por proyecto** — edita el contenido inicial de archivos antes de construir y reordena archivos abiertos por arrastrar y soltar sin perder la pestaña activa
-- **Sincronización de pestañas para archivos eliminados** — eliminar archivos o cambiar extensiones en el editor de estructura ahora cierra todas las pestañas obsoletas, selecciona la pestaña válida más cercana cuando es necesario y evita que contenido eliminado reaparezca
-- **Previsualización en vivo de Markdown** para archivos `.md` en el panel de previsualización
-- **Carpetas colapsables** en la previsualización del árbol
-- **Navegación por teclado en el árbol** — flechas, Home, End y Enter
-- **Coincidencia inteligente al renombrar archivos** cuando se editan líneas en el árbol
-- **Indentación / desindentación por bloque** con Tab y Shift+Tab, más Backspace inteligente para bloques de indentación
-- **Zoom de editor** — `Ctrl++`, `Ctrl+-`, y `Ctrl+0`
-- **Paneles redimensionables** (editor, árbol, previsualización de archivos) cuyo diseño se conserva entre sesiones
+- **Panel de validación** — identifica sangrías incorrectas, nombres inválidos, hermanos duplicados, rutas inseguras y estructuras vacías; haz clic en una advertencia para saltar a la línea
+- **Deshacer/Rehacer** con hasta 100 estados de historial
+- **Pestañas multiproyecto** con indicadores de cambio, barra desplazable y reordenamiento por arrastrar y soltar
+- **Pestañas de archivos por proyecto** — edita contenidos iniciales antes de compilar y reordena archivos abiertos con arrastrar y soltar sin perder el enfoque de la pestaña activa
+- **Sincronización de pestañas de archivos eliminados** — al eliminar un archivo o cambiar su extensión desde el editor de estructuras ahora se cierran todos los archivos antiguos, seleccionando la pestaña válida más cercana si es necesario y evitando que el contenido eliminado reaparezca
+- **Vista previa dinámica de Markdown** en archivos `.md` en el panel de previsualización
+- **Carpetas colapsables** en la vista previa del árbol
+- **Navegación de árbol por teclado** — flechas, Inicio, Fin y Enter
+- **Renombrado inteligente de archivos** al editar líneas del árbol
+- **Sangría/desangría por bloques** con Tab y Shift+Tab, más Backspace inteligente para bloques de sangría
+- **Zoom del editor** — `Ctrl++`, `Ctrl+-` y `Ctrl+0`
+- **Paneles redimensionables** (editor, árbol, vista previa de archivo) con disposición persistente entre sesiones
 
 #### Iconos y tipos de archivo
 - **Iconos Lucide** incluidos localmente (sin dependencia de CDN)
 - **Iconos contextuales** para carpetas comunes, lenguajes de programación, Docker, archivos de configuración, archivos comprimidos y multimedia
-- **Más de 100 extensiones con etiquetas** en el mapa de tipos de archivo
+- **Más de 100 etiquetas de extensión** en el mapeo de tipos de archivo
 
 #### Interfaz y experiencia inicial
-- **Ventana personalizada sin marco** con controles de minimizar, maximizar y cerrar
-- **Inicio limpio tras primera instalación** — la app permanece oculta hasta que se restaura y pinta la interfaz, mientras la metadata de la versión carga en segundo plano y se evita mostrar una pantalla congelada
-- **Barra de menú** — Archivo, Editar, Ver, Ventana y Acerca de
-- **Modal de bienvenida** en el primer inicio — diseño renovado con encabezado destacado, tarjetas de ajustes agrupadas (General, Apariencia, Sesión) y botón fijo **Empezar**
-- **Modal de ajustes** con pestañas: General, Apariencia, Atajos y Actualizaciones
-- **Modal de Acerca de** con versión en vivo de la app (evoluciona desde la pantalla de créditos de v1)
-- **Diálogo de cambios sin guardar** al cerrar con proyectos modificados
+- **Ventana personalizada sin marco** con controles para minimizar, maximizar y cerrar
+- **Inicio limpio en la primera ejecución** — la app permanece oculta hasta que termina de pintar la interfaz restaurada; la información de lanzamiento se carga en segundo plano para evitar mostrar una pantalla congelada al inicio
+- **Barra de menús** — Archivo, Edición, Vista, Ventana y Acerca de
+- **Modal de bienvenida** al primer inicio — diseño renovado con cabecera destacada, tarjetas agrupadas de configuración (General, Apariencia, Sesión) y botón anclado **Empezar**
+- **Modal de configuración** con pestañas: General, Apariencia, Atajos y Actualizaciones
+- **Modal de información** con versión activa en vivo (evolución de la pantalla de créditos de la v1)
+- **Diálogo por cambios sin guardar** al cerrar con proyectos modificados
 - **Superposición de arrastrar y soltar** para archivos `.tree` y archivos comprimidos
 - **Fuentes incluidas** — Inter y JetBrains Mono
 
-#### Diagnósticos orientados a privacidad y reportes en GitHub
-- **Formulario estructurado de reporte** — recopila título del problema, descripción, pasos de reproducción y comportamiento esperado en campos localizados, expansibles automáticamente y con contador de caracteres
-- **Selector de etiquetas del repositorio** — carga las etiquetas actuales de GitHub con respaldo offline, las muestra en el menú personalizado de la app, agrega la etiqueta seleccionada al título y la preselecciona en el borrador en GitHub
-- **Borrador limpio y localizado de problemas** — abre GitHub automáticamente tras un visible retardo, con título, secciones en Markdown y etiqueta elegida ya listos para revisión; haz clic en el aviso o presiona Enter/Espacio para ocultar el mensaje sin alterar el temporizador, y el problema nunca se envía automáticamente
-- **Registros de ejecución actual** — incluye solo entradas del último inicio de la aplicación, separando proceso principal y renderer, limitados a 256 KB y marcados con hora localizada de 12 horas, periodo del día y zona horaria
-- **Paquete diagnóstico saneado** — protege rutas locales, correos electrónicos, direcciones IP y secretos de URLs, y excluye nombres y contenidos de proyectos
-- **Capturas de pantalla interactivas** — tras autorización, oculta el formulario y permite capturar una región o la ventana completa, sigue capturando con `Shift+P` incluso si la barra flotante está colapsada y oculta instrucciones y controles al arrastrar para evitar que cubran el área seleccionada
-- **Revisión de capturas antes de guardar** — permite hasta 10 capturas, abre miniaturas a tamaño completo, elimina imágenes no deseadas y guarda cada PNG en el ZIP diagnóstico local; nunca se capturan el escritorio ni otras ventanas
-- **Adjuntos locales primero** — guarda el ZIP en la ubicación elegida por el usuario, sin abrir el explorador ni subir archivos; los registros y capturas permanecen locales hasta que se adjunten manualmente
-- **Modal de reporte más seguro** — seleccionar texto y arrastrar ya no cierra el diálogo, los campos se ajustan automáticamente, el contraste de temas claro/oscuro sigue el resto de la app y el formulario se reinicia tras éxito, Cancelar o cerrar con X
+#### Diagnóstico privado y reportes en GitHub
+- **Formulario estructurado de reportes** — recoge título, descripción del problema, pasos para reproducir y comportamiento esperado en campos localizados, expansibles automáticamente y con contador de caracteres
+- **Selector de etiquetas del repositorio** — carga las etiquetas actuales de GitHub con opción offline, las muestra en un menú propio, añade la etiqueta seleccionada al prefijo del título y la preselecciona en el borrador de GitHub
+- **Borrador de reporte limpio y localizado** — abre GitHub automáticamente tras una visible demora, con título, secciones en Markdown y etiqueta ya listos para revisión; clic en el aviso o presionar Enter/Espacio oculta el mensaje sin modificar el temporizador, y nunca se envía automáticamente
+- **Registros de ejecución actual** — solo incluye entradas desde el último inicio, separadas en secciones de proceso principal y de render, máxima de 256 KB, y sellados con hora, periodo del día y zona horaria localizados en formato de 12 horas
+- **Paquete diagnóstico anonimizado** — oculta rutas locales, correos electrónicos, direcciones IP y claves de URLs sin incluir nombres ni contenidos de proyectos
+- **Capturas de pantalla interactivas** — tras consentimiento explícito, oculta el formulario y permite capturar una región o la ventana completa, seguir tomando capturas con `Shift+P` incluso con la barra flotante colapsada y ocultar automáticamente instrucciones y controles durante la selección para que no cubran el contenido elegido
+- **Revisión de capturas antes de guardar** — permite hasta 10 capturas, abrir vistas previas tamaño completo, eliminar imágenes no deseadas y guardar cada PNG retenido en el ZIP de diagnóstico local; nunca se capturan el escritorio ni otras ventanas
+- **Adjuntos locales por defecto** — guarda el ZIP en el destino elegido por el usuario sin abrir el Explorador ni subirlo; los registros y capturas se mantienen locales hasta adjuntarlos manualmente
+- **Modal de reporte más seguro** — seleccionar texto o arrastrar ya no cierra el diálogo, los campos se redimensionan automáticamente, el contraste de tema claro/oscuro respeta la app, y el formulario se reinicia tras éxito, Cancelar o cerrar con la X
 
 #### Internacionalización
 - **Traducciones de interfaz en inglés, portugués (pt-BR) y español**
-- **Selección de idioma en primer inicio** en el flujo de bienvenida y ajustes
-- **Traducciones en proceso principal** para diálogos nativos y mensajes de error
-- **Script `npm run i18n:validate`** para mantener archivos locales sincronizados
+- **Selección de idioma al primer inicio** en la bienvenida y en configuración
+- **Traducciones en el proceso principal** para diálogos nativos y mensajes de error
+- **Script `npm run i18n:validate`** para mantener archivos de idioma sincronizados
 
 #### Persistencia de sesión
-- **Almacenamiento de sesión en IndexedDB** con migración automática desde el antiguo `localStorage`
+- **Almacenamiento de sesión en IndexedDB** con migración automática desde `localStorage` heredado
 - **Guardado automático** de pestañas abiertas, contenidos de archivos y nombres de proyectos
-- **Modos de sesión** — restaurar la última sesión al iniciar o comenzar siempre en limpio
+- **Modos de sesión** — restaurar la última sesión al iniciar o siempre empezar en blanco
 
-#### Actualizador automático y notas de versión
-- **Actualizador automático integrado** — consulta GitHub Releases, descarga con progreso y reinicia para instalar
-- **Canales de actualización estable y beta**
+#### Auto-actualizador y notas de versión
+- **Auto-actualizador integrado en la app** — revisa lanzamientos en GitHub, descarga con progreso y reinicia para instalar
+- **Canales de actualización estables y beta**
 - **Notas de versión localizadas** en el modal de actualización (inglés, portugués y español)
-- **Changelog de actualización legible** — diálogo más amplio, **Novedades** expandido por defecto, área de desplazamiento dedicada, jerarquía de títulos más clara y botones de acción fijos en el pie
-- **Flujo manual para `docs/changelog.md`** — edita las notas de versión en el repositorio; CI las traduce para la app y publica inglés en GitHub
-- **Notas de versión divididas** — el modal de actualización de la app muestra solo el changelog; los enlaces de navegación de idiomas aparecen en `docs/changelog.md` y la descripción de la versión en GitHub (apuntando a archivos legibles en `docs/changelogs/`); el enlace para comparar (`Full Changelog`) es solo para GitHub
-- **Traducción con GitHub Models** — las notas de versión en portugués y español se generan en CI vía la API `models.github.ai`
+- **Changelog de actualización legible** — diálogo más ancho, **Qué hay de nuevo** expandido por defecto, zona de desplazamiento dedicada, jerarquía de títulos clara y botones de acción anclados en el pie
+- **Flujo manual `docs/changelog.md`** — edita notas de versión en el repositorio; CI las traduce para la app y publica el inglés en GitHub
+- **Notas de versión divididas** — el modal de actualización muestra solo el texto del changelog; los enlaces de navegación aparecen en `docs/changelog.md` y en la descripción del lanzamiento de GitHub (a archivos legibles en `docs/changelogs/`); el enlace de comparación (`Full Changelog`) es solo de GitHub
+- **Traducción con GitHub Models** — las notas de versión en portugués y español se generan en CI mediante la API `models.github.ai`
 
 #### Atajos de teclado
-- **Atajos totalmente configurables** con interfaz para capturarlos y acción para restaurar predeterminados
-- Nuevos atajos predeterminados incluyen `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (construir), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (guardar todo) y atajos de zoom de editor
+- **Atajos completamente configurables** con interfaz para captura y acción de restaurar por defecto
+- Nuevos atajos incluyen `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (compilar), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (guardar todo) y atajos para zoom del editor
 
 #### Plataformas y distribución
-- **Windows x64** — instalador NSIS y paquetes portables; instalador multilingüe (inglés, portugués y español)
-- **Releases en GitHub** publicados automáticamente en versiones mediante CI
-- **Construcción del renderer antes de empaquetar** — `beforePack` ejecuta `vite build` y valida `dist/renderer/` para que todos los instaladores incluyan el paquete UI
+- **Windows x64** — paquetes instalador NSIS y portátiles; instalador multilingüe (inglés, portugués y español)
+- **Publicación automática en GitHub Releases** con cada etiqueta de versión desde CI
+- **Compilación del renderer antes de empaquetar** — `beforePack` ejecuta `vite build` y valida `dist/renderer/` para que todo instalador distribuido incluya el paquete de UI
 
 #### Arquitectura, herramientas de desarrollo y calidad
-- **Build de renderer con Vite** y recarga de módulos en desarrollo
-- **Código modular** — `src/main/`, `src/preload/`, `src/renderer/modules/`, `src/shared/` y 20 módulos CSS
-- **ES modules**, Node.js 24+, Electron 42
-- **Handlers IPC divididos** para proyecto, actualizaciones y ciclo de vida de la app
-- **API preload `contextBridge`** para proteger el límite del renderer
-- **Test suite con Vitest** y mocks de Electron para ejecuciones amigables con CI; helpers de changelog y errores del updater cubiertos por tests dedicados
-- **ESLint y Prettier** integrados en los scripts npm
-- **electron-reloader** para hot reload del proceso principal en desarrollo
-- **Exportación de registro de errores** en caso de crash para facilitar la depuración
-- **`semver`** como dependencia directa para comparación fiable de versiones en la app
+- **Renderer con Vite** y recarga modular en desarrollo
+- **Código modularizado** — `src/main/`, `src/preload/`, `src/renderer/modules/`, `src/shared/` y 20 módulos CSS
+- **Módulos ES**, Node.js 24+ y Electron 42
+- **Manejadores de IPC separados** para proyecto, actualizaciones y ciclo de vida de la app
+- **API `contextBridge` en preload** para frontera reforzada del renderer
+- **Suite de pruebas con Vitest** usando mocks de Electron, apta para CI; helpers de changelog y errores del actualizador cubiertos por pruebas dedicadas
+- **ESLint y Prettier** integrados en scripts de npm
+- **electron-reloader** para recarga activa del main en desarrollo
+- **Exportación de registros de error** en caso de fallo, para facilitar la depuración
+- **`semver`** como dependencia directa para comparación confiable de versiones en la app
