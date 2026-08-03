@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { argon2id as argon2idWasm } from 'hash-wasm';
 
 export const TREE_ENCRYPTED_V2_MAGIC = 'TREEIDE2';
 export const TREE_ENCRYPTED_MAGIC = TREE_ENCRYPTED_V2_MAGIC;
@@ -33,6 +34,34 @@ const V2_HEADER = {
     authTag: TAG_LEN
 };
 
+/** Cached probe: Electron/BoringSSL exposes argon2Sync but throws NOT_SUPPORTED. */
+let nativeArgon2Supported;
+
+function supportsNativeArgon2() {
+    if (nativeArgon2Supported !== undefined) {
+        return nativeArgon2Supported;
+    }
+    if (typeof crypto.argon2Sync !== 'function') {
+        nativeArgon2Supported = false;
+        return false;
+    }
+    try {
+        crypto.argon2Sync('argon2id', {
+            message: Buffer.alloc(1),
+            nonce: Buffer.alloc(8),
+            parallelism: 1,
+            tagLength: 32,
+            memory: 8,
+            passes: 1
+        });
+        nativeArgon2Supported = true;
+    } catch {
+        // Electron/BoringSSL exposes the API but throws ERR_CRYPTO_ARGON2_NOT_SUPPORTED.
+        nativeArgon2Supported = false;
+    }
+    return nativeArgon2Supported;
+}
+
 /**
  * @param {string} content
  * @returns {boolean}
@@ -42,15 +71,36 @@ export function isEncryptedTreeContent(content) {
     return content.startsWith(`${TREE_ENCRYPTED_V2_MAGIC}\n`);
 }
 
-function deriveArgon2idKey(password, salt) {
-    return crypto.argon2Sync('argon2id', {
-        message: Buffer.from(password, 'utf8'),
-        nonce: salt,
+/**
+ * Derive an AES-256 key with Argon2id.
+ * Prefers Node's OpenSSL-backed argon2 when available; falls back to hash-wasm
+ * (required in Electron, which ships BoringSSL without Argon2).
+ * @param {string} password
+ * @param {Buffer} salt
+ * @returns {Promise<Buffer>}
+ */
+async function deriveArgon2idKey(password, salt) {
+    if (supportsNativeArgon2()) {
+        return crypto.argon2Sync('argon2id', {
+            message: Buffer.from(password, 'utf8'),
+            nonce: salt,
+            parallelism: V2_ARGON2.parallelism,
+            tagLength: V2_ARGON2.tagLength,
+            memory: V2_ARGON2.memory,
+            passes: V2_ARGON2.passes
+        });
+    }
+
+    const key = await argon2idWasm({
+        password,
+        salt: new Uint8Array(salt),
         parallelism: V2_ARGON2.parallelism,
-        tagLength: V2_ARGON2.tagLength,
-        memory: V2_ARGON2.memory,
-        passes: V2_ARGON2.passes
+        iterations: V2_ARGON2.passes,
+        memorySize: V2_ARGON2.memory,
+        hashLength: V2_ARGON2.tagLength,
+        outputType: 'binary'
     });
+    return Buffer.from(key);
 }
 
 /**
@@ -91,9 +141,9 @@ function decryptAesGcm(payload, key, additionalData) {
 /**
  * @param {string} content
  * @param {string} password
- * @returns {string}
+ * @returns {Promise<string>}
  */
-export function encryptTreeContent(content, password) {
+export async function encryptTreeContent(content, password) {
     if (!password) {
         return content;
     }
@@ -101,7 +151,7 @@ export function encryptTreeContent(content, password) {
     const iv = crypto.randomBytes(IV_LEN);
     const header = JSON.stringify(V2_HEADER);
     const additionalData = Buffer.from(`${TREE_ENCRYPTED_V2_MAGIC}\n${header}`, 'utf8');
-    const key = deriveArgon2idKey(password, salt);
+    const key = await deriveArgon2idKey(password, salt);
     const { encrypted, tag } = encryptAesGcm(iv, Buffer.from(content, 'utf8'), key, additionalData);
     const payload = Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
     return `${TREE_ENCRYPTED_V2_MAGIC}\n${header}\n${payload}\n`;
@@ -124,9 +174,9 @@ function parseEncryptedTreeFile(content) {
 /**
  * @param {string} content
  * @param {string} password
- * @returns {string}
+ * @returns {Promise<string>}
  */
-export function decryptTreeContent(content, password) {
+export async function decryptTreeContent(content, password) {
     if (!isEncryptedTreeContent(content)) {
         return content;
     }
@@ -150,7 +200,7 @@ export function decryptTreeContent(content, password) {
     }
     const salt = data.subarray(0, V2_SALT_LEN);
     const encryptedPayload = data.subarray(V2_SALT_LEN);
-    const key = deriveArgon2idKey(password, salt);
+    const key = await deriveArgon2idKey(password, salt);
     const additionalData = Buffer.from(`${TREE_ENCRYPTED_V2_MAGIC}\n${parsed.headerLine}`, 'utf8');
     return decryptAesGcm(encryptedPayload, key, additionalData).toString('utf8');
 }

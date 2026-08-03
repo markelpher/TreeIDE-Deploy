@@ -47,7 +47,7 @@ function sanitizeProjectName(name) {
         .slice(0, 200) || 'project';
 }
 
-function resolveZipLoadResult(fileEntries, selectedPath, baseName, password) {
+async function resolveZipLoadResult(fileEntries, selectedPath, baseName, password) {
     const { treeContent, fileContentsMap } = buildTreeFromEntries(fileEntries);
     const treeFileKey = Object.keys(fileContentsMap).find((f) => /\.tree$/i.test(f));
 
@@ -73,7 +73,7 @@ function resolveZipLoadResult(fileEntries, selectedPath, baseName, password) {
             };
         }
         try {
-            treeFileContent = decryptTreeContent(treeFileContent, password);
+            treeFileContent = await decryptTreeContent(treeFileContent, password);
         } catch {
             return { canceled: false, wrongPassword: true, kind: 'tree', name: baseName, filePath: selectedPath };
         }
@@ -174,7 +174,7 @@ async function processLoadPath(selectedPath, lang, lastSaveDirectoryRef, options
                 };
             }
             try {
-                content = decryptTreeContent(rawContent, password);
+                content = await decryptTreeContent(rawContent, password);
             } catch {
                 return { canceled: false, wrongPassword: true, kind: 'tree', name: baseName, filePath: selectedPath };
             }
@@ -258,7 +258,7 @@ async function processLoadPath(selectedPath, lang, lastSaveDirectoryRef, options
             return { canceled: false, error: err.message };
         }
 
-        return resolveZipLoadResult(fileEntries, selectedPath, baseName, password);
+        return await resolveZipLoadResult(fileEntries, selectedPath, baseName, password);
     }
 
     if (ext === '.rar') {
@@ -395,7 +395,7 @@ function registerSaveHandlers(lastSaveDirectoryRef) {
             return { canceled: false, error: mainT(lang, 'error_invalid_content') };
         }
         const encryptPassword = options.encryptPassword || '';
-        const finalContent = encryptPassword ? encryptTreeContent(content, encryptPassword) : content;
+        const finalContent = encryptPassword ? await encryptTreeContent(content, encryptPassword) : content;
         if (Buffer.byteLength(finalContent, 'utf8') > MAX_ENTRY_SIZE) {
             return { canceled: false, error: mainT(lang, 'error_file_content_too_large') };
         }
@@ -505,7 +505,7 @@ function registerStructureHandlers() {
             }
             const exportOptions = { ...options };
             if (exportOptions.includeTreeContent && exportOptions.encryptTreePassword) {
-                exportOptions.includeTreeContent = encryptTreeContent(
+                exportOptions.includeTreeContent = await encryptTreeContent(
                     exportOptions.includeTreeContent,
                     exportOptions.encryptTreePassword
                 );

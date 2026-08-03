@@ -33,7 +33,7 @@ describe('ZIP load with embedded .tree', () => {
 
     it('prompts for password when embedded .tree is encrypted', async () => {
         const tree = { 'README.md': {} };
-        const encryptedTree = encryptTreeContent('README.md', 'secret');
+        const encryptedTree = await encryptTreeContent('README.md', 'secret');
         const entries = buildZipEntries(tree, {
             includeTreeContent: encryptedTree,
             treeFileName: 'project.tree',

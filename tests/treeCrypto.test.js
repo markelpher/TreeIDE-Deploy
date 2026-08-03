@@ -9,13 +9,13 @@ import { parseEditorContent } from '../src/shared/helpers.js';
 describe('treeCrypto', () => {
     const sample = 'src/\n    index.js\nREADME.md';
 
-    it('detects encrypted content', () => {
+    it('detects encrypted content', async () => {
         expect(isEncryptedTreeContent(sample)).toBe(false);
-        expect(isEncryptedTreeContent(encryptTreeContent(sample, 'secret'))).toBe(true);
+        expect(isEncryptedTreeContent(await encryptTreeContent(sample, 'secret'))).toBe(true);
     });
 
-    it('encrypts with a TREEIDE2 authenticated Argon2id profile', () => {
-        const encrypted = encryptTreeContent(sample, 'my-password');
+    it('encrypts with a TREEIDE2 authenticated Argon2id profile', async () => {
+        const encrypted = await encryptTreeContent(sample, 'my-password');
         expect(encrypted.startsWith(`${TREE_ENCRYPTED_V2_MAGIC}\n`)).toBe(true);
         const [, headerLine] = encrypted.split('\n');
         const header = JSON.parse(headerLine);
@@ -27,33 +27,33 @@ describe('treeCrypto', () => {
         expect(header.salt).toBe(32);
     });
 
-    it('encrypts and decrypts tree content', () => {
-        const encrypted = encryptTreeContent(sample, 'my-password');
-        const decrypted = decryptTreeContent(encrypted, 'my-password');
+    it('encrypts and decrypts tree content', async () => {
+        const encrypted = await encryptTreeContent(sample, 'my-password');
+        const decrypted = await decryptTreeContent(encrypted, 'my-password');
         expect(decrypted).toBe(sample);
     });
 
-    it('fails decryption with wrong password', () => {
-        const encrypted = encryptTreeContent(sample, 'right');
-        expect(() => decryptTreeContent(encrypted, 'wrong')).toThrow();
+    it('fails decryption with wrong password', async () => {
+        const encrypted = await encryptTreeContent(sample, 'right');
+        await expect(decryptTreeContent(encrypted, 'wrong')).rejects.toThrow();
     });
 
-    it('authenticates the TREEIDE2 cryptographic header', () => {
-        const encrypted = encryptTreeContent(sample, 'right');
+    it('authenticates the TREEIDE2 cryptographic header', async () => {
+        const encrypted = await encryptTreeContent(sample, 'right');
         const tampered = encrypted.replace(
             '"v":2,"kdf":"argon2id"',
             '"kdf":"argon2id","v":2'
         );
-        expect(() => decryptTreeContent(tampered, 'right')).toThrow();
+        await expect(decryptTreeContent(tampered, 'right')).rejects.toThrow();
     });
 
-    it('keeps original Legacy plaintext files unchanged', () => {
+    it('keeps original Legacy plaintext files unchanged', async () => {
         const legacyTabs = 'tabs/\n\tcontroller/\n\tmodels/\n\t\tUser.py';
         const legacyDots = 'dots/\n...controller/\n......User.py';
         expect(isEncryptedTreeContent(legacyTabs)).toBe(false);
         expect(isEncryptedTreeContent(legacyDots)).toBe(false);
-        expect(decryptTreeContent(legacyTabs, 'ignored')).toBe(legacyTabs);
-        expect(decryptTreeContent(legacyDots, 'ignored')).toBe(legacyDots);
+        expect(await decryptTreeContent(legacyTabs, 'ignored')).toBe(legacyTabs);
+        expect(await decryptTreeContent(legacyDots, 'ignored')).toBe(legacyDots);
         expect(parseEditorContent(legacyTabs)).toEqual({
             'tabs/': {
                 'controller/': {},
