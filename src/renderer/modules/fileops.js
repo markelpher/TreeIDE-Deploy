@@ -120,9 +120,14 @@ const defaultFileLangs = {};
         const addedPaths = [];
 
         filePaths.forEach((filePath) => {
-            if (Object.prototype.hasOwnProperty.call(fileContents, filePath)) {
-                nextContents[filePath] = fileContents[filePath];
+            const existing = Object.prototype.hasOwnProperty.call(fileContents, filePath) ? fileContents[filePath] : undefined;
+            if (existing !== undefined && existing !== '') {
+                nextContents[filePath] = existing;
             } else {
+                // Files with an empty persisted value (e.g. stale autosave state
+                // written before a default existed) or no entry at all must be
+                // re-seeded with the predefined starter content so they never
+                // stay stuck empty.
                 addedPaths.push(filePath);
                 nextContents[filePath] = getDefaultContentForFile(filePath);
                 defaultFileLangs[filePath] = app.i18n.getCurrentLang();

@@ -52,7 +52,7 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Themes** — light, dark, and **System** (follows OS color scheme)
 - **English, Portuguese (pt-BR), and Spanish** — interface translations plus main-process dialog translations
 - **Structured problem reports** — enter the issue title, description, reproduction steps, and expected behavior in an auto-growing, localized form inside the app
-- **GitHub label integration** — choose from the repository's live label list in the same custom dropdown used by the app; the localized issue draft opens with its title, Markdown body, and label already filled in for review
+- **GitHub label integration** — choose a category from the repository's issue label list, shown in the app's language
 - **Privacy-first diagnostics** — save a local ZIP with allowlisted system/app metadata, sanitized renderer errors, and logs limited to the current app execution; project names and contents are excluded
 - **Interactive app-only screenshots** — after explicit opt-in, the issue form steps aside for a Windows-style region selector or a full Tree IDE window capture; use `Shift+P` even with the toolbar collapsed, while instructions and controls automatically clear the screen during selection; open thumbnails at full size and remove unwanted images before saving up to 10 captures in the local diagnostic ZIP; the desktop and other windows are never captured
 - **IndexedDB session storage** with autosave of open tabs, file contents, and project names

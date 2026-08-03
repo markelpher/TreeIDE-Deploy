@@ -965,11 +965,14 @@ export function createShell(app) {
                         .filter(Boolean)
                 )
             ];
+            const toLabelKey = (name) => `diagnostic_label_${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')}`;
             diagnosticLabelSelect.replaceChildren(
                 ...names.map((name) => {
                     const option = document.createElement('option');
                     option.value = name;
-                    option.textContent = `[${name}]`;
+                    const labelKey = toLabelKey(name);
+                    const translated = app.i18n.t(labelKey);
+                    option.textContent = translated !== labelKey ? `[${translated}]` : `[${name}]`;
                     return option;
                 })
             );
@@ -1450,9 +1453,7 @@ export function createShell(app) {
                 submit.disabled = true;
             }
             if (status) {
-                status.textContent = includeScreenshot
-                    ? app.i18n.t('diagnostic_capture_hint')
-                    : app.i18n.t('diagnostic_creating');
+                status.textContent = includeScreenshot ? '' : app.i18n.t('diagnostic_creating');
             }
             let screenshots = [];
             if (includeScreenshot) {

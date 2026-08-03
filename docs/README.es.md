@@ -52,7 +52,7 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **Temas** — claro, oscuro y **Sistema** (sigue el esquema de colores del SO)
 - **Inglés, portugués (pt-BR) y español** — traducciones de la interfaz y de los diálogos del proceso principal
 - **Informes de problemas estructurados** — completa el título de la issue, la descripción, los pasos para reproducir y el comportamiento esperado en un formulario localizado con campos autoajustables dentro de la app
-- **Integración con labels de GitHub** — elige una label de la lista actual del repositorio usando el mismo dropdown personalizado de la app; el borrador localizado se abre con título, cuerpo Markdown y label completos para revisión
+- **Integración con labels de GitHub** — elige una categoría en la lista de labels de issues del repositorio, mostrada en el idioma de la app
 - **Diagnóstico con privacidad primero** — guarda un ZIP local con metadatos permitidos del sistema/app, errores sanitizados del renderer y registros limitados a la ejecución actual; se excluyen nombres y contenidos de proyectos
 - **Capturas interactivas solo de la app** — después del consentimiento explícito, el formulario de la issue deja espacio a un selector de región al estilo Windows o a la captura de la ventana completa de Tree IDE; usa `Shift+P` incluso con la barra plegada, mientras las instrucciones y los controles despejan la pantalla automáticamente durante la selección; abre las miniaturas en tamaño ampliado y elimina imágenes no deseadas antes de guardar hasta 10 capturas en el ZIP local; el escritorio y otras ventanas nunca se capturan
 - **Almacenamiento de sesión en IndexedDB** con guardado automático de pestañas abiertas, contenidos y nombres de proyectos

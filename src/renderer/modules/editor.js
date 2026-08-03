@@ -284,6 +284,15 @@ export function createEditor(app) {
         if (content === undefined) {
             content = app.fileops.getDefaultContentForFile(filePath);
             app.fileops.getDefaultFileLangs()[filePath] = app.i18n.getCurrentLang();
+        } else if (content === '') {
+            // Heal stuck-empty files: a persisted empty value must not block
+            // the predefined starter content. Files without a non-empty
+            // default (e.g. .env) keep their empty state.
+            const fresh = app.fileops.getDefaultContentForFile(filePath);
+            if (fresh !== '') {
+                content = fresh;
+                app.fileops.getDefaultFileLangs()[filePath] = app.i18n.getCurrentLang();
+            }
         }
         S.fileContents[filePath] = content;
         S.filePreviewEditor.value = content;

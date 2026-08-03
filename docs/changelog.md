@@ -1,4 +1,4 @@
-## What's new in v2.0.112
+## What's new in v2.0.113
 
 Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0](https://github.com/TreeIDE/TreeIDE-Legacy/releases/tag/v1.0.0). Same core idea — design folder structures in plain text, preview them in real time, and generate projects — with a new architecture, richer tooling, and Windows-only releases.
 
@@ -96,7 +96,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 
 #### Privacy-first diagnostics & GitHub reports
 - **Structured report form** — collect issue title, problem description, reproduction steps, and expected behavior in localized, auto-growing fields with character counters
-- **Repository label selector** — load the current GitHub labels with an offline fallback, display them in the app's custom dropdown, add the selected label to the title prefix, and preselect it in the GitHub draft
+- **Repository label selector** — load the current GitHub labels with an offline fallback, display them translated to the app's language, add the selected label to the title prefix, and preselect it in the GitHub draft
 - **Clean localized issue draft** — open GitHub automatically after a visible redirect delay with the title, Markdown sections, and selected label already filled in for review; click the popup or press Enter/Space to hide the notice without changing the timer, and the issue is never submitted automatically
 - **Current-execution logs** — include only log entries from the latest app launch, separated into main-process and renderer sections, capped at 256 KB, and stamped with a localized 12-hour time, day period, and timezone
 - **Sanitized diagnostic package** — redact local paths, email addresses, IP addresses, and URL secrets while excluding project names and contents
