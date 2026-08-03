@@ -16,14 +16,23 @@
  *   - The `#`, `##`, `###` heading markers stay verbatim.
  *   - Bold/italic/strikethrough markers stay verbatim.
  *
+ * Providers with small free-tier token budgets (e.g. Groq, 8k TPM) split
+ * the changelog into heading-aligned chunks (~2.5k chars) so every request
+ * stays inside the budget; providers with large quotas (Gemini, 250k TPM)
+ * translate the whole document in a single request. Chunks are translated
+ * in order and joined back. If a provider fails, the next one restarts the
+ * whole document with its own chunking strategy.
+ *
  * Provider chain (free tiers, tried in order; the first one with a
  * configured API key wins, and on failure the next is tried):
- *   1. Google Gemini       – GEMINI_API_KEY, gemini-2.5-flash
- *   2. Groq (Llama 3.3 70B)– GROQ_API_KEY,  llama-3.3-70b-versatile
- *   3. OpenRouter (Qwen3)  – OPENROUTER_API_KEY, qwen/qwen3-32b:free
+ *   1. Google Gemini       – GEMINI_API_KEY, gemini-3.5-flash (single-shot;
+ *      free quota 250k TPM / 10 RPM — fastest for parallel locales)
+ *   2. Groq (GPT-OSS 120B) – GROQ_API_KEY,  openai/gpt-oss-120b (chunked
+ *      at ~2.5k chars; free quota 8k TPM — quality fallback)
+ *   3. OpenRouter (free)   – OPENROUTER_API_KEY, openrouter/free
  *
  * Usage:
- *   GEMINI_API_KEY=… \
+ *   GROQ_API_KEY=… \
  *     node scripts/translate-changelog.mjs \
  *       --input path/to/changelog.en.md \
  *       --output path/to/changelog.pt-br.md \
@@ -47,14 +56,20 @@ const PROVIDERS = [
         name: 'gemini',
         endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
         keyEnv: 'GEMINI_API_KEY',
-        defaultModel: 'gemini-2.5-flash',
+        // Gemini free tier has ~250k TPM / 10 RPM, so the whole changelog
+        // fits in a single request — fastest for parallel locale runs.
+        defaultModel: 'gemini-3.5-flash',
         auth: 'bearer'
     },
     {
         name: 'groq',
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
         keyEnv: 'GROQ_API_KEY',
-        defaultModel: 'llama-3.3-70b-versatile',
+        // GPT-OSS 120B is the best-quality free model on Groq, but the
+        // free tier only allows ~8k TPM, so the changelog is translated
+        // in chunks.
+        defaultModel: 'openai/gpt-oss-120b',
+        chunkChars: 2500,
         auth: 'bearer'
     },
     {
@@ -80,6 +95,32 @@ const LANG_NAMES = {
     zh: 'Simplified Chinese (zh-CN)',
     ru: 'Russian (ru-RU)'
 };
+
+// Long changelogs are translated in chunks: free-tier providers enforce
+// small tokens-per-minute budgets (e.g. 8k TPM on Groq) and completion
+// caps, so a single request for the whole document gets truncated or
+// rate-limited. Chunks break at markdown heading lines so each piece
+// starts with its own section header and stays structurally intact.
+const CHUNK_MAX_CHARS = 2500;
+
+function splitChangelog(text, maxChars = CHUNK_MAX_CHARS) {
+    const lines = text.split('\n');
+    const chunks = [];
+    let current = '';
+    for (const line of lines) {
+        const isHeading = /^#{1,4} /.test(line);
+        if (isHeading && current && current.length >= maxChars * 0.75) {
+            chunks.push(current);
+            current = line;
+        } else {
+            current = current ? `${current}\n${line}` : line;
+        }
+    }
+    if (current.trim()) {
+        chunks.push(current);
+    }
+    return chunks.filter((chunk) => chunk.trim());
+}
 
 function parseArgs(args) {
     const out = {
@@ -250,7 +291,9 @@ async function translateWithRetry(opts) {
         } catch (err) {
             lastErr = err;
             if (!isTransient(err) || attempt === opts.maxRetries) {throw err;}
-            const backoff = Math.min(2000 * 2 ** (attempt - 1), 16000);
+            // Rate-limit windows (e.g. Groq free tier TPM) roll every minute,
+            // so wait out the window instead of retrying within it.
+            const backoff = err?.status === 429 ? 60000 : Math.min(2000 * 2 ** (attempt - 1), 16000);
             const jitter = Math.random() * 500;
             console.warn(`[translate] Attempt ${attempt} failed (${err.message}); retrying in ${(backoff + jitter) | 0}ms`);
             await new Promise((r) => setTimeout(r, backoff + jitter));
@@ -325,23 +368,34 @@ async function main() {
     let translated;
     const failures = [];
     for (const provider of providers) {
-        console.log(`[translate] Translating ${source.length} chars from ${opts.source || 'en'} to ${opts.target} via ${provider.name}/${provider.model}…`);
-        try {
-            translated = await translateWithRetry({
-                text: source,
-                source: opts.source || 'en',
-                target: opts.target,
-                model: provider.model,
-                endpoint: provider.endpoint,
-                key: provider.key,
-                auth: provider.auth,
-                timeoutMs: opts.timeoutMs,
-                maxRetries: opts.maxRetries
-            });
+        const chunkChars = provider.chunkChars ?? null;
+        const chunks = chunkChars ? splitChangelog(source, chunkChars) : [source];
+        const parts = [];
+        let ok = true;
+        for (let i = 0; i < chunks.length; i++) {
+            console.log(`[translate] Chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars) from ${opts.source || 'en'} to ${opts.target} via ${provider.name}/${provider.model}…`);
+            try {
+                parts.push(await translateWithRetry({
+                    text: chunks[i],
+                    source: opts.source || 'en',
+                    target: opts.target,
+                    model: provider.model,
+                    endpoint: provider.endpoint,
+                    key: provider.key,
+                    auth: provider.auth,
+                    timeoutMs: opts.timeoutMs,
+                    maxRetries: opts.maxRetries
+                }));
+            } catch (err) {
+                failures.push(`${provider.name} (chunk ${i + 1}): ${err.message}`);
+                console.error(`[translate] Provider "${provider.name}" failed on chunk ${i + 1}: ${err.message}`);
+                ok = false;
+                break;
+            }
+        }
+        if (ok) {
+            translated = parts.join('\n\n');
             break;
-        } catch (err) {
-            failures.push(`${provider.name}: ${err.message}`);
-            console.error(`[translate] Provider "${provider.name}" failed: ${err.message}`);
         }
     }
 

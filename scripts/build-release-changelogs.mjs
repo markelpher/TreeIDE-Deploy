@@ -108,24 +108,33 @@ async function main() {
     await writeEnglishNotes({ prev: prev || '-', current, outPath: sourcePath });
     notesByLocale.set(sourceLocale.code, await readFile(sourcePath, 'utf8'));
 
+    // Translate every non-English locale in parallel: providers such as
+    // Gemini have large free-tier quotas (250k TPM) that comfortably fit
+    // all locales at once, and the per-provider chunking in
+    // translate-changelog.mjs keeps Groq/OpenRouter fallbacks inside their
+    // smaller budgets.
+    const localeTasks = [];
     for (const locale of locales) {
         if (locale.source || locale.code === sourceLocale.code) { continue; }
 
-        const targetPath = path.join(outDir, `${locale.code}.md`);
-        const translateArgs = [
-            '--input', sourcePath,
-            '--output', targetPath,
-            '--target', locale.code,
-            '--source', locale.translateFrom || sourceLocale.code,
-        ];
-        if (!strictTranslations) {
-            translateArgs.push('--allow-source-fallback');
-        }
-        await runNode('scripts/translate-changelog.mjs', translateArgs);
-        const localized = stripFullChangelogLink(await readFile(targetPath, 'utf8'));
-        await writeFile(targetPath, localized, 'utf8');
-        notesByLocale.set(locale.code, localized);
+        localeTasks.push((async () => {
+            const targetPath = path.join(outDir, `${locale.code}.md`);
+            const translateArgs = [
+                '--input', sourcePath,
+                '--output', targetPath,
+                '--target', locale.code,
+                '--source', locale.translateFrom || sourceLocale.code,
+            ];
+            if (!strictTranslations) {
+                translateArgs.push('--allow-source-fallback');
+            }
+            await runNode('scripts/translate-changelog.mjs', translateArgs);
+            const localized = stripFullChangelogLink(await readFile(targetPath, 'utf8'));
+            await writeFile(targetPath, localized, 'utf8');
+            notesByLocale.set(locale.code, localized);
+        })());
     }
+    await Promise.all(localeTasks);
 
     if (syncDocs) {
         await syncLocalizedDocs(locales, notesByLocale);
