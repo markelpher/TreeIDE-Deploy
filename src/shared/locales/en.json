@@ -219,7 +219,7 @@
     "decrypt_password_lead_zip": "The archive {file} is password-protected. Enter the password to extract it.",
     "decrypt_password_lead_both": "The archive {file} is password-protected and may include encrypted content. Enter the password to open it.",
     "english": "English",
-    "portuguese": "Portuguese",
+    "portuguese": "Portuguese (Brazil)",
     "spanish": "Spanish",
     "settings": "Settings",
     "general": "General",

@@ -9,7 +9,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **First-install aware Setup** — the data choice is skipped when no previous Tree IDE profile or updater data exists and does not interrupt silent automatic updates
 - **Correct assisted data flow** — manual installs over an existing version and uninstall now display Keep/Delete choices; in-app silent updates skip the prompt and retain data
 - **Welcome follows data choice** — onboarding appears for a fresh profile or after selecting Delete, while selecting Keep preserves the completed onboarding state
-- **Correct uninstaller completion action** — the final page now labels its primary button as Finish instead of Next in English, Portuguese, and Spanish
+ - **Correct uninstaller completion action** — the final page now labels its primary button as Finish instead of Next in English, Portuguese (Brazil), and Spanish
 - **Protected production package** — application code remains organized in `app.asar`, now with Electron ASAR integrity validation and loading restricted to the validated archive
 - **Lean Windows x64 runtime** — removed the unused Squirrel packaging toolchain and non-Windows/non-x64 7-Zip binaries from distributed application files
 - **Complete optional cleanup** — deleting data covers preferences, cache, logs, saved session, current and legacy profile folders, and updater data
@@ -61,7 +61,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Editor-aware idle state** — Presence starts as Idle and only reports Editing Structure after direct interaction with the structure editor; five minutes without interaction returns to Idle with a keyboard icon
 - **Three privacy levels** — Basic shows only Tree IDE, Activity adds the current action, and Detailed may also show the project name and file type; file paths and contents are never shared
 - **Power-aware Presence** — lock and suspend clear the activity, while unlock and resume restore it automatically
-- **Localized Presence** — follow the Tree IDE language or choose English, Portuguese, or Spanish independently; the setting updates the RPC immediately and persists between sessions
+ - **Localized Presence** — follow the Tree IDE language or choose English, Portuguese (Brazil), or Spanish independently; the setting updates the RPC immediately and persists between sessions
 - **Localization scope explained** — Discord receives one localized activity payload, so every viewer sees the publisher's selected Presence language rather than a translation based on the viewer's Discord locale
 
 #### Editor, tree & validation
@@ -106,7 +106,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Safer report modal** — text selection and dragging no longer dismiss the dialog, fields resize automatically, light/dark theme contrast follows the rest of the app, and the form resets after success, Cancel, or closing with the X button
 
 #### Internationalization
-- **English, Portuguese (pt-BR), and Spanish** interface translations
+ - **English, Portuguese (Brazil), and Spanish** interface translations
 - **First-run language selection** in the welcome flow and settings
 - **Main-process translations** for native dialogs and error messages
 - **`npm run i18n:validate`** script to keep locale files in sync
@@ -119,18 +119,18 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 #### Auto-updater & release notes
 - **In-app auto-updater** — check GitHub Releases, download with progress, and restart to install
 - **Stable and beta update channels**
-- **Localized release notes** in the update modal (English, Portuguese, and Spanish)
+ - **Localized release notes** in the update modal (English, Portuguese (Brazil), and Spanish)
 - **Readable update changelog** — wider dialog, **What’s new** expanded by default, dedicated scroll area, clearer heading hierarchy, and action buttons pinned in the footer
 - **Manual `docs/changelog.md` workflow** — edit release notes in the repo; CI translates them for the app and publishes English on GitHub
 - **Split release notes** — app update modal shows changelog text only; locale navigation links appear in `docs/changelog.md` and on the GitHub release description (pointing to readable files in `docs/changelogs/`); the compare link (`Full Changelog`) is GitHub-only
-- **GitHub Models translation** — Portuguese and Spanish release notes are generated in CI via the `models.github.ai` API
+ - **GitHub Models translation** — Portuguese (Brazil) and Spanish release notes are generated in CI via the `models.github.ai` API
 
 #### Keyboard shortcuts
 - **Fully configurable shortcuts** with capture UI and restore-defaults action
 - New defaults include `Ctrl+N`, `Ctrl+O`, `Ctrl+B` (build), `Ctrl+Z` / `Ctrl+Y`, `Ctrl+R`, `F11`, `Ctrl+T`, `Ctrl+Tab` / `Ctrl+Shift+Tab`, `Ctrl+W`, `Ctrl+Shift+W`, `Ctrl+Q`, `Ctrl+Alt+S` (save all), and editor zoom shortcuts
 
 #### Platforms & distribution
-- **Windows x64** — NSIS setup and Portable packages; multi-language installer (English, Portuguese, and Spanish)
+ - **Windows x64** — NSIS setup and Portable packages; multi-language installer (English, Portuguese (Brazil), and Spanish)
 - **GitHub Releases** published automatically on version tags from CI
 - **Renderer build before pack** — `beforePack` runs `vite build` and validates `dist/renderer/` so every installer ships the UI bundle
 

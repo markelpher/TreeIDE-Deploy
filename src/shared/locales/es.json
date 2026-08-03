@@ -219,7 +219,7 @@
     "decrypt_password_lead_zip": "El archivo {file} está protegido con contraseña. Ingresa la contraseña para extraerlo.",
     "decrypt_password_lead_both": "El archivo {file} está protegido con contraseña y puede incluir contenido cifrado. Ingresa la contraseña para abrirlo.",
     "english": "Inglés",
-    "portuguese": "Portugués",
+    "portuguese": "Portugués (Brasil)",
     "spanish": "Español",
     "settings": "Configuración",
     "general": "General",

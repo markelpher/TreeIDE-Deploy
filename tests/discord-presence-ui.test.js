@@ -63,7 +63,7 @@ describe('Discord Presence UI states', () => {
             <input id="discordPresenceBarToggle" type="checkbox">
             <select id="discordLanguageSelect">
                 <option value="app">App</option>
-                <option value="pt">Português</option>
+                <option value="pt">Português (Brasil)</option>
                 <option value="en">English</option>
                 <option value="es">Español</option>
             </select>

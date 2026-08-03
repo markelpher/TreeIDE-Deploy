@@ -63,7 +63,7 @@ Tree IDE v2 é uma reescrita e expansão completa do aplicativo original [Tree I
 - **Estado de inatividade sensível ao editor** — Presença começa como Inativo e relata apenas Editando Estrutura após interação direta com o editor de estrutura; cinco minutos sem interação retornam ao Inativo com um ícone de teclado
 - **Três níveis de privacidade** — Básico mostra apenas Tree IDE, Atividade adiciona a ação atual e Detalhado pode mostrar o nome do projeto e o tipo de arquivo; caminhos de arquivos e conteúdos nunca são compartilhados
 - **Presença sensível à energia** — trava e suspensão limpam a atividade, enquanto desbloqueio e reativação a restauram automaticamente
-- **Presença localizada** — siga o idioma do Tree IDE ou escolha Inglês, Português ou Espanhol independentemente; a configuração atualiza a RPC imediatamente e persiste entre sessões
+- **Presença localizada** — siga o idioma do Tree IDE ou escolha Inglês, Português (Brasil) ou Espanhol independentemente; a configuração atualiza a RPC imediatamente e persiste entre sessões
 - **Escopo de localização explicado** — o Discord recebe uma carga útil de atividade localizada, then todos os visualizadores veem a linguagem de Presença selecionada pelo publicador em vez de uma tradução baseada na localização do Discord do visualizador
 
 #### Editor, árvore e validação

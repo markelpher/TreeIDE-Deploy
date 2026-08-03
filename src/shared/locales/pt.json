@@ -219,7 +219,7 @@
     "decrypt_password_lead_zip": "O arquivo {file} está protegido por senha. Digite a senha para extrair o conteúdo.",
     "decrypt_password_lead_both": "O arquivo {file} está protegido por senha e pode conter conteúdo criptografado. Digite a senha para abrir.",
     "english": "Inglês",
-    "portuguese": "Português",
+    "portuguese": "Português (Brasil)",
     "spanish": "Espanhol",
     "settings": "Configurações",
     "general": "Geral",

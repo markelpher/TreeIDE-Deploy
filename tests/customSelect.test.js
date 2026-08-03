@@ -13,7 +13,7 @@ describe('customSelect', () => {
                 <label for="demoSelect">Language</label>
                 <select id="demoSelect" class="styled-select">
                     <option value="en">English</option>
-                    <option value="pt">Português</option>
+                    <option value="pt">Português (Brasil)</option>
                 </select>
             </div>
         `;
@@ -34,7 +34,7 @@ describe('customSelect', () => {
                     <label for="langSelect">Language</label>
                     <select id="langSelect" class="styled-select">
                         <option value="en">English</option>
-                        <option value="pt">Português</option>
+                        <option value="pt">Português (Brasil)</option>
                     </select>
                 </div>
             </div>
@@ -74,7 +74,7 @@ describe('customSelect', () => {
         document.body.innerHTML = `
             <select id="langSelect" class="styled-select">
                 <option value="en">English</option>
-                <option value="pt">Português</option>
+                <option value="pt">Português (Brasil)</option>
             </select>
         `;
         const select = document.getElementById('langSelect');
@@ -82,6 +82,6 @@ describe('customSelect', () => {
         select.value = 'pt';
         instance.update();
         const trigger = document.querySelector('.custom-select-trigger');
-        expect(trigger.textContent).toBe('Português');
+        expect(trigger.textContent).toBe('Português (Brasil)');
     });
 });
