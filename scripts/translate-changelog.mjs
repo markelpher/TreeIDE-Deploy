@@ -3,7 +3,7 @@
  * TreeIDE - Changelog translator
  *
  * Reads a markdown changelog and produces a translated version in
- * the target language using the GitHub Models API (GPT-4.1).
+ * the target language using a chain of OpenAI-compatible chat providers.
  * The model is told to preserve the markdown structure exactly:
  *
  *   - Section headers (### Added, ### Fixed, …) become the
@@ -16,14 +16,24 @@
  *   - The `#`, `##`, `###` heading markers stay verbatim.
  *   - Bold/italic/strikethrough markers stay verbatim.
  *
+ * Provider chain (free tiers, tried in order; the first one with a
+ * configured API key wins, and on failure the next is tried):
+ *   1. Google Gemini       – GEMINI_API_KEY, gemini-2.5-flash
+ *   2. Groq (Llama 3.3 70B)– GROQ_API_KEY,  llama-3.3-70b-versatile
+ *   3. OpenRouter (Qwen3)  – OPENROUTER_API_KEY, qwen/qwen3-32b:free
+ *
  * Usage:
- *   GITHUB_TOKEN=ghp_… \
+ *   GEMINI_API_KEY=… \
  *     node scripts/translate-changelog.mjs \
  *       --input path/to/changelog.en.md \
  *       --output path/to/changelog.pt-br.md \
  *       --target pt-br
  *
- * If the API call fails, the script exits with an error by default
+ * Pin a specific provider with --provider, override the model with
+ * --model, or point to any OpenAI-compatible endpoint with --endpoint
+ * plus --key (and optionally --auth api-key for Azure-style services).
+ *
+ * If every provider fails, the script exits with an error by default
  * so releases never ship untranslated localized changelogs. Pass
  * --allow-source-fallback only for local/manual recovery runs.
  */
@@ -32,9 +42,33 @@ import { readFile, writeFile, access } from 'node:fs/promises';
 import { constants as FS } from 'node:fs';
 import { argv, env, exit } from 'node:process';
 
-const MODELS_ENDPOINT = 'https://models.github.ai/inference/chat/completions';
-const DEFAULT_MODEL = 'openai/gpt-4.1';
-const GITHUB_API_VERSION = '2022-11-28';
+const PROVIDERS = [
+    {
+        name: 'gemini',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+        keyEnv: 'GEMINI_API_KEY',
+        defaultModel: 'gemini-2.5-flash',
+        auth: 'bearer'
+    },
+    {
+        name: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        keyEnv: 'GROQ_API_KEY',
+        defaultModel: 'llama-3.3-70b-versatile',
+        auth: 'bearer'
+    },
+    {
+        name: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        keyEnv: 'OPENROUTER_API_KEY',
+        // "openrouter/free" auto-routes to any live free model, so this
+        // last-resort entry never goes stale when individual free models
+        // are added or removed (e.g. qwen3-32b:free and DeepSeek:free
+        // were retired and are now paid-only).
+        defaultModel: 'openrouter/free',
+        auth: 'bearer'
+    }
+];
 
 const LANG_NAMES = {
     'pt-br': 'Brazilian Portuguese (pt-BR)',
@@ -48,7 +82,16 @@ const LANG_NAMES = {
 };
 
 function parseArgs(args) {
-    const out = { model: DEFAULT_MODEL, maxRetries: 3, timeoutMs: 120000, allowSourceFallback: false };
+    const out = {
+        model: null,
+        provider: null,
+        endpoint: null,
+        key: null,
+        auth: 'bearer',
+        maxRetries: 3,
+        timeoutMs: 120000,
+        allowSourceFallback: false
+    };
     for (let i = 0; i < args.length; i++) {
         const a = args[i];
         if (a === '--input' || a === '-i') {out.input = args[++i];}
@@ -56,6 +99,10 @@ function parseArgs(args) {
         else if (a === '--target' || a === '-t') {out.target = args[++i];}
         else if (a === '--source') {out.source = args[++i];}
         else if (a === '--model') {out.model = args[++i];}
+        else if (a === '--provider') {out.provider = args[++i];}
+        else if (a === '--endpoint') {out.endpoint = args[++i];}
+        else if (a === '--key') {out.key = args[++i];}
+        else if (a === '--auth') {out.auth = args[++i];}
         else if (a === '--max-retries') {out.maxRetries = parseInt(args[++i], 10);}
         else if (a === '--timeout-ms') {out.timeoutMs = parseInt(args[++i], 10);}
         else if (a === '--allow-source-fallback') {out.allowSourceFallback = true;}
@@ -84,12 +131,19 @@ Options:
   -o, --output <path>     Path where the translated file is written (required).
   -t, --target <lang>     Target language code, e.g. "pt" (required).
       --source <lang>     Source language code (default: en).
-      --model <name>      Model to use (default: ${DEFAULT_MODEL}).
+      --provider <name>   Pin a provider from the built-in chain: ${PROVIDERS.map((p) => p.name).join(', ')}.
+      --model <name>      Override the model for the provider chain.
+      --endpoint <url>    Use a custom OpenAI-compatible chat/completions endpoint.
+      --key <key>         API key for the custom endpoint (or --auth api-key for Azure-style services).
+      --auth <type>       Auth header for custom endpoints: "bearer" (default) or "api-key".
       --max-retries <n>   Number of API retries on transient failures (default: 3).
       --timeout-ms <n>    Per-request timeout in ms (default: 120000).
       --allow-source-fallback
                           Copy source text to output if translation fails.
-  -h, --help              Show this help.`);
+  -h, --help              Show this help.
+
+Free providers (tried in order when their key env var is set):
+${PROVIDERS.map((p) => `  ${p.name.padEnd(10)} ${p.keyEnv.padEnd(22)} ${p.defaultModel}`).join('\n')}`);
 }
 
 const SYSTEM_PROMPT = `You are a technical translator that translates software release-notes from one language to another.
@@ -125,7 +179,7 @@ Source markdown:
 ${sourceText}`;
 }
 
-async function translateOnce({ text, source, target, model, token, timeoutMs, signal }) {
+async function translateOnce({ text, source, target, model, endpoint, key, auth, timeoutMs, signal }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(new Error('timeout')), timeoutMs);
     const externalAbort = () => controller.abort(signal?.reason);
@@ -135,14 +189,22 @@ async function translateOnce({ text, source, target, model, token, timeoutMs, si
     }
 
     try {
-        const response = await fetch(MODELS_ENDPOINT, {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        if (auth === 'api-key') {
+            headers['api-key'] = key;
+        } else {
+            headers['Authorization'] = `Bearer ${key}`;
+        }
+        if (endpoint.includes('openrouter.ai')) {
+            headers['HTTP-Referer'] = 'https://github.com/markelpher/treeide-deploy';
+            headers['X-Title'] = 'TreeIDE changelog translator';
+        }
+
+        const response = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': GITHUB_API_VERSION,
-            },
+            headers,
             body: JSON.stringify({
                 model,
                 messages: [
@@ -197,13 +259,47 @@ async function translateWithRetry(opts) {
     throw lastErr;
 }
 
+function resolveProviders(opts) {
+    if (opts.endpoint && opts.key) {
+        return [{
+            name: 'custom',
+            endpoint: opts.endpoint,
+            key: opts.key,
+            model: opts.model || 'gpt-4.1-mini',
+            auth: opts.auth
+        }];
+    }
+    if (opts.provider) {
+        const provider = PROVIDERS.find((p) => p.name === opts.provider);
+        if (!provider) {
+            throw new Error(`Unknown provider "${opts.provider}". Available: ${PROVIDERS.map((p) => p.name).join(', ')}`);
+        }
+        if (!env[provider.keyEnv]) {
+            throw new Error(`Provider "${provider.name}" requires the ${provider.keyEnv} env var.`);
+        }
+        return [{
+            ...provider,
+            key: env[provider.keyEnv],
+            model: opts.model || provider.defaultModel
+        }];
+    }
+    const available = PROVIDERS.filter((p) => env[p.keyEnv]);
+    if (available.length === 0) {
+        throw new Error(
+            'No translation provider configured. Set one of: ' +
+            PROVIDERS.map((p) => p.keyEnv).join(', ') +
+            ' (free tiers), or pass --endpoint/--key for a custom OpenAI-compatible API.'
+        );
+    }
+    return available.map((p) => ({
+        ...p,
+        key: env[p.keyEnv],
+        model: opts.model || p.defaultModel
+    }));
+}
+
 async function main() {
     const opts = parseArgs(argv.slice(2));
-
-    if (!env.GITHUB_TOKEN) {
-        console.error('GITHUB_TOKEN env var is required.');
-        exit(2);
-    }
 
     try {
         await access(opts.input, FS.R_OK);
@@ -218,23 +314,42 @@ async function main() {
         exit(2);
     }
 
-    console.log(`[translate] Translating ${source.length} chars from ${opts.source} to ${opts.target} via ${opts.model}…`);
+    let providers;
+    try {
+        providers = resolveProviders(opts);
+    } catch (err) {
+        console.error(err.message);
+        exit(2);
+    }
 
     let translated;
-    try {
-        translated = await translateWithRetry({
-            text: source,
-            source: opts.source || 'en',
-            target: opts.target,
-            model: opts.model,
-            token: env.GITHUB_TOKEN,
-            timeoutMs: opts.timeoutMs,
-            maxRetries: opts.maxRetries
-        });
-    } catch (err) {
-        console.error(`[translate] FAILED after ${opts.maxRetries} attempts: ${err.message}`);
+    const failures = [];
+    for (const provider of providers) {
+        console.log(`[translate] Translating ${source.length} chars from ${opts.source || 'en'} to ${opts.target} via ${provider.name}/${provider.model}…`);
+        try {
+            translated = await translateWithRetry({
+                text: source,
+                source: opts.source || 'en',
+                target: opts.target,
+                model: provider.model,
+                endpoint: provider.endpoint,
+                key: provider.key,
+                auth: provider.auth,
+                timeoutMs: opts.timeoutMs,
+                maxRetries: opts.maxRetries
+            });
+            break;
+        } catch (err) {
+            failures.push(`${provider.name}: ${err.message}`);
+            console.error(`[translate] Provider "${provider.name}" failed: ${err.message}`);
+        }
+    }
+
+    if (translated === undefined) {
+        console.error(`[translate] FAILED — all providers failed:\n${failures.map((f) => `  - ${f}`).join('\n')}`);
         if (!opts.allowSourceFallback) {
-            throw err;
+            console.error('[translate] Fatal: no provider produced a translation (use --allow-source-fallback to ship source notes).');
+            exit(1);
         }
         console.warn('[translate] Falling back to source because --allow-source-fallback was provided.');
         translated = source;
