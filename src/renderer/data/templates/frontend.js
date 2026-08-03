@@ -7,80 +7,8 @@ export const frontendTemplates = {
     label: `HTML`,
     tree: `site/
     index.html
+    favicon.ico
     assets/
-        favicon.ico`,
-    files: {
-        "site/index.html": `<!doctype html>
-<html lang="{lang}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tree IDE Site</title>
-    <link rel="icon" href="assets/favicon.ico">
-</head>
-<body>
-    <main>
-        <h1>Tree IDE Site</h1>
-        <p>{start_editing}</p>
-    </main>
-</body>
-</html>
-`,
-        "site/assets/favicon.ico": ``
-    }
-},
-    htmlCss: {
-    label: `HTML & CSS`,
-    tree: `site/
-    index.html
-    styles/
-        styles.css
-    assets/
-        favicon.ico`,
-    files: {
-        "site/index.html": `<!doctype html>
-<html lang="{lang}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tree IDE Site</title>
-    <link rel="icon" href="assets/favicon.ico">
-    <link rel="stylesheet" href="styles/styles.css">
-</head>
-<body>
-    <main>
-        <h1>Tree IDE Site</h1>
-        <p>{start_editing}</p>
-    </main>
-</body>
-</html>
-`,
-        "site/styles/styles.css": `body {
-    margin: 0;
-    font-family: Inter, system-ui, sans-serif;
-    background: #111;
-    color: #f4f4f4;
-}
-
-main {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-}
-`,
-        "site/assets/favicon.ico": ``
-    }
-},
-    cssJavascript: {
-    label: `HTML, CSS & JavaScript`,
-    tree: `site/
-    index.html
-    styles/
-        styles.css
-    scripts/
-        app.js
-    assets/
-        favicon.ico
         images/`,
     files: {
         "site/index.html": `<!doctype html>
@@ -89,19 +17,47 @@ main {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tree IDE Site</title>
-    <link rel="icon" href="assets/favicon.ico">
-    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="icon" href="favicon.ico">
 </head>
 <body>
     <main>
         <h1>Tree IDE Site</h1>
         <p>{start_editing}</p>
     </main>
-    <script src="scripts/app.js"></script>
 </body>
 </html>
 `,
-        "site/styles/styles.css": `body {
+        "site/favicon.ico": ``
+    }
+},
+    htmlCss: {
+    label: `HTML & CSS`,
+    tree: `site/
+    index.html
+    favicon.ico
+    css/
+        style.css
+    assets/
+        images/`,
+    files: {
+        "site/index.html": `<!doctype html>
+<html lang="{lang}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tree IDE Site</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main>
+        <h1>Tree IDE Site</h1>
+        <p>{start_editing}</p>
+    </main>
+</body>
+</html>
+`,
+        "site/css/style.css": `body {
     margin: 0;
     font-family: Inter, system-ui, sans-serif;
     background: #111;
@@ -114,9 +70,55 @@ main {
     place-items: center;
 }
 `,
-        "site/scripts/app.js": `console.log('Tree IDE site ready');
+        "site/favicon.ico": ``
+    }
+},
+    cssJavascript: {
+    label: `HTML, CSS & JavaScript`,
+    tree: `site/
+    index.html
+    favicon.ico
+    css/
+        style.css
+    js/
+        main.js
+    assets/
+        images/`,
+    files: {
+        "site/index.html": `<!doctype html>
+<html lang="{lang}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tree IDE Site</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main>
+        <h1>Tree IDE Site</h1>
+        <p>{start_editing}</p>
+    </main>
+    <script src="js/main.js"></script>
+</body>
+</html>
 `,
-        "site/assets/favicon.ico": ``
+        "site/css/style.css": `body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    background: #111;
+    color: #f4f4f4;
+}
+
+main {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+}
+`,
+        "site/js/main.js": `console.log('Tree IDE site ready');
+`,
+        "site/favicon.ico": ``
     }
 },
     react: {
