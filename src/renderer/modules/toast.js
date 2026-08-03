@@ -60,8 +60,9 @@ export function createToast(app) {
     }
 
     function trimOldestToasts(stack) {
+        // Newest is first (top); oldest sits at the end and is dropped first.
         while (stack.children.length > MAX_VISIBLE_TOASTS) {
-            const oldest = stack.firstElementChild;
+            const oldest = stack.lastElementChild;
             if (!oldest) { break; }
 
             const key = oldest.dataset.toastKey;
@@ -86,6 +87,8 @@ export function createToast(app) {
         const existing = activeToasts.get(display);
 
         if (existing?.el.isConnected) {
+            // Same message is the most recent again — keep it on top.
+            stack.insertBefore(existing.el, stack.firstChild);
             scheduleRemoval(display, existing, visibleDuration);
             return;
         }
@@ -98,7 +101,7 @@ export function createToast(app) {
         item.className = 'toast-item';
         item.dataset.toastKey = display;
         item.textContent = display;
-        stack.appendChild(item);
+        stack.insertBefore(item, stack.firstChild);
 
         const entry = { el: item, timer: null };
         activeToasts.set(display, entry);

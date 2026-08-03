@@ -58,15 +58,15 @@ describe('showToast stack', () => {
         expect(items[0].textContent).toContain('Line 5');
     });
 
-    it('stacks older toasts above newer ones', () => {
+    it('stacks newer toasts above older ones', () => {
         const { showToast } = createToastApi();
         showToast('First error', 5000);
         showToast('Second error', 5000);
 
         const items = [...document.querySelectorAll('.toast-item')];
         expect(items).toHaveLength(2);
-        expect(items[0].textContent).toBe('First error');
-        expect(items[1].textContent).toBe('Second error');
+        expect(items[0].textContent).toBe('Second error');
+        expect(items[1].textContent).toBe('First error');
     });
 
     it('does not duplicate the same visible message', () => {
@@ -102,7 +102,19 @@ describe('showToast stack', () => {
 
         const items = [...document.querySelectorAll('.toast-item')];
         expect(items).toHaveLength(4);
-        expect(items[0].textContent).toBe('Toast 2');
-        expect(items[3].textContent).toBe('Toast 5');
+        expect(items[0].textContent).toBe('Toast 5');
+        expect(items[3].textContent).toBe('Toast 2');
+    });
+
+    it('moves a repeated message back to the top', () => {
+        const { showToast } = createToastApi();
+        showToast('Older', 8000);
+        showToast('Newer', 8000);
+        showToast('Older', 8000);
+
+        const items = [...document.querySelectorAll('.toast-item')];
+        expect(items).toHaveLength(2);
+        expect(items[0].textContent).toBe('Older');
+        expect(items[1].textContent).toBe('Newer');
     });
 });

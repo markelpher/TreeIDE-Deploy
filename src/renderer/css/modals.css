@@ -1,4 +1,4 @@
-/* Toast stack — older messages stay above, newest at the bottom */
+/* Toast stack — newest messages stay on top, older ones push down */
 .toast-stack {
     position: fixed;
     bottom: 24px;
