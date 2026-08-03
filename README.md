@@ -33,6 +33,8 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Tree IDE 1 file compatibility** — Tree IDE 1 is the first-generation `.tree` file format used by Tree IDE Legacy; its headerless UTF-8 files remain fully readable, including tab- and `...`-based indentation
 - **ZIP export** with optional AES-256 password protection via 7-Zip
 - **High-strength encrypted `.tree` projects** — TREEIDE2 uses authenticated AES-256-GCM with Argon2id (256 MiB, 4 passes, 4 lanes), while original Tree IDE Legacy plaintext files remain readable as the first-generation format
+- **Electron-ready Argon2id** — falls back to WASM key derivation when native Argon2 is unavailable, still producing compatible TREEIDE2 files
+- **Re-encrypt on save** — protected projects are written back as TREEIDE2 ciphertext; auto-save never overwrites an encrypted file with plaintext
 - **Explicit `.tree` password protection** — password fields stay visible but disabled until protection is selected; enabling it shows the unrecoverable-password warning and requires matching values before saving
 - **Archive import** via file dialog or drag-and-drop: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, and `.7z`
 - **Password prompts** for encrypted ZIP archives and encrypted `.tree` files
@@ -56,7 +58,9 @@ Tree IDE v2 is a full rewrite of the [original app](https://github.com/TreeIDE/T
 - **Privacy-first diagnostics** — save a local ZIP with allowlisted system/app metadata, sanitized renderer errors, and logs limited to the current app execution; project names and contents are excluded
 - **Interactive app-only screenshots** — after explicit opt-in, the issue form steps aside for a Windows-style region selector or a full Tree IDE window capture; use `Shift+P` even with the toolbar collapsed, while instructions and controls automatically clear the screen during selection; open thumbnails at full size and remove unwanted images before saving up to 10 captures in the local diagnostic ZIP; the desktop and other windows are never captured
 - **IndexedDB session storage** with autosave of open tabs, file contents, and project names
-- **Session modes** — restore the last session on launch or always start clean
+- **Session modes** — restore the last session on launch (including unsaved drafts) or always start clean
+- **Encrypted project sessions** — with restore enabled, an unlocked `.tree` stays in open tabs across restarts; closing the tab drops it so reopening the file requires the password again; passwords are never stored in the session
+- **Notification stack** — newest notifications stay on top
 - **Bundled fonts** — Inter and JetBrains Mono; Lucide icons bundled locally (no CDN)
 - **Command Palette** — use `Ctrl+Shift+P` to access 23 project, editing, tab navigation, build, view, update, and help actions; unavailable contextual tab commands are shown disabled, and action-specific Lucide icons are bundled offline
 - **Accessibility improvements** — localized screen-reader labels, live result announcements, semantic listboxes and tabs, visible focus, and keyboard navigation for command and template workflows

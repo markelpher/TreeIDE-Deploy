@@ -33,6 +33,8 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **Compatibilidad con archivos Tree IDE 1** — Tree IDE 1 es el formato de archivo `.tree` de primera generación utilizado por Tree IDE Legacy; sus archivos de texto UTF-8 sin encabezado siguen siendo totalmente compatibles, incluida la indentación con tabulaciones o `...`
 - **Exportación ZIP** con protección opcional por contraseña AES-256 vía 7-Zip
 - **Proyectos `.tree` con cifrado de alto nivel** — TREEIDE2 usa AES-256-GCM autenticado con Argon2id (256 MiB, 4 pasadas y 4 vías), mientras los archivos de texto simple de Tree IDE Legacy siguen siendo compatibles como formato de primera generación
+- **Argon2id listo para Electron** — si Argon2 nativo no está disponible, la derivación de clave usa WASM y sigue generando archivos TREEIDE2 compatibles
+- **Recifrado al guardar** — los proyectos protegidos se vuelven a escribir como ciphertext TREEIDE2; el auto-guardado nunca sobrescribe un `.tree` cifrado con texto plano
 - **Protección explícita del `.tree` con contraseña** — los campos de contraseña permanecen visibles, pero deshabilitados hasta seleccionar la protección; al activarla aparece la advertencia de contraseña irrecuperable y los valores deben coincidir antes de guardar
 - **Importación de archivos** mediante diálogo o arrastrar y soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` y `.7z`
 - **Solicitud de contraseña** para ZIP cifrados y archivos `.tree` protegidos
@@ -56,7 +58,9 @@ Tree IDE v2 es una reescritura completa de la [aplicación original](https://git
 - **Diagnóstico con privacidad primero** — guarda un ZIP local con metadatos permitidos del sistema/app, errores sanitizados del renderer y registros limitados a la ejecución actual; se excluyen nombres y contenidos de proyectos
 - **Capturas interactivas solo de la app** — después del consentimiento explícito, el formulario de la issue deja espacio a un selector de región al estilo Windows o a la captura de la ventana completa de Tree IDE; usa `Shift+P` incluso con la barra plegada, mientras las instrucciones y los controles despejan la pantalla automáticamente durante la selección; abre las miniaturas en tamaño ampliado y elimina imágenes no deseadas antes de guardar hasta 10 capturas en el ZIP local; el escritorio y otras ventanas nunca se capturan
 - **Almacenamiento de sesión en IndexedDB** con guardado automático de pestañas abiertas, contenidos y nombres de proyectos
-- **Modos de sesión** — restaurar la última sesión al iniciar o siempre empezar limpio
+- **Modos de sesión** — restaurar la última sesión al iniciar (incluidos borradores sin guardar) o siempre empezar limpio
+- **Sesión de proyectos cifrados** — con restauración activa, un `.tree` desbloqueado permanece en las pestañas abiertas tras reiniciar; cerrar la pestaña elimina el borrador y volver a abrir el archivo pide la contraseña; las contraseñas nunca se guardan en la sesión
+- **Pila de notificaciones** — las notificaciones más recientes se mantienen arriba
 - **Fuentes incluidas** — Inter y JetBrains Mono; iconos Lucide locales (sin CDN)
 - **Paleta de comandos** — usa `Ctrl+Shift+P` para acceder a 23 acciones de proyecto, edición, navegación entre pestañas, creación, vista, actualización y ayuda; los comandos contextuales no disponibles aparecen deshabilitados y los iconos Lucide específicos de cada acción están disponibles sin conexión
 - **Mejoras de accesibilidad** — etiquetas localizadas para lectores de pantalla, anuncios de resultados, listboxes y pestañas semánticas, foco visible y navegación por teclado en los flujos de comandos y plantillas

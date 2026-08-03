@@ -33,6 +33,8 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Compatibilidade com arquivos Tree IDE 1** — Tree IDE 1 é o formato de arquivo `.tree` de primeira geração usado pelo Tree IDE Legacy; seus arquivos em texto UTF-8 sem cabeçalho continuam totalmente compatíveis, incluindo indentação por tabulações ou `...`
 - **Exportação ZIP** com proteção opcional por senha AES-256 via 7-Zip
 - **Projetos `.tree` com criptografia de alto padrão** — o TREEIDE2 usa AES-256-GCM autenticado com Argon2id (256 MiB, 4 passagens e 4 vias), enquanto os arquivos de texto simples do Tree IDE Legacy continuam compatíveis como formato de primeira geração
+- **Argon2id pronto para Electron** — se o Argon2 nativo não estiver disponível, a derivação de chave usa WASM e continua gerando arquivos TREEIDE2 compatíveis
+- **Recriptografia ao salvar** — projetos protegidos voltam a ser gravados como ciphertext TREEIDE2; o auto-save nunca sobrescreve um `.tree` criptografado com texto puro
 - **Proteção explícita do `.tree` com senha** — os campos de senha permanecem visíveis, mas desabilitados até a proteção ser marcada; ao ativá-la, o aviso de senha irrecuperável aparece e os valores precisam coincidir antes de salvar
 - **Importação de arquivos** via diálogo ou arrastar e soltar: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar` e `.7z`
 - **Solicitação de senha** para ZIP criptografados e arquivos `.tree` protegidos
@@ -56,7 +58,9 @@ O Tree IDE v2 é uma reescrita completa do [app original](https://github.com/Tre
 - **Diagnóstico com privacidade em primeiro lugar** — salve um ZIP local com metadados permitidos do sistema/app, erros sanitizados do renderer e logs limitados à execução atual; nomes e conteúdos de projetos ficam de fora
 - **Capturas interativas somente do app** — após consentimento explícito, o formulário da issue dá lugar a um seletor de região no estilo Windows ou à captura da janela inteira do Tree IDE; use `Shift+P` mesmo com a barra recolhida, enquanto instruções e controles liberam a tela automaticamente durante a seleção; abra miniaturas em tamanho ampliado e remova imagens indesejadas antes de salvar até 10 capturas no ZIP local; a área de trabalho e outras janelas nunca são capturadas
 - **Armazenamento de sessão em IndexedDB** com salvamento automático de abas abertas, conteúdos e nomes de projetos
-- **Modos de sessão** — restaurar a última sessão ao iniciar ou sempre começar limpo
+- **Modos de sessão** — restaurar a última sessão ao iniciar (incluindo rascunhos não salvos) ou sempre começar limpo
+- **Sessão de projetos criptografados** — com restauração ativa, um `.tree` desbloqueado permanece nas abas abertas após reiniciar; fechar a aba remove o rascunho e reabrir o arquivo pede a senha de novo; senhas nunca são gravadas na sessão
+- **Pilha de notificações** — as notificações mais recentes ficam no topo
 - **Fontes incluídas** — Inter e JetBrains Mono; ícones Lucide locais (sem CDN)
 - **Paleta de comandos** — use `Ctrl+Shift+P` para acessar 23 ações de projeto, edição, navegação entre abas, build, visualização, atualização e ajuda; comandos contextuais indisponíveis aparecem desabilitados, e ícones Lucide específicos para cada ação ficam disponíveis offline
 - **Melhorias de acessibilidade** — rótulos localizados para leitores de tela, anúncios de resultados, listboxes e abas semânticas, foco visível e navegação por teclado nos fluxos de comandos e templates

@@ -28,6 +28,8 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Tree IDE 1 file compatibility** — Tree IDE 1 identifies the first-generation `.tree` file format used by Tree IDE Legacy; original headerless UTF-8 files remain readable with both tab and `...` indentation styles
 - **ZIP export** with optional AES-256 password protection via 7-Zip
 - **High-strength encrypted `.tree` projects** — TREEIDE2 uses authenticated AES-256-GCM with Argon2id (256 MiB, 4 passes, 4 lanes), authenticates its cryptographic header, and keeps the original headerless Tree IDE Legacy format readable as generation 1
+- **Electron-ready Argon2id** — when the runtime lacks native Argon2 (Electron/BoringSSL), key derivation falls back to a WASM implementation that produces the same TREEIDE2 keys as OpenSSL-backed Node
+- **Re-encrypt on save** — saving or auto-saving a protected `.tree` rewrites the file as TREEIDE2 ciphertext instead of plaintext; auto-save skips until an unlock password is available in memory
 - **Explicit `.tree` protection** — a dedicated checkbox enables the otherwise disabled password and confirmation fields, explains that TREEIDE2 encryption will be applied, and shows the unrecoverable-password warning only while protection is selected
 - **Archive import** via file dialog or drag-and-drop: `.tree`, `.zip`, `.tar.gz` / `.tgz` / `.tar`, `.rar`, and `.7z`
 - **Password prompts** for encrypted ZIP archives and encrypted `.tree` files
@@ -91,6 +93,7 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 - **Settings modal** with tabs: General, Appearance, Shortcuts, and Updates
 - **About modal** with live app version (evolved from the v1 credits screen)
 - **Unsaved-changes dialog** when closing with modified projects
+- **Notification stack** — newest notifications appear on top; older ones push down; repeating the same message brings it back to the top and refreshes its timer
 - **Drag-and-drop overlay** for `.tree` files and archives
 - **Bundled fonts** — Inter and JetBrains Mono
 
@@ -114,7 +117,10 @@ Tree IDE v2 is a full rewrite and expansion of the original app [Tree IDE v1.0.0
 #### Session persistence
 - **IndexedDB session storage** with automatic migration from legacy `localStorage`
 - **Autosave** of open tabs, file contents, and project names
-- **Session modes** — restore the last session on launch or always start clean
+- **Session modes** — restore the last session on launch (including unsaved editor drafts) or always start clean
+- **Encrypted project session rules** — with **Restore last session**, a `.tree` unlocked in an open tab keeps its decrypted structure in the editor after restart; closing that tab removes it from the snapshot so reopening the file asks for the password again; **Start clean** never restores those drafts
+- **Passwords stay out of storage** — unlock passwords are held only in memory while a tab is open; after a restored session, saving a protected file prompts for the password again before re-encrypting to disk
+- **Safe session restore** — startup never blocks on password dialogs (so the window can appear), and a corrupt session falls back to a clean untitled tab
 
 #### Auto-updater & release notes
 - **In-app auto-updater** — check GitHub Releases, download with progress, and restart to install
