@@ -1574,66 +1574,102 @@ export function createShell(app) {
     const SESSION_AUTOSAVE_MS = 30000;
     const LEGACY_AUTOSAVE_KEYS = ['autosave_content', 'temp_content', 'temp_path'];
 
+    function ensureActiveTabRestored(appInstance) {
+        const active = appInstance.tabs.getActiveTab();
+        if (active) {
+            // Guard against corrupt session payloads.
+            if (!active.fileContents || typeof active.fileContents !== 'object') {
+                active.fileContents = {};
+            }
+            if (!Array.isArray(active.openFileTabs)) {
+                active.openFileTabs = [];
+            }
+            if (typeof active.editorContent !== 'string') {
+                active.editorContent = '';
+            }
+            appInstance.tabs.restoreTabState(active);
+            return;
+        }
+        appInstance.tabs.createTab({ name: appInstance.i18n.t('untitled') });
+    }
+
     async function restoreSession() {
         const S = app.state;
         const currentSessionMode = localStorage.getItem('session_mode') || 'restore';
 
-        if (currentSessionMode === 'clean') {
-            const keys = ['autosave_tabs', 'autosave_path', 'autosave_project_name', 'autosave_file_contents', 'panel_layout', ...LEGACY_AUTOSAVE_KEYS];
-            keys.forEach((k) => localStorage.removeItem(k));
-            app.panelResize?.resetToDefaults();
-            if (app.dbStorage) {
-                app.dbStorage.remove('autosave_tabs').catch((err) => console.warn('Failed to clear autosave tabs:', err));
-                app.dbStorage.remove('autosave_file_contents').catch((err) => console.warn('Failed to clear autosave file contents:', err));
+        try {
+            if (currentSessionMode === 'clean') {
+                const keys = ['autosave_tabs', 'autosave_path', 'autosave_project_name', 'autosave_file_contents', 'panel_layout', ...LEGACY_AUTOSAVE_KEYS];
+                keys.forEach((k) => localStorage.removeItem(k));
+                app.panelResize?.resetToDefaults();
+                if (app.dbStorage) {
+                    app.dbStorage.remove('autosave_tabs').catch((err) => console.warn('Failed to clear autosave tabs:', err));
+                    app.dbStorage.remove('autosave_file_contents').catch((err) => console.warn('Failed to clear autosave file contents:', err));
+                }
+                S.fileContents = {};
+                app.tabs.createTab({ name: app.i18n.t('untitled') });
+                return;
             }
-            S.fileContents = {};
-            app.tabs.createTab({ name: app.i18n.t('untitled') });
-            return;
-        }
 
-        let tabsLoaded = app.tabs.loadTabsFromStorage();
-        if (!tabsLoaded) {
+            let tabsLoaded = app.tabs.loadTabsFromStorage();
+            if (!tabsLoaded) {
+                try {
+                    tabsLoaded = await app.tabs.loadTabsFromStorageAsync();
+                } catch (err) {
+                    console.warn('Failed to load tabs from IndexedDB:', err);
+                }
+            }
+
+            if (tabsLoaded && app.tabs.projectTabs.length > 0) {
+                // Restore open tabs as-is (including decrypted content of encrypted .tree
+                // projects still open). Passwords are not restored — save re-prompts if needed.
+                // Closed tabs are already absent from the snapshot. Clean session never reaches here.
+                ensureActiveTabRestored(app);
+                app.tabs.saveTabsToStorage();
+                app.undoredo.resetForTab(S.editor?.value || '');
+                app.tabs.updateSaveAllMenuVisibility();
+                return;
+            }
+
+            const savedContent = localStorage.getItem('temp_content') || localStorage.getItem('autosave_content');
+            const savedPath = localStorage.getItem('temp_path') || localStorage.getItem('autosave_path');
+            const savedProjectName = localStorage.getItem('autosave_project_name');
+            app.fileops.loadSavedFileContents();
             try {
-                tabsLoaded = await app.tabs.loadTabsFromStorageAsync();
+                await Promise.race([app.storage.loadSavedFileContentsAsync(), new Promise((resolve) => setTimeout(resolve, 4000))]);
             } catch (err) {
-                console.warn('Failed to load tabs from IndexedDB:', err);
+                console.warn('IndexedDB file contents load skipped:', err);
             }
-        }
-
-        if (tabsLoaded && app.tabs.projectTabs.length > 0) {
-            app.tabs.restoreTabState(app.tabs.getActiveTab());
+            const legacyTab = app.tabs.createTab({
+                name: savedProjectName || app.i18n.t('untitled'),
+                editorContent: savedContent || '',
+                filePath: savedPath || '',
+                fileContents: { ...(S.fileContents || {}) },
+                isModified: false,
+                lastSavedProjectName: savedProjectName || ''
+            });
+            if (savedPath) {
+                app.tabs.markTabSaved(legacyTab, savedContent || '', S.fileContents || {});
+            }
+            const activeTab = app.tabs.getActiveTab();
+            if (activeTab) {
+                activeTab.treeData = app.tree.parseEditorContent(activeTab.editorContent || '');
+            }
             app.tabs.saveTabsToStorage();
             app.undoredo.resetForTab(S.editor?.value || '');
             app.tabs.updateSaveAllMenuVisibility();
-            return;
-        }
-
-        const savedContent = localStorage.getItem('temp_content') || localStorage.getItem('autosave_content');
-        const savedPath = localStorage.getItem('temp_path') || localStorage.getItem('autosave_path');
-        const savedProjectName = localStorage.getItem('autosave_project_name');
-        app.fileops.loadSavedFileContents();
-        try {
-            await Promise.race([app.storage.loadSavedFileContentsAsync(), new Promise((resolve) => setTimeout(resolve, 4000))]);
+            LEGACY_AUTOSAVE_KEYS.forEach((k) => localStorage.removeItem(k));
         } catch (err) {
-            console.warn('IndexedDB file contents load skipped:', err);
+            console.error('[TreeIDE] restoreSession failed, starting clean:', err);
+            try {
+                app.tabs.projectTabs = [];
+                app.tabs.activeProjectTabId = null;
+                S.fileContents = {};
+                app.tabs.createTab({ name: app.i18n.t('untitled') });
+            } catch (fallbackErr) {
+                console.error('[TreeIDE] clean session fallback failed:', fallbackErr);
+            }
         }
-        const legacyTab = app.tabs.createTab({
-            name: savedProjectName || app.i18n.t('untitled'),
-            editorContent: savedContent || '',
-            filePath: savedPath || '',
-            fileContents: { ...S.fileContents },
-            isModified: false,
-            lastSavedProjectName: savedProjectName || ''
-        });
-        if (savedPath) {
-            app.tabs.markTabSaved(legacyTab, savedContent || '', S.fileContents);
-        }
-        const activeTab = app.tabs.getActiveTab();
-        activeTab.treeData = app.tree.parseEditorContent(activeTab.editorContent);
-        app.tabs.saveTabsToStorage();
-        app.undoredo.resetForTab(S.editor?.value || '');
-        app.tabs.updateSaveAllMenuVisibility();
-        LEGACY_AUTOSAVE_KEYS.forEach((k) => localStorage.removeItem(k));
     }
 
     function initOnboarding() {

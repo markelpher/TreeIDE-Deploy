@@ -10,7 +10,7 @@ function getDisplayName(filePath, result) {
     return fileName.replace(/\.(tree|zip)$/i, '');
 }
 
-function applyLoadResult(app, result, filePath) {
+function applyLoadResult(app, result, filePath, unlockPassword = '') {
     const tree = result.treeData || app.tree.parseEditorContent(result.content || '');
     if (Object.keys(tree).length === 0) {
         app.toast.showToast(app.i18n.t('validation_empty'), 4000);
@@ -26,6 +26,7 @@ function applyLoadResult(app, result, filePath) {
     const forceNew = activeTab && (
         app.editor.getTreeEditorContent().trim() !== '' || activeTab.isModified
     );
+    const treeEncrypted = Boolean(result.treeEncrypted);
 
     app.tabs.loadContentIntoTab({
         content: result.content,
@@ -34,7 +35,9 @@ function applyLoadResult(app, result, filePath) {
         treeData: result.treeData || null,
         fileContents: importedFileContents,
         isModified: !isFromFile,
-        forceNewTab: forceNew
+        forceNewTab: forceNew,
+        treeEncrypted,
+        unlockPassword: treeEncrypted ? unlockPassword : ''
     });
     app.toast.showToast(app.i18n.t('file_loaded'));
     return true;
@@ -43,7 +46,7 @@ function applyLoadResult(app, result, filePath) {
 /**
  * @param {import('../createApp.js').App} app
  * @param {string} filePath
- * @param {{ password?: string, showToastOnError?: boolean }} [options]
+ * @param {{ password?: string, showToastOnError?: boolean, silentToast?: boolean }} [options]
  */
 export async function loadProjectFromPath(app, filePath, options = {}) {
     const lang = app.i18n.getCurrentLang();
@@ -89,7 +92,7 @@ export async function loadProjectFromPath(app, filePath, options = {}) {
             return false;
         }
 
-        return applyLoadResult(app, result, filePath);
+        return applyLoadResult(app, result, filePath, password);
     }
 }
 
@@ -147,6 +150,6 @@ export async function loadProjectFromResult(app, initialResult, filePath = '') {
             return false;
         }
 
-        return applyLoadResult(app, result, resolvedPath);
+        return applyLoadResult(app, result, resolvedPath, password);
     }
 }

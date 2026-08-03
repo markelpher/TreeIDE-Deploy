@@ -62,7 +62,8 @@ async function resolveZipLoadResult(fileEntries, selectedPath, baseName, passwor
     }
 
     let treeFileContent = fileContentsMap[treeFileKey];
-    if (isEncryptedTreeContent(treeFileContent)) {
+    const treeEncrypted = isEncryptedTreeContent(treeFileContent);
+    if (treeEncrypted) {
         if (!password) {
             return {
                 canceled: false,
@@ -88,7 +89,8 @@ async function resolveZipLoadResult(fileEntries, selectedPath, baseName, passwor
         name: baseName,
         fileContents,
         filePath: selectedPath,
-        treeData: parseTreeContent(treeFileContent)
+        treeData: parseTreeContent(treeFileContent),
+        treeEncrypted
     };
 }
 
@@ -163,7 +165,8 @@ async function processLoadPath(selectedPath, lang, lastSaveDirectoryRef, options
     if (ext === '.tree') {
         const rawContent = fs.readFileSync(selectedPath, 'utf-8');
         let content = rawContent;
-        if (isEncryptedTreeContent(rawContent)) {
+        const treeEncrypted = isEncryptedTreeContent(rawContent);
+        if (treeEncrypted) {
             if (!password) {
                 return {
                     canceled: false,
@@ -181,7 +184,14 @@ async function processLoadPath(selectedPath, lang, lastSaveDirectoryRef, options
         }
         const treeData = parseTreeContent(content);
         lastSaveDirectoryRef.value = path.dirname(selectedPath);
-        return { canceled: false, treeData, content, filePath: selectedPath, name: baseName };
+        return {
+            canceled: false,
+            treeData,
+            content,
+            filePath: selectedPath,
+            name: baseName,
+            treeEncrypted
+        };
     }
 
     if (selectedPath.endsWith('.tar.gz') || selectedPath.endsWith('.tgz') || ext === '.gz' || ext === '.tgz' || ext === '.tar') {
@@ -371,23 +381,27 @@ function isPathInsideDir(filePath, dirPath) {
 }
 
 function registerSaveHandlers(lastSaveDirectoryRef) {
-    ipcMain.handle('save-tree', async (event, filePath, content, lang = 'en') => {
+    ipcMain.handle('save-tree', async (event, filePath, content, lang = 'en', options = {}) => {
         if (typeof filePath !== 'string' || !filePath) {
             throw new Error(mainT(lang, 'error_invalid_file_path'));
         }
         if (typeof content !== 'string') {
             throw new Error(mainT(lang, 'error_invalid_content'));
         }
-        if (Buffer.byteLength(content, 'utf8') > MAX_ENTRY_SIZE) {
+        const encryptPassword = options?.encryptPassword || '';
+        const finalContent = encryptPassword
+            ? await encryptTreeContent(content, encryptPassword)
+            : content;
+        if (Buffer.byteLength(finalContent, 'utf8') > MAX_ENTRY_SIZE) {
             throw new Error(mainT(lang, 'error_file_content_too_large'));
         }
         const resolved = path.resolve(filePath);
         if (lastSaveDirectoryRef.value && !isPathInsideDir(resolved, lastSaveDirectoryRef.value)) {
             throw new Error(mainT(lang, 'error_path_outside_allowed'));
         }
-        fs.writeFileSync(resolved, content, 'utf-8');
+        fs.writeFileSync(resolved, finalContent, 'utf-8');
         lastSaveDirectoryRef.value = path.dirname(resolved);
-        return true;
+        return { ok: true, encrypted: Boolean(encryptPassword) };
     });
 
     ipcMain.handle('save-tree-as', async (event, content, defaultName = 'project', lang = 'en', options = {}) => {

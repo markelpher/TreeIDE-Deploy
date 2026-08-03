@@ -210,17 +210,74 @@ const defaultFileLangs = {};
         return false;
     }
 
+    /**
+     * Options for writing a .tree that must stay TREEIDE2-encrypted.
+     * Password lives only in memory for the open tab (never in session storage).
+     * @param {object | null} tab
+     * @returns {{ encryptPassword?: string }}
+     */
+    function getTreeSaveOptions(tab) {
+        if (!tab?.treeEncrypted) {
+            return {};
+        }
+        const encryptPassword = app.tabs.getUnlockPassword?.(tab.id) || '';
+        if (!encryptPassword) {
+            return null;
+        }
+        return { encryptPassword };
+    }
+
+    /**
+     * After session restore the unlock password is gone. Ask again before writing
+     * so the on-disk .tree stays TREEIDE2 (never overwrite with plaintext).
+     * @param {object | null} tab
+     * @returns {Promise<{ encryptPassword?: string } | null>}
+     */
+    async function resolveTreeSaveOptions(tab) {
+        const existing = getTreeSaveOptions(tab);
+        if (existing !== null) {
+            return existing;
+        }
+        if (!tab?.treeEncrypted || !app.modals?.showDecryptPasswordModal) {
+            return null;
+        }
+
+        const fileName = (tab.filePath || tab.name || 'project')
+            .split(/[\\/]/)
+            .pop()
+            .replace(/\.tree$/i, '');
+        const entered = await app.modals.showDecryptPasswordModal({
+            fileName,
+            kind: 'tree',
+            wrongPassword: false
+        });
+        if (!entered) {
+            return null;
+        }
+        app.tabs.setUnlockPassword?.(tab.id, entered);
+        return { encryptPassword: entered };
+    }
+
     async function autoSaveToDisk() {
         const S = app.state;
         if (!S.currentFilePath || S._isSaving) {return;}
         if (!S.editor?.value?.trim()) {return;}
 
+        const activeTab = app.tabs.getActiveTab();
+        // Never auto-write plaintext over an encrypted project; skip until password is known.
+        const saveOptions = getTreeSaveOptions(activeTab);
+        if (saveOptions === null) { return; }
+
         S._isSaving = true;
         try {
-            const result = await app.electronAPI.saveTree(S.currentFilePath, S.editor.value, app.i18n.getCurrentLang());
+            const result = await app.electronAPI.saveTree(
+                S.currentFilePath,
+                S.editor.value,
+                app.i18n.getCurrentLang(),
+                saveOptions
+            );
             if (handleSaveResult(result)) { return; }
             S.isModified = false;
-            const activeTab = app.tabs.getActiveTab();
             if (activeTab) {
                 activeTab.editorContent = S.editor.value;
                 app.tabs.markTabSaved(activeTab, S.editor.value, S.fileContents);
@@ -252,6 +309,10 @@ const defaultFileLangs = {};
         try {
             app.tabs.saveCurrentTabState();
             const activeTab = app.tabs.getActiveTab();
+            const saveOptions = await resolveTreeSaveOptions(activeTab);
+            if (saveOptions === null) {
+                return false;
+            }
             const untitledLabel = getUntitledLabel();
             const currentName = resolveProjectName({
                 tabName: activeTab?.name,
@@ -262,7 +323,12 @@ const defaultFileLangs = {};
             const savedName = sanitizeProjectFileName(currentName);
 
             if (!S.currentFilePath || askPath || (savedName !== sanitizeProjectFileName(S.lastSavedProjectName || ''))) {
-                const result = await app.electronAPI.saveTreeAs(S.editor.value, savedName, app.i18n.getCurrentLang());
+                const result = await app.electronAPI.saveTreeAs(
+                    S.editor.value,
+                    savedName,
+                    app.i18n.getCurrentLang(),
+                    saveOptions
+                );
                 if (result.canceled) { return false; }
                 if (handleSaveResult(result) || !result.filePath) { return false; }
                 S.currentFilePath = result.filePath;
@@ -277,13 +343,21 @@ const defaultFileLangs = {};
                     activeTab.filePath = S.currentFilePath;
                     activeTab.lastSavedProjectName = savedFileName;
                     activeTab.editorContent = S.editor.value;
+                    if (result.encrypted || saveOptions.encryptPassword) {
+                        app.tabs.markTabTreeEncrypted(activeTab, saveOptions.encryptPassword);
+                    }
                     app.tabs.markTabSaved(activeTab, S.editor.value, S.fileContents);
                     app.tabs.renderProjectTabBar();
                     app.tabs.saveTabsToStorage();
                 }
                 return true;
             } else {
-                const result = await app.electronAPI.saveTree(S.currentFilePath, S.editor.value, app.i18n.getCurrentLang());
+                const result = await app.electronAPI.saveTree(
+                    S.currentFilePath,
+                    S.editor.value,
+                    app.i18n.getCurrentLang(),
+                    saveOptions
+                );
                 if (handleSaveResult(result)) { return false; }
                 S.isModified = false;
                 persistFileContents();

@@ -68,6 +68,9 @@ function resolveTabTreeData(tab) {
     return app.tree.parseEditorContent(tab.editorContent || '');
 }
 
+/** In-memory unlock secrets only — never written to localStorage/IndexedDB. */
+const tabUnlockPasswords = new Map();
+
 function createProjectTab(options = {}) {
     const tab = {
         id: options.id || ('proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
@@ -81,10 +84,37 @@ function createProjectTab(options = {}) {
         openFileTabs: options.openFileTabs || [],
         activeFileTabPath: options.activeFileTabPath || null,
         savedEditorContent: options.savedEditorContent,
-        savedFileContentsSnapshot: options.savedFileContentsSnapshot
+        savedFileContentsSnapshot: options.savedFileContentsSnapshot,
+        // Loaded from / saved as TREEIDE2; plaintext must not persist across sessions.
+        treeEncrypted: Boolean(options.treeEncrypted)
     };
     ensureTabSnapshots(tab);
     return tab;
+}
+
+/**
+ * Serialize a tab for session storage.
+ * With session mode "restore", decrypted editor content of open encrypted tabs is kept
+ * (same as normal tabs). Unlock passwords are never stored — only held in memory while
+ * the tab is open. Closing the tab removes it from the next session snapshot.
+ * @param {object} tab
+ */
+function serializeTabForStorage(tab) {
+    return {
+        id: tab.id,
+        name: tab.name,
+        editorContent: tab.editorContent,
+        filePath: tab.filePath,
+        treeData: tab.treeData,
+        fileContents: tab.fileContents,
+        isModified: tab.isModified,
+        lastSavedProjectName: tab.lastSavedProjectName,
+        openFileTabs: tab.openFileTabs,
+        activeFileTabPath: tab.activeFileTabPath,
+        savedEditorContent: tab.savedEditorContent,
+        savedFileContentsSnapshot: tab.savedFileContentsSnapshot,
+        treeEncrypted: Boolean(tab.treeEncrypted)
+    };
 }
 
 function getTabScrollViewport(list) {
@@ -188,9 +218,19 @@ const tabManager = {
         const treeView = document.getElementById('treeView');
         const S = app.state;
 
-        S.currentFilePath = tab.filePath;
-        S.isModified = tab.isModified;
-        S.lastSavedProjectName = tab.lastSavedProjectName;
+        if (!tab.fileContents || typeof tab.fileContents !== 'object') {
+            tab.fileContents = {};
+        }
+        if (!Array.isArray(tab.openFileTabs)) {
+            tab.openFileTabs = [];
+        }
+        if (typeof tab.editorContent !== 'string') {
+            tab.editorContent = '';
+        }
+
+        S.currentFilePath = tab.filePath || '';
+        S.isModified = Boolean(tab.isModified);
+        S.lastSavedProjectName = tab.lastSavedProjectName || '';
         S.fileContents = { ...tab.fileContents };
         S.activePreviewPath = '';
 
@@ -255,31 +295,73 @@ const tabManager = {
         return tab;
     },
 
-    loadContentIntoTab({ content, tabName, filePath, treeData, fileContents, isModified, forceNewTab }) {
+    loadContentIntoTab({
+        content,
+        tabName,
+        filePath,
+        treeData,
+        fileContents,
+        isModified,
+        forceNewTab,
+        treeEncrypted = false,
+        unlockPassword = ''
+    }) {
         const resolvedTreeData = (treeData && Object.keys(treeData).length > 0)
             ? treeData
             : app.tree.parseEditorContent(content || '');
         const activeTab = this.getActiveTab();
+        let targetTab = null;
         if (activeTab && forceNewTab) {
-            const tab = this.createTab({
+            targetTab = this.createTab({
                 name: tabName,
                 editorContent: content,
                 filePath: filePath || null,
                 treeData: resolvedTreeData,
                 fileContents: fileContents || {},
                 isModified,
-                lastSavedProjectName: tabName
+                lastSavedProjectName: tabName,
+                treeEncrypted: Boolean(treeEncrypted)
             });
-            this.markTabLoaded(tab, content, fileContents || {}, !!isModified);
+            this.markTabLoaded(targetTab, content, fileContents || {}, !!isModified);
         } else if (activeTab) {
+            // Switching project content: drop any previous unlock secret.
+            this.clearUnlockPassword(activeTab.id);
             activeTab.editorContent = content;
             activeTab.filePath = filePath || null;
             activeTab.treeData = resolvedTreeData;
             activeTab.fileContents = fileContents || {};
             activeTab.name = tabName;
             activeTab.lastSavedProjectName = tabName;
+            activeTab.treeEncrypted = Boolean(treeEncrypted);
             this.markTabLoaded(activeTab, content, fileContents || {}, !!isModified);
             this.restoreTabState(activeTab);
+            targetTab = activeTab;
+        }
+        if (targetTab?.treeEncrypted && unlockPassword) {
+            this.setUnlockPassword(targetTab.id, unlockPassword);
+        }
+        this.saveTabsToStorage();
+        return targetTab;
+    },
+
+    setUnlockPassword(tabId, password) {
+        if (!tabId || !password) { return; }
+        tabUnlockPasswords.set(tabId, password);
+    },
+
+    getUnlockPassword(tabId) {
+        return tabUnlockPasswords.get(tabId) || '';
+    },
+
+    clearUnlockPassword(tabId) {
+        if (tabId) { tabUnlockPasswords.delete(tabId); }
+    },
+
+    markTabTreeEncrypted(tab, password = '') {
+        if (!tab) { return; }
+        tab.treeEncrypted = true;
+        if (password) {
+            this.setUnlockPassword(tab.id, password);
         }
         this.saveTabsToStorage();
     },
@@ -301,6 +383,9 @@ const tabManager = {
             );
             if (!discard) { return; }
         }
+
+        // Drop unlock secret; closing the tab removes it from the next session snapshot.
+        this.clearUnlockPassword(tabId);
 
         if (tabId === this.activeProjectTabId) {
             this.projectTabs.splice(index, 1);
@@ -1209,20 +1294,7 @@ const tabManager = {
         this.saveCurrentTabState();
         const data = {
             activeProjectTabId: this.activeProjectTabId,
-            projectTabs: this.projectTabs.map(tab => ({
-                id: tab.id,
-                name: tab.name,
-                editorContent: tab.editorContent,
-                filePath: tab.filePath,
-                treeData: tab.treeData,
-                fileContents: tab.fileContents,
-                isModified: tab.isModified,
-                lastSavedProjectName: tab.lastSavedProjectName,
-                openFileTabs: tab.openFileTabs,
-                activeFileTabPath: tab.activeFileTabPath,
-                savedEditorContent: tab.savedEditorContent,
-                savedFileContentsSnapshot: tab.savedFileContentsSnapshot
-            }))
+            projectTabs: this.projectTabs.map((tab) => serializeTabForStorage(tab))
         };
         const json = JSON.stringify(data);
         try {
@@ -1249,6 +1321,8 @@ const tabManager = {
                 this.projectTabs = data.projectTabs.map((t) => {
                     const tab = createProjectTab(t);
                     reconcileTabAfterLoad(t, tab);
+                    // Password is never restored from storage — only while the tab stays open after unlock.
+                    this.clearUnlockPassword(tab.id);
                     return tab;
                 });
                 this.activeProjectTabId = data.activeProjectTabId || this.projectTabs[0].id;
@@ -1274,6 +1348,7 @@ const tabManager = {
                 this.projectTabs = data.projectTabs.map((t) => {
                     const tab = createProjectTab(t);
                     reconcileTabAfterLoad(t, tab);
+                    this.clearUnlockPassword(tab.id);
                     return tab;
                 });
                 this.activeProjectTabId = data.activeProjectTabId || this.projectTabs[0].id;
